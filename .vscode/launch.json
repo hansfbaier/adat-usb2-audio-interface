@@ -8,7 +8,7 @@
             "name": "Python: Generate Gateware",
             "type": "python",
             "request": "launch",
-            "program": "gateware/adat_audio_interface.py",
+            "program": "gateware/adat_usb2_audio_interface.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": ["--keep"]
