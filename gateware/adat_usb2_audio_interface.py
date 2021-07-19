@@ -5,21 +5,25 @@
 
 import os
 
-from luna.gateware.platform.de0_nano import DE0NanoPlatform
 from nmigen              import Elaboratable, Module, Cat
 
 from luna                import top_level_cli
 from luna.usb2           import USBDevice, USBIsochronousInEndpoint, USBIsochronousOutEndpoint
 
-from luna.gateware.stream                        import StreamInterface
 from luna.gateware.platform                      import NullPin
+from luna.gateware.platform.de0_nano             import DE0NanoPlatform
 from luna.gateware.usb.usb2.device               import USBDevice
 from luna.gateware.usb.usb2.request              import USBRequestHandler, StallOnlyRequestHandler
 from luna.gateware.usb.usb2.endpoints.stream     import USBStreamInEndpoint, USBStreamOutEndpoint
 
-from usb_protocol.types                import USBRequestType, USBTransferType, USBSynchronizationType, USBUsageType, USBDirection
-from usb_protocol.emitters             import DeviceDescriptorCollection
-from usb_protocol.emitters.descriptors import uac2, standard
+from luna.gateware.usb.stream        import USBInStreamInterface
+from luna.gateware.stream.generator  import StreamSerializer
+from nmigen.hdl.ast import Const
+
+from usb_protocol.types                  import USBRequestType, USBTransferType, USBSynchronizationType, USBUsageType, USBDirection, USBStandardRequests
+from usb_protocol.types.descriptors.uac2 import AudioClassSpecificRequestCodes
+from usb_protocol.emitters               import DeviceDescriptorCollection
+from usb_protocol.emitters.descriptors   import uac2, standard
 
 class USB2AudioInterface(Elaboratable):
     """ USB Audio Class v2 interface """
@@ -258,14 +262,69 @@ class UAC2RequestHandlers(USBRequestHandler):
         interface         = self.interface
         setup             = self.interface.setup
 
+        m.submodules.transmitter = transmitter = \
+            StreamSerializer(data_length=14, domain="usb", stream_type=USBInStreamInterface, max_length_width=14)
+
         #
         # Class request handlers.
         #
 
         with m.If(setup.type == USBRequestType.CLASS):
             with m.Switch(setup.request):
-                with m.Case(0x10D0): # TODO
-                    pass
+                request_clock_freq = (setup.value == 0x100) & (setup.index == 0x0101)
+                with m.Case(AudioClassSpecificRequestCodes.RANGE):
+                    m.d.comb += transmitter.stream.attach(self.interface.tx)
+
+                    with m.If(request_clock_freq & (setup.length == 2)):
+                        m.d.comb += [
+                            Cat(transmitter.data[0:1]).eq(Const(0x1, 16)),
+                            transmitter.max_length.eq(2)
+                        ]
+
+                    with m.Elif(request_clock_freq & (setup.length == 14)):
+                        m.d.comb += [
+                            Cat(transmitter.data).eq(
+                                Cat(Const(0x1, 16), # no triples
+                                    Const(48000, 32), # MIN
+                                    Const(48000, 32), # MAX
+                                    Const(48000, 32))), # RES
+                            transmitter.max_length.eq(14)
+                        ]
+                    with m.Else():
+                        m.d.comb += interface.handshakes_out.stall.eq(1)
+
+                    # ... trigger it to respond when data's requested...
+                    with m.If(interface.data_requested):
+                        m.d.comb += transmitter.start.eq(1)
+
+                    # ... and ACK our status stage.
+                    with m.If(interface.status_requested):
+                        m.d.comb += interface.handshakes_out.ack.eq(1)
+
+                with m.Case(AudioClassSpecificRequestCodes.CUR):
+                    m.d.comb += transmitter.stream.attach(self.interface.tx)
+                    with m.If(request_clock_freq & (setup.length == 4)):
+                        m.d.comb += [
+                            Cat(transmitter.data[0:4]).eq(Const(48000, 32)),
+                            transmitter.max_length.eq(4)
+                        ]
+                    with m.Else():
+                        m.d.comb += interface.handshakes_out.stall.eq(1)
+
+                    # ... trigger it to respond when data's requested...
+                    with m.If(interface.data_requested):
+                        m.d.comb += transmitter.start.eq(1)
+
+                    # ... and ACK our status stage.
+                    with m.If(interface.status_requested):
+                        m.d.comb += interface.handshakes_out.ack.eq(1)
+
+                with m.Case(USBStandardRequests.SET_INTERFACE):
+                    with m.If(interface.status_requested):
+                        m.d.comb += [
+                            interface.handshakes_out.stall.eq(0),
+                            interface.handshakes_out.ack.eq(1)
+                        ]
 
                 with m.Case():
                     #
