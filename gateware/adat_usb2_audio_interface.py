@@ -57,7 +57,7 @@ class USB2AudioInterface(Elaboratable):
 
             # Interface Descriptor (Control)
             interfaceDescriptor = uac2.StandardAudioControlInterfaceDescriptorEmitter()
-            interfaceDescriptor.bInterfaceNumber = 1
+            interfaceDescriptor.bInterfaceNumber = 0
             configDescr.add_subordinate_descriptor(interfaceDescriptor)
 
             # AudioControl Interface Descriptor
