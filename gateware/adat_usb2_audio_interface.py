@@ -40,10 +40,10 @@ class USB2AudioInterface(Elaboratable):
             d.bDeviceSubclass    = 0x02
             d.bDeviceProtocol    = 0x01
             d.idVendor           = 0x1209
-            d.idProduct          = 0x0001
+            d.idProduct          = 0x4711
 
-            d.iManufacturer      = "Hans Baier"
-            d.iProduct           = "ADAT Audio Interface"
+            d.iManufacturer      = "OpenAudioGear"
+            d.iProduct           = "ADATface"
             d.iSerialNumber      = "4711"
             d.bcdDevice          = 0.01
 
