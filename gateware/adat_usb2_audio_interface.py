@@ -268,10 +268,9 @@ class UAC2RequestHandlers(USBRequestHandler):
         #
         # Class request handlers.
         #
-
         with m.If(setup.type == USBRequestType.CLASS):
             with m.Switch(setup.request):
-                request_clock_freq = (setup.value == 0x100) & (setup.index == 0x0101)
+                request_clock_freq = (setup.value == 0x100) & (setup.index == 0x0100)
                 with m.Case(AudioClassSpecificRequestCodes.RANGE):
                     m.d.comb += transmitter.stream.attach(self.interface.tx)
 
