@@ -131,8 +131,8 @@ class USB2AudioInterface(Elaboratable):
         audioOutEndpoint = standard.EndpointDescriptorEmitter()
         audioOutEndpoint.bEndpointAddress     = USBDirection.OUT.to_endpoint_address(1) # EP 1 OUT
         audioOutEndpoint.bmAttributes         = USBTransferType.ISOCHRONOUS  | \
-                                                USBSynchronizationType.ASYNC | \
-                                                USBUsageType.DATA
+                                                (USBSynchronizationType.ASYNC << 2) | \
+                                                (USBUsageType.DATA << 4)
         audioOutEndpoint.wMaxPacketSize = self.MAX_PACKET_SIZE
         audioOutEndpoint.bInterval       = 1
         c.add_subordinate_descriptor(audioOutEndpoint)
@@ -145,8 +145,8 @@ class USB2AudioInterface(Elaboratable):
         feedbackInEndpoint = standard.EndpointDescriptorEmitter()
         feedbackInEndpoint.bEndpointAddress  = USBDirection.IN.to_endpoint_address(1) # EP 1 IN
         feedbackInEndpoint.bmAttributes      = USBTransferType.ISOCHRONOUS  | \
-                                               USBSynchronizationType.NONE  | \
-                                               USBUsageType.FEEDBACK
+                                               (USBSynchronizationType.NONE << 2)  | \
+                                               (USBUsageType.FEEDBACK << 4)
         feedbackInEndpoint.wMaxPacketSize    = 4
         feedbackInEndpoint.bInterval         = 4
         c.add_subordinate_descriptor(feedbackInEndpoint)
