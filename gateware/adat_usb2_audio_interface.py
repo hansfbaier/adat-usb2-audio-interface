@@ -286,7 +286,7 @@ class UAC2RequestHandlers(USBRequestHandler):
                                 Cat(Const(0x1, 16), # no triples
                                     Const(48000, 32), # MIN
                                     Const(48000, 32), # MAX
-                                    Const(48000, 32))), # RES
+                                    Const(0, 32))),   # RES
                             transmitter.max_length.eq(14)
                         ]
                     with m.Else():
