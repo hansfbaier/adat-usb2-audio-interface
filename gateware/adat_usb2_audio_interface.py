@@ -205,7 +205,10 @@ class USB2AudioInterface(Elaboratable):
 
         # Add our standard control endpoint to the device.
         descriptors = self.create_descriptors()
-        control_ep = usb.add_standard_control_endpoint(descriptors)
+        control_ep = usb.add_control_endpoint()
+        control_ep.add_standard_request_handlers(descriptors, blacklist=[
+            lambda setup: (setup.type == USBRequestType.STANDARD) & (setup.request == USBStandardRequests.SET_INTERFACE)
+        ])
 
         # Attach our class request handlers.
         control_ep.add_request_handler(UAC2RequestHandlers())
@@ -267,26 +270,30 @@ class UAC2RequestHandlers(USBRequestHandler):
         #
         # Class request handlers.
         #
-        with m.If(setup.type == USBRequestType.CLASS):
+        with m.If(setup.type == USBRequestType.STANDARD):
+            with m.If(setup.request == USBStandardRequests.SET_INTERFACE):
+                # Always ACK the data out...
+                with m.If(interface.rx_ready_for_response):
+                    m.d.comb += interface.handshakes_out.ack.eq(1)
+
+                # ... and accept whatever the request was.
+                with m.If(interface.status_requested):
+                    m.d.comb += self.send_zlp()
+
+        request_clock_freq = (setup.value == 0x100) & (setup.index == 0x0100)
+        with m.Elif(setup.type == USBRequestType.CLASS):
             with m.Switch(setup.request):
-                request_clock_freq = (setup.value == 0x100) & (setup.index == 0x0100)
                 with m.Case(AudioClassSpecificRequestCodes.RANGE):
                     m.d.comb += transmitter.stream.attach(self.interface.tx)
 
-                    with m.If(request_clock_freq & (setup.length == 2)):
-                        m.d.comb += [
-                            Cat(transmitter.data[0:1]).eq(Const(0x1, 16)),
-                            transmitter.max_length.eq(2)
-                        ]
-
-                    with m.Elif(request_clock_freq & (setup.length == 14)):
+                    with m.If(request_clock_freq):
                         m.d.comb += [
                             Cat(transmitter.data).eq(
                                 Cat(Const(0x1, 16), # no triples
                                     Const(48000, 32), # MIN
                                     Const(48000, 32), # MAX
                                     Const(0, 32))),   # RES
-                            transmitter.max_length.eq(14)
+                            transmitter.max_length.eq(setup.length)
                         ]
                     with m.Else():
                         m.d.comb += interface.handshakes_out.stall.eq(1)
@@ -316,13 +323,6 @@ class UAC2RequestHandlers(USBRequestHandler):
                     # ... and ACK our status stage.
                     with m.If(interface.status_requested):
                         m.d.comb += interface.handshakes_out.ack.eq(1)
-
-                with m.Case(USBStandardRequests.SET_INTERFACE):
-                    with m.If(interface.status_requested):
-                        m.d.comb += [
-                            interface.handshakes_out.stall.eq(0),
-                            interface.handshakes_out.ack.eq(1)
-                        ]
 
                 with m.Case():
                     #
