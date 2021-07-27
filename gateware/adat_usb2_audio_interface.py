@@ -14,13 +14,12 @@ from luna.gateware.platform                      import NullPin
 from luna.gateware.platform.de0_nano             import DE0NanoPlatform
 from luna.gateware.usb.usb2.device               import USBDevice
 from luna.gateware.usb.usb2.request              import USBRequestHandler, StallOnlyRequestHandler
-from luna.gateware.usb.usb2.endpoints.stream     import USBStreamInEndpoint, USBStreamOutEndpoint
 
 from luna.gateware.usb.stream        import USBInStreamInterface
 from luna.gateware.stream.generator  import StreamSerializer
 from nmigen.hdl.ast import Const
 
-from usb_protocol.types                  import USBRequestType, USBTransferType, USBSynchronizationType, USBUsageType, USBDirection, USBStandardRequests
+from usb_protocol.types                  import USBRequestType, USBRequestRecipient, USBTransferType, USBSynchronizationType, USBUsageType, USBDirection, USBStandardRequests
 from usb_protocol.types.descriptors.uac2 import AudioClassSpecificRequestCodes
 from usb_protocol.emitters               import DeviceDescriptorCollection
 from usb_protocol.emitters.descriptors   import uac2, standard
