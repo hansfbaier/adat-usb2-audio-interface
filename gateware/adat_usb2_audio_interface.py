@@ -276,8 +276,8 @@ class USB2AudioInterface(Elaboratable):
             ep1_in.value.eq(0xff & (feedbackValue >> bitPos))
         ]
 
-        with m.If(ep2_in.address[2]):
-            m.d.comb += ep2_in.value.eq(0xff)
+        with m.If(ep2_in.address[2] & ep2_in.address[3]):
+            m.d.comb += ep2_in.value.eq(0xaa)
         with m.Else():
             m.d.comb += ep2_in.value.eq(0x00)
 
