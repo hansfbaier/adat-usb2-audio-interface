@@ -260,13 +260,23 @@ class USB2AudioInterface(Elaboratable):
 
         # Connect our device as a high speed device
         m.d.comb += [
-            ep2_in.bytes_in_frame.eq(36),
+            ep1_in.bytes_in_frame.eq(4),
+            ep2_in.bytes_in_frame.eq(48),
             ep1_out.stream.ready .eq(1),
             usb.connect          .eq(1),
             usb.full_speed_only  .eq(0),
         ]
 
-        with m.If(ep2_in.address < 18):
+        feedbackValue = Signal(32)
+        bitPos        = Signal(5)
+        # 48000 / 2000 = 24
+        m.d.comb += [
+            feedbackValue.eq(24 << 14),
+            bitPos.eq(ep1_in.address << 3),
+            ep1_in.value.eq(0xff & (feedbackValue >> bitPos))
+        ]
+
+        with m.If(ep2_in.address[2]):
             m.d.comb += ep2_in.value.eq(0xff)
         with m.Else():
             m.d.comb += ep2_in.value.eq(0x00)
