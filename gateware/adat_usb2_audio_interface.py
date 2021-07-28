@@ -101,14 +101,14 @@ class USB2AudioInterface(Elaboratable):
         #
         # Interface Descriptor (Streaming, OUT, quiet setting)
         #
-        #quietAudioStreamingInterface                  = uac2.AudioStreamingInterfaceDescriptorEmitter()
-        #quietAudioStreamingInterface.bInterfaceNumber = 1
-        #c.add_subordinate_descriptor(quietAudioStreamingInterface)
+        quietAudioStreamingInterface                  = uac2.AudioStreamingInterfaceDescriptorEmitter()
+        quietAudioStreamingInterface.bInterfaceNumber = 1
+        c.add_subordinate_descriptor(quietAudioStreamingInterface)
 
         # Interface Descriptor (Streaming, OUT, active setting)
         activeAudioStreamingInterface                   = uac2.AudioStreamingInterfaceDescriptorEmitter()
         activeAudioStreamingInterface.bInterfaceNumber  = 1
-        #activeAudioStreamingInterface.bAlternateSetting = 1
+        activeAudioStreamingInterface.bAlternateSetting = 1
         activeAudioStreamingInterface.bNumEndpoints     = 2
         c.add_subordinate_descriptor(activeAudioStreamingInterface)
 
@@ -154,14 +154,14 @@ class USB2AudioInterface(Elaboratable):
         #
         # Interface Descriptor (Streaming, IN, quiet setting)
         #
-        #quietAudioStreamingInterface                  = uac2.AudioStreamingInterfaceDescriptorEmitter()
-        #quietAudioStreamingInterface.bInterfaceNumber = 2
-        #c.add_subordinate_descriptor(quietAudioStreamingInterface)
+        quietAudioStreamingInterface                  = uac2.AudioStreamingInterfaceDescriptorEmitter()
+        quietAudioStreamingInterface.bInterfaceNumber = 2
+        c.add_subordinate_descriptor(quietAudioStreamingInterface)
 
         # Interface Descriptor (Streaming, IN, active setting)
         activeAudioStreamingInterface                   = uac2.AudioStreamingInterfaceDescriptorEmitter()
         activeAudioStreamingInterface.bInterfaceNumber  = 2
-        #activeAudioStreamingInterface.bAlternateSetting = 1
+        activeAudioStreamingInterface.bAlternateSetting = 1
         activeAudioStreamingInterface.bNumEndpoints     = 1
         c.add_subordinate_descriptor(activeAudioStreamingInterface)
 
