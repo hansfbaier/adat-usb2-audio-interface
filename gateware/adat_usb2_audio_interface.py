@@ -82,33 +82,33 @@ class USB2AudioInterface(Elaboratable):
 
         # streaming input port from the host to the USB interface
         inputTerminal               = uac2.InputTerminalDescriptorEmitter()
-        inputTerminal.bTerminalID   = 1
+        inputTerminal.bTerminalID   = 2
         inputTerminal.wTerminalType = uac2.USBTerminalTypes.USB_STREAMING
-        inputTerminal.bCSourceID    = 1
         inputTerminal.bNrChannels   = 2
+        inputTerminal.bCSourceID    = 1
         audioControlInterface.add_subordinate_descriptor(inputTerminal)
 
         # audio output port from the USB interface to the outside world
         outputTerminal               = uac2.OutputTerminalDescriptorEmitter()
-        outputTerminal.bTerminalID   = 2
+        outputTerminal.bTerminalID   = 3
         outputTerminal.wTerminalType = uac2.OutputTerminalTypes.SPEAKER
-        outputTerminal.bSourceID     = 1
+        outputTerminal.bSourceID     = 2
         outputTerminal.bCSourceID    = 1
         audioControlInterface.add_subordinate_descriptor(outputTerminal)
 
         # audio input port from the outside world to the USB interface
         inputTerminal               = uac2.InputTerminalDescriptorEmitter()
-        inputTerminal.bTerminalID   = 3
+        inputTerminal.bTerminalID   = 4
         inputTerminal.wTerminalType = uac2.InputTerminalTypes.MICROPHONE
-        inputTerminal.bCSourceID    = 1
         inputTerminal.bNrChannels   = 2
+        inputTerminal.bCSourceID    = 1
         audioControlInterface.add_subordinate_descriptor(inputTerminal)
 
         # audio output port from the USB interface to the host
         outputTerminal               = uac2.OutputTerminalDescriptorEmitter()
-        outputTerminal.bTerminalID   = 4
+        outputTerminal.bTerminalID   = 5
         outputTerminal.wTerminalType = uac2.USBTerminalTypes.USB_STREAMING
-        outputTerminal.bSourceID     = 3
+        outputTerminal.bSourceID     = 4
         outputTerminal.bCSourceID    = 1
         audioControlInterface.add_subordinate_descriptor(outputTerminal)
 
@@ -131,7 +131,7 @@ class USB2AudioInterface(Elaboratable):
 
         # AudioStreaming Interface Descriptor (General)
         audioStreamingInterface               = uac2.ClassSpecificAudioStreamingInterfaceDescriptorEmitter()
-        audioStreamingInterface.bTerminalLink = 1
+        audioStreamingInterface.bTerminalLink = 2
         audioStreamingInterface.bFormatType   = uac2.FormatTypes.FORMAT_TYPE_I
         audioStreamingInterface.bmFormats     = uac2.TypeIFormats.PCM
         audioStreamingInterface.bNrChannels   = 2
@@ -184,7 +184,7 @@ class USB2AudioInterface(Elaboratable):
 
         # AudioStreaming Interface Descriptor (General)
         audioStreamingInterface               = uac2.ClassSpecificAudioStreamingInterfaceDescriptorEmitter()
-        audioStreamingInterface.bTerminalLink = 4
+        audioStreamingInterface.bTerminalLink = 5
         audioStreamingInterface.bFormatType   = uac2.FormatTypes.FORMAT_TYPE_I
         audioStreamingInterface.bmFormats     = uac2.TypeIFormats.PCM
         audioStreamingInterface.bNrChannels   = 2
