@@ -5,7 +5,7 @@
 
 import os
 
-from nmigen              import Elaboratable, Module, Cat
+from nmigen              import *
 
 from luna                import top_level_cli
 from luna.usb2           import USBDevice, USBIsochronousInEndpoint, USBIsochronousOutEndpoint
@@ -79,18 +79,35 @@ class USB2AudioInterface(Elaboratable):
         clockSource.bmControls   = uac2.ClockFrequencyControl.HOST_READ_ONLY
         audioControlInterface.add_subordinate_descriptor(clockSource)
 
-        # AudioControl Interface Descriptor (InputTerminal)
+
+        # streaming input port from the host to the USB interface
+        inputTerminal               = uac2.InputTerminalDescriptorEmitter()
+        inputTerminal.bTerminalID   = 1
+        inputTerminal.wTerminalType = uac2.USBTerminalTypes.USB_STREAMING
+        inputTerminal.bCSourceID    = 1
+        inputTerminal.bNrChannels   = 2
+        audioControlInterface.add_subordinate_descriptor(inputTerminal)
+
+        # audio output port from the USB interface to the outside world
+        outputTerminal               = uac2.OutputTerminalDescriptorEmitter()
+        outputTerminal.bTerminalID   = 2
+        outputTerminal.wTerminalType = uac2.OutputTerminalTypes.SPEAKER
+        outputTerminal.bSourceID     = 1
+        outputTerminal.bCSourceID    = 1
+        audioControlInterface.add_subordinate_descriptor(outputTerminal)
+
+        # audio input port from the outside world to the USB interface
         inputTerminal               = uac2.InputTerminalDescriptorEmitter()
         inputTerminal.bTerminalID   = 3
         inputTerminal.wTerminalType = uac2.InputTerminalTypes.MICROPHONE
         inputTerminal.bCSourceID    = 1
-        inputTerminal.bNrChannels   = 1
+        inputTerminal.bNrChannels   = 2
         audioControlInterface.add_subordinate_descriptor(inputTerminal)
 
-        # AudioControl Interface Descriptor (OutputTerminal)
+        # audio output port from the USB interface to the host
         outputTerminal               = uac2.OutputTerminalDescriptorEmitter()
         outputTerminal.bTerminalID   = 4
-        outputTerminal.wTerminalType = uac2.OutputTerminalTypes.SPEAKER
+        outputTerminal.wTerminalType = uac2.USBTerminalTypes.USB_STREAMING
         outputTerminal.bSourceID     = 3
         outputTerminal.bCSourceID    = 1
         audioControlInterface.add_subordinate_descriptor(outputTerminal)
@@ -114,7 +131,7 @@ class USB2AudioInterface(Elaboratable):
 
         # AudioStreaming Interface Descriptor (General)
         audioStreamingInterface               = uac2.ClassSpecificAudioStreamingInterfaceDescriptorEmitter()
-        audioStreamingInterface.bTerminalLink = 4
+        audioStreamingInterface.bTerminalLink = 1
         audioStreamingInterface.bFormatType   = uac2.FormatTypes.FORMAT_TYPE_I
         audioStreamingInterface.bmFormats     = uac2.TypeIFormats.PCM
         audioStreamingInterface.bNrChannels   = 2
@@ -122,7 +139,7 @@ class USB2AudioInterface(Elaboratable):
 
         # AudioStreaming Interface Descriptor (Type I)
         typeIStreamingInterface  = uac2.TypeIFormatTypeDescriptorEmitter()
-        typeIStreamingInterface.bSubslotSize   = 3  # 24 bit per sample
+        typeIStreamingInterface.bSubslotSize   = 4
         typeIStreamingInterface.bBitResolution = 24 # we use all 24 bits
         c.add_subordinate_descriptor(typeIStreamingInterface)
 
@@ -167,15 +184,15 @@ class USB2AudioInterface(Elaboratable):
 
         # AudioStreaming Interface Descriptor (General)
         audioStreamingInterface               = uac2.ClassSpecificAudioStreamingInterfaceDescriptorEmitter()
-        audioStreamingInterface.bTerminalLink = 3
+        audioStreamingInterface.bTerminalLink = 4
         audioStreamingInterface.bFormatType   = uac2.FormatTypes.FORMAT_TYPE_I
         audioStreamingInterface.bmFormats     = uac2.TypeIFormats.PCM
-        audioStreamingInterface.bNrChannels   = 1
+        audioStreamingInterface.bNrChannels   = 2
         c.add_subordinate_descriptor(audioStreamingInterface)
 
         # AudioStreaming Interface Descriptor (Type I)
         typeIStreamingInterface  = uac2.TypeIFormatTypeDescriptorEmitter()
-        typeIStreamingInterface.bSubslotSize   = 3  # 24 bit per sample
+        typeIStreamingInterface.bSubslotSize   = 4
         typeIStreamingInterface.bBitResolution = 24 # we use all 24 bits
         c.add_subordinate_descriptor(typeIStreamingInterface)
 
@@ -186,7 +203,7 @@ class USB2AudioInterface(Elaboratable):
                                                 (USBSynchronizationType.ASYNC << 2) | \
                                                 (USBUsageType.DATA << 4)
         audioOutEndpoint.wMaxPacketSize = self.MAX_PACKET_SIZE
-        audioOutEndpoint.bInterval       = 1
+        audioOutEndpoint.bInterval      = 1
         c.add_subordinate_descriptor(audioOutEndpoint)
 
         # AudioControl Endpoint Descriptor
@@ -222,20 +239,17 @@ class USB2AudioInterface(Elaboratable):
 
         ep1_out = USBIsochronousOutEndpoint(
             endpoint_number=1, # EP 1 OUT
-            max_packet_size=self.MAX_PACKET_SIZE,
-        )
+            max_packet_size=self.MAX_PACKET_SIZE)
         usb.add_endpoint(ep1_out)
 
         ep1_in = USBIsochronousInEndpoint(
             endpoint_number=1, # EP 1 IN
-            max_packet_size=4
-        )
+            max_packet_size=4)
         usb.add_endpoint(ep1_in)
 
         ep2_in = USBIsochronousInEndpoint(
             endpoint_number=2, # EP 2 IN
-            max_packet_size=self.MAX_PACKET_SIZE
-        )
+            max_packet_size=self.MAX_PACKET_SIZE)
         usb.add_endpoint(ep2_in)
 
         leds    = Cat(platform.request_optional("led", i, default=NullPin()) for i in range(8))
@@ -260,7 +274,7 @@ class USB2AudioInterface(Elaboratable):
         return m
 
 class UAC2RequestHandlers(USBRequestHandler):
-    """ Minimal set of request handlers to implement UAC2 functionality. """
+    """ request handlers to implement UAC2 functionality. """
 
     def elaborate(self, platform):
         m = Module()
