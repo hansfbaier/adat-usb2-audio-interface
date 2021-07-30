@@ -1,6 +1,5 @@
 git+https://github.com/nmigen/nmigen.git
 git+https://github.com/hansfbaier/nmigen-boards.git@qmtech-boards
-git+https://github.com/hansfbaier/python-usb-protocol.git
-git+https://github.com/hansfbaier/luna.git@isochronous-out-endpoint
+git+https://github.com/hansfbaier/usb2-highspeed-core.git
 git+https://github.com/hansfbaier/adat-core.git
 git+https://github.com/hansfbaier/nmigen-library.git

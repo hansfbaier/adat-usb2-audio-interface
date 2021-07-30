@@ -7,7 +7,7 @@ import os
 from nmigen              import *
 
 from luna                import top_level_cli
-from luna.usb2           import USBDevice, USBIsochronousInEndpoint, USBIsochronousOutEndpoint
+from luna.usb2           import USBDevice, USBIsochronousInMemoryEndpoint, USBIsochronousOutStreamEndpoint
 
 from usb_protocol.types                       import USBRequestType, USBRequestRecipient, USBTransferType, USBSynchronizationType, USBUsageType, USBDirection, USBStandardRequests
 from usb_protocol.types.descriptors.uac2      import AudioClassSpecificRequestCodes
@@ -233,23 +233,23 @@ class USB2AudioInterface(Elaboratable):
             (setup.type == USBRequestType.RESERVED)
         control_ep.add_request_handler(StallOnlyRequestHandler(stall_condition))
 
-        ep1_out = USBIsochronousOutEndpoint(
+        ep1_out = USBIsochronousOutStreamEndpoint(
             endpoint_number=1, # EP 1 OUT
             max_packet_size=self.MAX_PACKET_SIZE)
         usb.add_endpoint(ep1_out)
 
-        ep1_in = USBIsochronousInEndpoint(
+        ep1_in = USBIsochronousInMemoryEndpoint(
             endpoint_number=1, # EP 1 IN
             max_packet_size=4)
         usb.add_endpoint(ep1_in)
 
-        ep2_in = USBIsochronousInEndpoint(
+        ep2_in = USBIsochronousInMemoryEndpoint(
             endpoint_number=2, # EP 2 IN
             max_packet_size=self.MAX_PACKET_SIZE)
         usb.add_endpoint(ep2_in)
 
-        leds    = Cat(platform.request_optional("led", i, default=NullPin()) for i in range(8))
-        with m.If(ep1_out.stream.valid):
+        leds    = Cat(platform.request_optional("debug_led", i, default=NullPin()) for i in range(8))
+        with m.If(ep1_out.stream.valid & ep1_out.stream.first):
             m.d.usb += [
                 leds.eq(ep1_out.stream.payload),
             ]
