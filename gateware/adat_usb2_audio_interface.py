@@ -7,7 +7,7 @@ import os
 from nmigen              import *
 
 from luna                import top_level_cli
-from luna.usb2           import USBDevice, USBIsochronousInMemoryEndpoint, USBIsochronousOutStreamEndpoint
+from luna.usb2           import USBDevice, USBIsochronousInMemoryEndpoint, USBIsochronousOutStreamEndpoint, USBIsochronousInStreamEndpoint
 
 from usb_protocol.types                       import USBRequestType, USBRequestRecipient, USBTransferType, USBSynchronizationType, USBUsageType, USBDirection, USBStandardRequests
 from usb_protocol.types.descriptors.uac2      import AudioClassSpecificRequestCodes
@@ -243,15 +243,15 @@ class USB2AudioInterface(Elaboratable):
             max_packet_size=4)
         usb.add_endpoint(ep1_in)
 
-        ep2_in = USBIsochronousInMemoryEndpoint(
+        ep2_in = USBIsochronousInStreamEndpoint(
             endpoint_number=2, # EP 2 IN
             max_packet_size=self.MAX_PACKET_SIZE)
         usb.add_endpoint(ep2_in)
 
-        leds    = Cat(platform.request_optional("debug_led", i, default=NullPin()) for i in range(8))
+        debug    = Cat(platform.request_optional("debug", i, default=NullPin()) for i in range(8))
         with m.If(ep1_out.stream.valid & ep1_out.stream.first):
             m.d.usb += [
-                leds.eq(ep1_out.stream.payload),
+                debug.eq(ep1_out.stream.payload),
             ]
 
         # Connect our device as a high speed device
@@ -263,6 +263,7 @@ class USB2AudioInterface(Elaboratable):
             usb.full_speed_only  .eq(0),
         ]
 
+        # feedback endpoint
         feedbackValue = Signal(32)
         bitPos        = Signal(5)
         # 48000 / 2000 = 24
@@ -272,10 +273,20 @@ class USB2AudioInterface(Elaboratable):
             ep1_in.value.eq(0xff & (feedbackValue >> bitPos))
         ]
 
-        with m.If(ep2_in.address[2] & ep2_in.address[3]):
-            m.d.comb += ep2_in.value.eq(0xaa)
+        # EP 2 audio input
+        wavepos = Signal(6)
+        m.d.comb += ep2_in.stream.valid.eq(1)
+
+        with m.If(ep2_in.stream.ready):
+            with m.If(wavepos == 47):
+                m.d.usb += wavepos.eq(0)
+            with m.Else():
+                m.d.usb += wavepos.eq(wavepos + 1)
+
+        with m.If(wavepos[2] & wavepos[3]):
+            m.d.comb += ep2_in.stream.payload.eq(0xaa)
         with m.Else():
-            m.d.comb += ep2_in.value.eq(0x00)
+            m.d.comb += ep2_in.stream.payload.eq(0x00)
 
         return m
 
