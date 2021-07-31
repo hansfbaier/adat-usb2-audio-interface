@@ -371,7 +371,7 @@ class UAC2RequestHandlers(USBRequestHandler):
                 return m
 
 if __name__ == "__main__":
-    os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce15_platform:JT51SynthPlatform"
+    os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce15_platform:ADATFacePlatform"
     e = USB2AudioInterface()
     d = e.create_descriptors()
     descriptor_bytes = d.get_descriptor_bytes(2)

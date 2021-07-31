@@ -1,13 +1,12 @@
 from nmigen import *
 from nmigen.build import *
 
-from luna.gateware.platform.core import LUNAPlatform
-
 from nmigen_boards.resources import *
 from nmigen_boards.qmtech_ep4ce15 import QMTechEP4CE15Platform
 
+from luna.gateware.platform.core import LUNAPlatform
 
-class JT51SynthClockDomainGenerator(Elaboratable):
+class ADATFaceClockDomainGenerator(Elaboratable):
     def __init__(self, *, clock_frequencies=None, clock_signal_name=None):
         pass
 
@@ -102,8 +101,8 @@ class JT51SynthClockDomainGenerator(Elaboratable):
 
         return m
 
-class JT51SynthPlatform(QMTechEP4CE15Platform, LUNAPlatform):
-    clock_domain_generator = JT51SynthClockDomainGenerator
+class ADATFacePlatform(QMTechEP4CE15Platform, LUNAPlatform):
+    clock_domain_generator = ADATFaceClockDomainGenerator
     default_usb_connection = "ulpi"
 
     @property
@@ -111,7 +110,7 @@ class JT51SynthPlatform(QMTechEP4CE15Platform, LUNAPlatform):
         templates = super().file_templates
         templates["{{name}}.qsf"] += r"""
             set_global_assignment -name OPTIMIZATION_MODE "Aggressive Performance"
-            set_global_assignment -name FITTER_EFFORT "Standard Fit"
+            #set_global_assignment -name FITTER_EFFORT "Standard Fit"
             set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT "Extra"
             set_instance_assignment -name DECREASE_INPUT_DELAY_TO_INPUT_REGISTER OFF -to *ulpi*
             set_instance_assignment -name INCREASE_DELAY_TO_OUTPUT_PIN OFF -to *ulpi*
