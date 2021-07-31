@@ -142,6 +142,15 @@ class JT51SynthPlatform(QMTechEP4CE15Platform, LUNAPlatform):
             Resource("debug_led", 6, Pins("J_2:46", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
             Resource("debug_led", 7, Pins("J_2:48", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
 
+            Resource("debug", 0, Pins("J_2:49", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
+            Resource("debug", 1, Pins("J_2:50", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
+            Resource("debug", 2, Pins("J_2:51", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
+            Resource("debug", 3, Pins("J_2:52", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
+            Resource("debug", 4, Pins("J_2:53", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
+            Resource("debug", 5, Pins("J_2:54", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
+            Resource("debug", 6, Pins("J_2:55", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
+            Resource("debug", 7, Pins("J_2:56", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
+
             UARTResource(0, rx="J_2:8", tx="J_2:10", attrs=Attrs(io_standard="3.3-V LVCMOS")),
 
             Resource("adat", 0,
