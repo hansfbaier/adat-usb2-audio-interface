@@ -3,8 +3,13 @@
 # Copyright (c) 2021 Hans Baier <hansfbaier@gmail.com>
 # SPDX-License-Identifier: CERN-OHL-W-2.0
 import os
+from luna.gateware import stream
 
 from nmigen              import *
+from nmigen.lib.fifo     import AsyncFIFO
+
+from nmigen_library.stream       import StreamInterface
+from nmigen_library.stream.fifo  import connect_stream_to_fifo, connect_fifo_to_stream
 
 from luna                import top_level_cli
 from luna.usb2           import USBDevice, USBIsochronousInMemoryEndpoint, USBIsochronousOutStreamEndpoint, USBIsochronousInStreamEndpoint
@@ -22,7 +27,7 @@ from luna.gateware.stream.generator           import StreamSerializer
 
 class USB2AudioInterface(Elaboratable):
     """ USB Audio Class v2 interface """
-    MAX_PACKET_SIZE = 256 * 3 # 256 samples of 24 bit each
+    MAX_PACKET_SIZE = 104
 
     def create_descriptors(self):
         """ Creates the descriptors that describe our audio topology. """
@@ -269,17 +274,13 @@ class USB2AudioInterface(Elaboratable):
             ep1_in.value.eq(0xff & (feedbackValue >> bitPos))
         ]
 
-        # EP 2 audio input
-        wavepos = Signal(6)
-        m.d.comb += ep2_in.stream.valid.eq(1)
+        # loopback
+        m.submodules.fifo = fifo = AsyncFIFO(width=8, depth=48, r_domain="usb", w_domain="usb")
 
-        with m.If(ep2_in.stream.ready):
-            with m.If(wavepos == 47):
-                m.d.usb += wavepos.eq(0)
-            with m.Else():
-                m.d.usb += wavepos.eq(wavepos + 1)
-
-        m.d.comb += ep2_in.stream.payload.eq(wavepos)
+        m.d.comb += [
+            connect_stream_to_fifo(ep1_out.stream, fifo),
+            connect_fifo_to_stream(fifo, ep2_in.stream),
+        ]
 
         return m
 
