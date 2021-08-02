@@ -248,11 +248,7 @@ class USB2AudioInterface(Elaboratable):
             max_packet_size=self.MAX_PACKET_SIZE)
         usb.add_endpoint(ep2_in)
 
-        debug    = Cat(platform.request_optional("debug", i, default=NullPin()) for i in range(8))
-        with m.If(ep1_out.stream.valid & ep1_out.stream.first):
-            m.d.usb += [
-                debug.eq(ep1_out.stream.payload),
-            ]
+        # debug = Cat(platform.request_optional("debug", i, default=NullPin()) for i in range(8))
 
         # Connect our device as a high speed device
         m.d.comb += [
@@ -283,10 +279,7 @@ class USB2AudioInterface(Elaboratable):
             with m.Else():
                 m.d.usb += wavepos.eq(wavepos + 1)
 
-        with m.If(wavepos[2] & wavepos[3]):
-            m.d.comb += ep2_in.stream.payload.eq(0xaa)
-        with m.Else():
-            m.d.comb += ep2_in.stream.payload.eq(0x00)
+        m.d.comb += ep2_in.stream.payload.eq(wavepos)
 
         return m
 
