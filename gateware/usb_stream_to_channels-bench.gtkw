@@ -1,35 +1,51 @@
 [*]
 [*] GTKWave Analyzer v3.3.109 (w)1999-2020 BSI
-[*] Wed Aug  4 02:56:39 2021
+[*] Wed Aug  4 22:07:12 2021
 [*]
 [dumpfile] "usb_stream_to_channels.vcd"
-[dumpfile_mtime] "Wed Aug  4 02:54:54 2021"
-[dumpfile_size] 6047
+[dumpfile_mtime] "Wed Aug  4 22:06:16 2021"
+[dumpfile_size] 6356
 [savefile] "gateware/usb_stream_to_channels-bench.gtkw"
 [timestart] 0
 [size] 3828 2090
 [pos] -1 -1
-*-16.000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-16.000000 40300 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [sst_width] 357
 [signals_width] 345
 [sst_expanded] 1
-[sst_vpaned_height] 658
+[sst_vpaned_height] 650
 @28
-top.usb_clk
+top.clk
+@200
+-Input Stream
 @22
 top.payload$1[7:0]
-@29
-top.first
 @28
+top.first
 top.valid
+@200
+-Core
+@28
 top.usb_valid[1:0]
 @22
 top.out_byte[7:0]
 top.out_byte_counter[1:0]
 top.out_sample[23:0]
-top.out_channel_no[2:0]
+@200
+-Output Stream
+@22
+[color] 2
+top.channel_no[2:0]
+[color] 2
 top.payload[23:0]
 @28
+[color] 2
 top.valid$1
+@29
+[color] 2
+top.first$1
+@28
+[color] 2
+top.last
 [pattern_trace] 1
 [pattern_trace] 0
