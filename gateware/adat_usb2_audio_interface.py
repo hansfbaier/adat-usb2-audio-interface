@@ -3,12 +3,10 @@
 # Copyright (c) 2021 Hans Baier <hansfbaier@gmail.com>
 # SPDX-License-Identifier: CERN-OHL-W-2.0
 import os
-from luna.gateware import stream
 
 from nmigen              import *
 from nmigen.lib.fifo     import AsyncFIFO
 
-from nmigen_library.stream       import StreamInterface
 from nmigen_library.stream.fifo  import connect_stream_to_fifo, connect_fifo_to_stream
 
 from luna                import top_level_cli
@@ -25,9 +23,13 @@ from luna.gateware.usb.usb2.request           import USBRequestHandler, StallOnl
 from luna.gateware.usb.stream                 import USBInStreamInterface
 from luna.gateware.stream.generator           import StreamSerializer
 
+from adat import ADATTransmitter, ADATReceiver
+from usb_stream_to_channels import USBStreamToChannels
+
 class USB2AudioInterface(Elaboratable):
     """ USB Audio Class v2 interface """
-    MAX_PACKET_SIZE = 104
+    NR_CHANNELS = 2
+    MAX_PACKET_SIZE = NR_CHANNELS * 24 + 4
 
     def create_descriptors(self):
         """ Creates the descriptors that describe our audio topology. """
@@ -85,7 +87,7 @@ class USB2AudioInterface(Elaboratable):
         inputTerminal               = uac2.InputTerminalDescriptorEmitter()
         inputTerminal.bTerminalID   = 2
         inputTerminal.wTerminalType = uac2.USBTerminalTypes.USB_STREAMING
-        inputTerminal.bNrChannels   = 2
+        inputTerminal.bNrChannels   = self.NR_CHANNELS
         inputTerminal.bCSourceID    = 1
         audioControlInterface.add_subordinate_descriptor(inputTerminal)
 
@@ -101,7 +103,7 @@ class USB2AudioInterface(Elaboratable):
         inputTerminal               = uac2.InputTerminalDescriptorEmitter()
         inputTerminal.bTerminalID   = 4
         inputTerminal.wTerminalType = uac2.InputTerminalTypes.MICROPHONE
-        inputTerminal.bNrChannels   = 2
+        inputTerminal.bNrChannels   = self.NR_CHANNELS
         inputTerminal.bCSourceID    = 1
         audioControlInterface.add_subordinate_descriptor(inputTerminal)
 
@@ -135,7 +137,7 @@ class USB2AudioInterface(Elaboratable):
         audioStreamingInterface.bTerminalLink = 2
         audioStreamingInterface.bFormatType   = uac2.FormatTypes.FORMAT_TYPE_I
         audioStreamingInterface.bmFormats     = uac2.TypeIFormats.PCM
-        audioStreamingInterface.bNrChannels   = 2
+        audioStreamingInterface.bNrChannels   = self.NR_CHANNELS
         c.add_subordinate_descriptor(audioStreamingInterface)
 
         # AudioStreaming Interface Descriptor (Type I)
@@ -188,7 +190,7 @@ class USB2AudioInterface(Elaboratable):
         audioStreamingInterface.bTerminalLink = 5
         audioStreamingInterface.bFormatType   = uac2.FormatTypes.FORMAT_TYPE_I
         audioStreamingInterface.bmFormats     = uac2.TypeIFormats.PCM
-        audioStreamingInterface.bNrChannels   = 2
+        audioStreamingInterface.bNrChannels   = self.NR_CHANNELS
         c.add_subordinate_descriptor(audioStreamingInterface)
 
         # AudioStreaming Interface Descriptor (Type I)
@@ -225,7 +227,8 @@ class USB2AudioInterface(Elaboratable):
         descriptors = self.create_descriptors()
         control_ep = usb.add_control_endpoint()
         control_ep.add_standard_request_handlers(descriptors, blacklist=[
-            lambda setup: (setup.type == USBRequestType.STANDARD) & (setup.request == USBStandardRequests.SET_INTERFACE)
+            lambda setup:   (setup.type    == USBRequestType.STANDARD)
+                          & (setup.request == USBStandardRequests.SET_INTERFACE)
         ])
 
         # Attach our class request handlers.
@@ -258,7 +261,7 @@ class USB2AudioInterface(Elaboratable):
         # Connect our device as a high speed device
         m.d.comb += [
             ep1_in.bytes_in_frame.eq(4),
-            ep2_in.bytes_in_frame.eq(48),
+            ep2_in.bytes_in_frame.eq(24 * self.NR_CHANNELS),
             ep1_out.stream.ready .eq(1),
             usb.connect          .eq(1),
             usb.full_speed_only  .eq(0),
@@ -274,12 +277,35 @@ class USB2AudioInterface(Elaboratable):
             ep1_in.value.eq(0xff & (feedbackValue >> bitPos))
         ]
 
-        # loopback
-        m.submodules.fifo = fifo = AsyncFIFO(width=8, depth=48, r_domain="usb", w_domain="usb")
+        m.submodules.usb_to_channel_stream = usb_to_channel_stream = \
+            DomainRenamer("usb")(USBStreamToChannels(self.NR_CHANNELS))
+
+        nr_channel_bits = Shape.cast(range(self.NR_CHANNELS)).width
+        m.submodules.usb_to_adat_fifo = usb_to_adat_fifo = \
+            AsyncFIFO(width=24 + nr_channel_bits + 2, depth=16, w_domain="usb", r_domain="sync")
+
+        m.submodules.adat_transmitter = adat_transmitter = ADATTransmitter()
+        #m.submodules.adat_receiver    = adat_receiver    = ADATReceiver()
+
+        adat = platform.request("adat")
 
         m.d.comb += [
-            connect_stream_to_fifo(ep1_out.stream, fifo),
-            connect_fifo_to_stream(fifo, ep2_in.stream),
+            # wire USB to FIFO
+            ep1_out.stream.ready.eq(usb_to_adat_fifo.w_rdy),
+            usb_to_channel_stream.usb_stream.stream_eq(ep1_out.stream),
+            *connect_stream_to_fifo(usb_to_channel_stream.channel_stream, usb_to_adat_fifo),
+            usb_to_adat_fifo.w_data[24:(24 + nr_channel_bits)].eq(usb_to_channel_stream.channel_stream.channel_no),
+            usb_to_adat_fifo.w_data[(24 + nr_channel_bits)].eq(usb_to_channel_stream.channel_stream.first),
+            usb_to_adat_fifo.w_data[(24 + nr_channel_bits + 1)].eq(usb_to_channel_stream.channel_stream.last),
+            usb_to_adat_fifo.r_en.eq(adat_transmitter.ready_out),
+            # wire FIFO to ADAT transmitter
+            adat_transmitter.sample_in.eq(usb_to_adat_fifo.r_data[0:24]),
+            adat_transmitter.addr_in.eq(usb_to_adat_fifo.r_data[24:(24 + nr_channel_bits)]),
+            adat_transmitter.last_in.eq(usb_to_adat_fifo.r_data[-1]),
+            adat_transmitter.valid_in.eq(usb_to_adat_fifo.r_rdy & usb_to_adat_fifo.r_en),
+            adat_transmitter.user_data_in.eq(0),
+            # ADAT output
+            adat.tx.eq(adat_transmitter.adat_out)
         ]
 
         return m
