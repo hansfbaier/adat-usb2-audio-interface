@@ -5,13 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "ILA",
+            "type": "python",
+            "request": "launch",
+            "program": "ila.py",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Python: Generate Gateware",
             "type": "python",
             "request": "launch",
             "program": "gateware/adat_usb2_audio_interface.py",
             "console": "integratedTerminal",
             "justMyCode": false,
-            "args": ["--keep"]
+            "args": [
+                "--keep"
+            ]
         }
     ]
 }

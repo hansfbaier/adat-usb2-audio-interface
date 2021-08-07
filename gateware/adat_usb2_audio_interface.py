@@ -19,17 +19,30 @@ from usb_protocol.emitters.descriptors        import uac2, standard
 
 from luna.gateware.platform                   import NullPin
 from luna.gateware.usb.usb2.device            import USBDevice
+from luna.gateware.usb.usb2.endpoints.stream  import USBMultibyteStreamInEndpoint
 from luna.gateware.usb.usb2.request           import USBRequestHandler, StallOnlyRequestHandler
 from luna.gateware.usb.stream                 import USBInStreamInterface
 from luna.gateware.stream.generator           import StreamSerializer
+from luna.gateware.debug.ila                  import StreamILA
 
 from adat import ADATTransmitter, ADATReceiver
 from usb_stream_to_channels import USBStreamToChannels
+
+class ILAData:
+    def __init__(self, ila) -> None:
+        self.bytes_per_sample = ila.bytes_per_sample
+        self.sample_period    = ila.sample_period
+        self.sample_depth     = ila.sample_depth
+        self.sample_rate      = ila.sample_rate
+        self.sample_width     = ila.sample_width
+        self.signals          = ila.signals
 
 class USB2AudioInterface(Elaboratable):
     """ USB Audio Class v2 interface """
     NR_CHANNELS = 2
     MAX_PACKET_SIZE = NR_CHANNELS * 24 + 4
+    USE_ILA = True
+    ILA_MAX_PACKET_SIZE = 512
 
     def create_descriptors(self):
         """ Creates the descriptors that describe our audio topology. """
@@ -69,6 +82,14 @@ class USB2AudioInterface(Elaboratable):
             self.create_output_channels_descriptor(configDescr)
 
             self.create_input_channels_descriptor(configDescr)
+
+            if self.USE_ILA:
+                with configDescr.InterfaceDescriptor() as i:
+                    i.bInterfaceNumber = 3
+
+                    with i.EndpointDescriptor() as e:
+                        e.bEndpointAddress = USBDirection.IN.to_endpoint_address(3) # EP 3 IN
+                        e.wMaxPacketSize   = self.ILA_MAX_PACKET_SIZE
 
         return descriptors
 
@@ -307,6 +328,28 @@ class USB2AudioInterface(Elaboratable):
             # ADAT output
             adat.tx.eq(adat_transmitter.adat_out)
         ]
+
+        if self.USE_ILA:
+            signals = [
+                ep1_out.stream.valid,
+                ep1_out.stream.payload,
+            ]
+            m.submodules.ila = ila = StreamILA(signals=signals, sample_depth=16384, o_domain="usb")
+
+            stream_ep = USBMultibyteStreamInEndpoint(
+                endpoint_number=3, # EP 3 IN
+                max_packet_size=self.ILA_MAX_PACKET_SIZE,
+                byte_width=ila.bytes_per_sample
+            )
+            usb.add_endpoint(stream_ep)
+
+            m.d.comb += [
+                stream_ep.stream.stream_eq(ila.stream),
+                ila.trigger.eq(ep1_out.stream.valid)
+            ]
+
+            import pickle
+            pickle.dump(ILAData(ila), open("ila.P", "wb"))
 
         return m
 
