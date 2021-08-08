@@ -35,7 +35,7 @@ class USBStreamToChannels(Elaboratable):
             ]
 
             with m.If(out_byte_counter > 0):
-                m.d.sync +=out_sample.eq(Cat(out_byte, out_sample[:-8]))
+                m.d.sync +=out_sample.eq(Cat(out_sample[8:], out_byte))
 
             with m.If((out_byte_counter == 0) & ((usb_valid > 1))):
                 m.d.sync += [
