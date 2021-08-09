@@ -12,6 +12,8 @@ from nmigen_library.stream.fifo  import connect_stream_to_fifo, connect_fifo_to_
 from luna                import top_level_cli
 from luna.usb2           import USBDevice, USBIsochronousInMemoryEndpoint, USBIsochronousOutStreamEndpoint, USBIsochronousInStreamEndpoint
 
+#from luna.gateware.usb.usb2.endpoints.isochronous import USBIsochronousOutRawStreamEndpoint
+
 from usb_protocol.types                       import USBRequestType, USBRequestRecipient, USBTransferType, USBSynchronizationType, USBUsageType, USBDirection, USBStandardRequests
 from usb_protocol.types.descriptors.uac2      import AudioClassSpecificRequestCodes
 from usb_protocol.emitters                    import DeviceDescriptorCollection
@@ -30,7 +32,7 @@ from usb_stream_to_channels import USBStreamToChannels
 
 class USB2AudioInterface(Elaboratable):
     """ USB Audio Class v2 interface """
-    NR_CHANNELS = 2
+    NR_CHANNELS = 8
     MAX_PACKET_SIZE = NR_CHANNELS * 24 + 4
     USE_ILA = True
     ILA_MAX_PACKET_SIZE = 512
@@ -263,12 +265,10 @@ class USB2AudioInterface(Elaboratable):
             max_packet_size=4)
         usb.add_endpoint(ep1_in)
 
-        ep2_in = USBIsochronousInStreamEndpoint(
+        ep2_in = USBIsochronousInMemoryEndpoint(
             endpoint_number=2, # EP 2 IN
             max_packet_size=self.MAX_PACKET_SIZE)
         usb.add_endpoint(ep2_in)
-
-        # debug = Cat(platform.request_optional("debug", i, default=NullPin()) for i in range(8))
 
         # Connect our device as a high speed device
         m.d.comb += [
@@ -285,7 +285,8 @@ class USB2AudioInterface(Elaboratable):
         m.d.comb += [
             feedbackValue.eq(24 << 14),
             bitPos.eq(ep1_in.address << 3),
-            ep1_in.value.eq(0xff & (feedbackValue >> bitPos))
+            ep1_in.value.eq(0xff & (feedbackValue >> bitPos)),
+            ep2_in.value.eq(ep2_in.address),
         ]
 
         m.submodules.usb_to_channel_stream = usb_to_channel_stream = \
@@ -302,7 +303,6 @@ class USB2AudioInterface(Elaboratable):
 
         m.d.comb += [
             # wire USB to FIFO
-            ep1_out.stream.ready.eq(usb_to_adat_fifo.w_rdy),
             usb_to_channel_stream.usb_stream.stream_eq(ep1_out.stream),
             *connect_stream_to_fifo(usb_to_channel_stream.channel_stream, usb_to_adat_fifo),
             usb_to_adat_fifo.w_data[24:(24 + nr_channel_bits)].eq(usb_to_channel_stream.channel_stream.channel_no),
@@ -321,11 +321,32 @@ class USB2AudioInterface(Elaboratable):
 
         if self.USE_ILA:
             signals = [
-                ep1_out.stream.valid,
-                ep1_out.stream.payload,
+                #ep1_out.stream.valid,
+                #ep1_out.stream.ready,
+                #ep1_out.stream.payload,
+                #ep1_out.stream.first,
+                #ep1_out.stream.last,
+                #usb_to_channel_stream.usb_stream.valid,
+                #usb_to_channel_stream.usb_stream.ready,
+                #usb_to_channel_stream.usb_stream.payload,
+                #usb_to_channel_stream.usb_stream.first,
+                #usb_to_channel_stream.usb_stream.last,
+                #usb_to_channel_stream.channel_stream.valid,
+                #usb_to_channel_stream.channel_stream.payload,
+                #usb_to_channel_stream.channel_stream.last,
+                #usb_to_channel_stream.channel_stream.channel_no,
+                #usb_to_adat_fifo.r_level,
+                usb_to_adat_fifo.r_rdy,
+                adat_transmitter.underflow_out,
+                adat_transmitter.adat_out,
+                adat_transmitter.last_in,
+                adat_transmitter.valid_in,
+                adat_transmitter.ready_out,
+                adat_transmitter.addr_in,
+                #adat_transmitter.sample_in,
             ]
-
-            m.submodules.ila = ila = StreamILA(signals=signals, sample_depth=16*1024, domain="usb", o_domain="usb")
+            signals_bits = sum([s.width for s in signals])
+            m.submodules.ila = ila = StreamILA(signals=signals, sample_depth=int(33*9*1024/signals_bits), domain="sync", o_domain="usb")
 
             stream_ep = USBMultibyteStreamInEndpoint(
                 endpoint_number=3, # EP 3 IN
@@ -336,7 +357,7 @@ class USB2AudioInterface(Elaboratable):
 
             m.d.comb += [
                 stream_ep.stream.stream_eq(ila.stream),
-                ila.trigger.eq(ep1_out.stream.valid)
+                ila.trigger.eq(adat_transmitter.underflow_out),
             ]
 
             ILACoreParameters(ila).pickle()
