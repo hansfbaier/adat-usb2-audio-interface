@@ -1,10 +1,10 @@
 [*]
 [*] GTKWave Analyzer v3.3.109 (w)1999-2020 BSI
-[*] Wed Aug  4 22:07:12 2021
+[*] Mon Aug  9 01:22:52 2021
 [*]
 [dumpfile] "usb_stream_to_channels.vcd"
-[dumpfile_mtime] "Wed Aug  4 22:06:16 2021"
-[dumpfile_size] 6356
+[dumpfile_mtime] "Mon Aug  9 01:22:03 2021"
+[dumpfile_size] 8192
 [savefile] "gateware/usb_stream_to_channels-bench.gtkw"
 [timestart] 0
 [size] 3828 2090
@@ -23,6 +23,7 @@ top.payload$1[7:0]
 @28
 top.first
 top.valid
+top.ready$1
 @200
 -Core
 @28
@@ -41,10 +42,9 @@ top.payload[23:0]
 @28
 [color] 2
 top.valid$1
-@29
 [color] 2
 top.first$1
-@28
+@29
 [color] 2
 top.last
 [pattern_trace] 1

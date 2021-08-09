@@ -5,18 +5,25 @@ from nmigen.sim import Simulator, Tick
 if __name__ == "__main__":
     dut = USBStreamToChannels(8)
 
-    def send_one_frame(pause=False):
+    def send_one_frame(seamless=False, drop_ready=False):
         data = [n % 4 + (n//4 << 4) for n in range(32)]
         yield dut.usb_stream.valid.eq(1)
         yield dut.usb_stream.first.eq(1)
-        for byte in data:
+        yield dut.channel_stream.ready.eq(1)
+        for pos, byte in enumerate(data):
             yield dut.usb_stream.payload.eq(byte)
             yield Tick()
             yield dut.usb_stream.first.eq(0)
+            if drop_ready and pos == 7 * 4 + 3:
+                yield dut.channel_stream.valid.eq(0)
+                for _ in range(4): yield Tick()
+                yield dut.channel_stream.valid.eq(1)
         yield dut.usb_stream.last.eq(1)
         yield dut.usb_stream.valid.eq(0)
-        if pause:
-            yield Tick()
+        if not seamless:
+            for _ in range(10): yield Tick()
+            yield dut.usb_stream.first.eq(1)
+            yield dut.usb_stream.payload.eq(data[0])
         yield dut.usb_stream.last.eq(0)
 
     def process():
@@ -25,8 +32,8 @@ if __name__ == "__main__":
         yield from send_one_frame()
         yield Tick()
         yield Tick()
-        yield from send_one_frame()
-        yield from send_one_frame()
+        yield from send_one_frame(seamless=True, drop_ready=True)
+        yield from send_one_frame(seamless=True)
         for _ in range(5): yield Tick()
 
     sim = Simulator(dut)
