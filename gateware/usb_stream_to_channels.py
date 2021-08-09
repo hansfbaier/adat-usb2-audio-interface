@@ -4,9 +4,8 @@ from nmigen_library.stream  import StreamInterface
 
 class USBStreamToChannels(Elaboratable):
     def __init__(self, nr_channels):
-        self._nr_channels  = nr_channels
-        self._channel_bits = Shape.cast(range(nr_channels)).width
-
+        self._nr_channels   = nr_channels
+        self._channel_bits  = Shape.cast(range(nr_channels)).width
         self.usb_stream     = StreamInterface()
         self.channel_stream = StreamInterface(24, extra_fields=[("channel_no", self._channel_bits)])
 
@@ -45,10 +44,7 @@ class USBStreamToChannels(Elaboratable):
                 ]
 
         with m.If(self.usb_stream.first):
-            m.d.sync += [
-                out_byte_counter.eq(0),
-                out_sample.eq(0),
-            ]
+            m.d.sync += out_byte_counter.eq(0)
 
         with m.If(usb_first):
             m.d.sync += out_channel_no.eq(2**self._channel_bits - 1)
