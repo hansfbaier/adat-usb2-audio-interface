@@ -6,6 +6,7 @@ import os
 
 from nmigen              import *
 from nmigen.lib.fifo     import AsyncFIFO
+from nmigen.lib.cdc      import FFSynchronizer
 
 from nmigen_library.stream.fifo  import connect_stream_to_fifo, connect_fifo_to_stream
 
@@ -28,13 +29,14 @@ from luna.gateware.stream.generator           import StreamSerializer
 from luna.gateware.debug.ila                  import StreamILA, ILACoreParameters
 
 from adat import ADATTransmitter, ADATReceiver
+from adat import EdgeToPulse
 from usb_stream_to_channels import USBStreamToChannels
 
 class USB2AudioInterface(Elaboratable):
     """ USB Audio Class v2 interface """
-    NR_CHANNELS = 8
-    MAX_PACKET_SIZE = NR_CHANNELS * 24 + 4
-    USE_ILA = True
+    NR_CHANNELS = 2
+    MAX_PACKET_SIZE = 512 # NR_CHANNELS * 24 + 4
+    USE_ILA = False
     ILA_MAX_PACKET_SIZE = 512
 
     def create_descriptors(self):
@@ -270,20 +272,71 @@ class USB2AudioInterface(Elaboratable):
             max_packet_size=self.MAX_PACKET_SIZE)
         usb.add_endpoint(ep2_in)
 
+        # calculate bytes in frame for audio in
+        audio_in_frame_bytes = Signal(range(self.MAX_PACKET_SIZE), reset=24 * self.NR_CHANNELS)
+        audio_in_frame_bytes_counting = Signal()
+
+        with m.If(audio_in_frame_bytes_counting):
+            m.d.usb += audio_in_frame_bytes.eq(audio_in_frame_bytes + 1)
+
+        with m.If(ep1_out.stream.valid & ep1_out.stream.ready):
+            with m.If(ep1_out.stream.first):
+                m.d.usb += [
+                    audio_in_frame_bytes.eq(1),
+                    audio_in_frame_bytes_counting.eq(1),
+                ]
+            with m.Elif(ep1_out.stream.last):
+                m.d.usb += audio_in_frame_bytes_counting.eq(0)
+
         # Connect our device as a high speed device
         m.d.comb += [
             ep1_in.bytes_in_frame.eq(4),
-            ep2_in.bytes_in_frame.eq(24 * self.NR_CHANNELS),
+            ep2_in.bytes_in_frame.eq(audio_in_frame_bytes),
             usb.connect          .eq(1),
             usb.full_speed_only  .eq(0),
         ]
 
         # feedback endpoint
-        feedbackValue = Signal(32)
-        bitPos        = Signal(5)
-        # 48000 / 2000 = 24
+        feedbackValue      = Signal(32, reset=0x60000)
+        bitPos             = Signal(5)
+
+        # this tracks the number of ADAT frames since the last USB frame
+        # 12.288MHz / 8kHz = 1536, so we need at least 11 bits = 2048
+        # we need to capture 32 micro frames to get to the precision
+        # required by the USB standard, so and that is 0xc000, so we
+        # need 16 bits here
+        adat_clock_counter = Signal(16)
+        sof_counter        = Signal(5)
+
+        adat_clock_usb = Signal()
+        m.submodules.adat_clock_usb_sync = FFSynchronizer(ClockSignal("adat"), adat_clock_usb, o_domain="usb")
+        m.submodules.adat_clock_usb_pulse = adat_clock_usb_pulse = DomainRenamer("usb")(EdgeToPulse())
+        adat_clock_tick = Signal()
+        m.d.usb += [
+            adat_clock_usb_pulse.edge_in.eq(adat_clock_usb),
+            adat_clock_tick.eq(adat_clock_usb_pulse.pulse_out),
+        ]
+
+        with m.If(adat_clock_tick):
+            m.d.usb += adat_clock_counter.eq(adat_clock_counter + 1)
+
+        with m.If(usb.sof_detected):
+            m.d.usb += sof_counter.eq(sof_counter + 1)
+
+            # according to USB2 standard chapter 5.12.4.2
+            # we need 2**13 / 2**8 = 2**5 = 32 SOF-frames of
+            # sample master frequency counter to get enough
+            # precision for the sample frequency estimate
+            # / 2**8 because the ADAT-clock = 256 times = 2**8
+            # the sample frequency and sof_counter is 5 bits
+            # so it wraps automatically every 32 SOFs
+            with m.If(sof_counter == 0):
+                m.d.usb += [
+                    feedbackValue.eq(adat_clock_counter << 3),
+                    adat_clock_counter.eq(0),
+                ]
+
         m.d.comb += [
-            feedbackValue.eq(24 << 14),
             bitPos.eq(ep1_in.address << 3),
             ep1_in.value.eq(0xff & (feedbackValue >> bitPos)),
             ep2_in.value.eq(ep2_in.address),
@@ -294,9 +347,9 @@ class USB2AudioInterface(Elaboratable):
 
         nr_channel_bits = Shape.cast(range(self.NR_CHANNELS)).width
         m.submodules.usb_to_adat_fifo = usb_to_adat_fifo = \
-            AsyncFIFO(width=24 + nr_channel_bits + 2, depth=16, w_domain="usb", r_domain="sync")
+            AsyncFIFO(width=24 + nr_channel_bits + 2, depth=64, w_domain="usb", r_domain="sync")
 
-        m.submodules.adat_transmitter = adat_transmitter = ADATTransmitter()
+        m.submodules.adat_transmitter = adat_transmitter = ADATTransmitter(fifo_depth=4)
         #m.submodules.adat_receiver    = adat_receiver    = ADATReceiver()
 
         adat = platform.request("adat")
@@ -320,7 +373,14 @@ class USB2AudioInterface(Elaboratable):
         ]
 
         if self.USE_ILA:
+            adat_clock = Signal()
+            m.d.comb += adat_clock.eq(ClockSignal("adat"))
+            sof_wrap = Signal()
+            m.d.comb += sof_wrap.eq(sof_counter == 0)
+
             signals = [
+                usb.sof_detected,
+                sof_wrap,
                 #ep1_out.stream.valid,
                 #ep1_out.stream.ready,
                 #ep1_out.stream.payload,
@@ -345,8 +405,15 @@ class USB2AudioInterface(Elaboratable):
                 adat_transmitter.addr_in,
                 #adat_transmitter.sample_in,
             ]
+
             signals_bits = sum([s.width for s in signals])
-            m.submodules.ila = ila = StreamILA(signals=signals, sample_depth=int(33*9*1024/signals_bits), domain="sync", o_domain="usb")
+            depth = int(33*9*1024/signals_bits)
+            m.submodules.ila = ila = \
+                StreamILA(
+                    signals=signals,
+                    sample_depth=depth,
+                    domain="usb", o_domain="usb",
+                    samples_pretrigger=depth/2)
 
             stream_ep = USBMultibyteStreamInEndpoint(
                 endpoint_number=3, # EP 3 IN
@@ -361,6 +428,15 @@ class USB2AudioInterface(Elaboratable):
             ]
 
             ILACoreParameters(ila).pickle()
+
+        led = platform.request("debug_led")
+        m.d.comb += [
+            led[0].eq(usb.tx_activity_led),
+            led[1].eq(usb.rx_activity_led),
+            led[2].eq(usb.suspended),
+            led[3].eq(usb.reset_detected),
+            led[4].eq(adat_transmitter.underflow_out),
+        ]
 
         return m
 
@@ -446,8 +522,4 @@ class UAC2RequestHandlers(USBRequestHandler):
 
 if __name__ == "__main__":
     os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce15_platform:ADATFacePlatform"
-    e = USB2AudioInterface()
-    d = e.create_descriptors()
-    descriptor_bytes = d.get_descriptor_bytes(2)
-    print(f"descriptor length: {len(descriptor_bytes)} bytes: {str(descriptor_bytes.hex())}")
     top_level_cli(USB2AudioInterface)
