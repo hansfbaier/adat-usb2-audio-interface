@@ -130,25 +130,13 @@ class ADATFacePlatform(QMTechEP4CE15Platform, LUNAPlatform):
                 dir="J_2:11", nxt="J_2:13", stp="J_2:15", rst="J_2:7", rst_invert=True, # USB3320 reset is active low
                 attrs=Attrs(io_standard="3.3-V LVCMOS")),
 
-            Resource("ground", 0, Pins(" ".join([f"J_2:{i}" for i in range(12, 33, 2)]), dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
+            Resource("ground", 0, Pins(" ".join([f"J_2:{i}" for i in range(12, 33, 2)]), dir="o"),
+                Attrs(io_standard="3.3-V LVCMOS")),
 
-            Resource("debug_led", 0, Pins("J_2:34", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug_led", 1, Pins("J_2:36", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug_led", 2, Pins("J_2:38", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug_led", 3, Pins("J_2:40", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug_led", 4, Pins("J_2:42", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug_led", 5, Pins("J_2:44", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug_led", 6, Pins("J_2:46", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug_led", 7, Pins("J_2:48", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-
-            Resource("debug", 0, Pins("J_2:49", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug", 1, Pins("J_2:50", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug", 2, Pins("J_2:51", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug", 3, Pins("J_2:52", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug", 4, Pins("J_2:53", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug", 5, Pins("J_2:54", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug", 6, Pins("J_2:55", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug", 7, Pins("J_2:56", dir="o"), Attrs(io_standard="3.3-V LVCMOS")),
+            Resource("debug_led", 0, Pins("J_2:34 J_2:36 J_2:38 J_2:40 J_2:42 J_2:44 J_2:46 J_2:48 ", dir="o"),
+                Attrs(io_standard="3.3-V LVCMOS")),
+            Resource("debug", 0, Pins("J_2:49 J_2:50 J_2:51 J_2:52 J_2:53 J_2:54 J_2:55 J_2:56", dir="o"),
+                Attrs(io_standard="3.3-V LVCMOS")),
 
             UARTResource(0, rx="J_2:8", tx="J_2:10", attrs=Attrs(io_standard="3.3-V LVCMOS")),
 
