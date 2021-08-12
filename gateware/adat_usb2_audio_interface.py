@@ -413,7 +413,7 @@ class USB2AudioInterface(Elaboratable):
                     signals=signals,
                     sample_depth=depth,
                     domain="usb", o_domain="usb",
-                    samples_pretrigger=int(depth/2))
+                    samples_pretrigger=512)
 
             stream_ep = USBMultibyteStreamInEndpoint(
                 endpoint_number=3, # EP 3 IN

@@ -4,7 +4,7 @@ FPGA based USB 2.0 High Speed audio interface featuring multiple optical ADAT in
 
 ## Status / current limitations
 * enumerates as class compliant audio device on Linux (Windows only with 2 channels)
-* audio output works with glitches (sample rate feedback buggy)
+* audio output works almost glitch free. Occasional underruns occur, but they are barely audible.
 * only 48kHz sample rate supported
 * audio input is still a dummy (internally generated signal)
 * integrated USB2 high speed logic analyzer works
