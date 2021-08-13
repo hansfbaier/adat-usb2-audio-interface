@@ -13,6 +13,7 @@ class UAC2RequestHandlers(USBRequestHandler):
 
         self.output_interface_altsetting_nr = Signal(3)
         self.input_interface_altsetting_nr  = Signal(3)
+        self.interface_settings_changed     = Signal()
 
     def elaborate(self, platform):
         m = Module()
@@ -23,6 +24,8 @@ class UAC2RequestHandlers(USBRequestHandler):
         m.submodules.transmitter = transmitter = \
             StreamSerializer(data_length=14, domain="usb", stream_type=USBInStreamInterface, max_length_width=14)
 
+        m.d.usb += self.interface_settings_changed.eq(0)
+
         #
         # Class request handlers.
         #
@@ -32,6 +35,12 @@ class UAC2RequestHandlers(USBRequestHandler):
 
                 interface_nr   = setup.index
                 alt_setting_nr = setup.value
+
+                m.d.usb += [
+                    self.output_interface_altsetting_nr.eq(0),
+                    self.input_interface_altsetting_nr.eq(0),
+                    self.interface_settings_changed.eq(1),
+                ]
 
                 with m.Switch(interface_nr):
                     with m.Case(1):

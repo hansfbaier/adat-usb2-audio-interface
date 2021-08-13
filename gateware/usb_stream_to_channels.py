@@ -9,7 +9,7 @@ class USBStreamToChannels(Elaboratable):
         self._channel_bits    = Shape.cast(range(max_nr_channels)).width
 
         # ports
-        self.no_channels_in      = Signal(self._channel_bits)
+        self.no_channels_in      = Signal(self._channel_bits + 1)
         self.usb_stream_in       = StreamInterface()
         self.channel_stream_out  = StreamInterface(24, extra_fields=[("channel_no", self._channel_bits)])
 
@@ -58,7 +58,7 @@ class USBStreamToChannels(Elaboratable):
             self.channel_stream_out.first.eq(
                 (out_channel_no == 0) & out_valid),
             self.channel_stream_out.last.eq(
-                (out_channel_no == (self._max_nr_channels - 1)) & out_valid),
+                (out_channel_no == (self.no_channels_in - 1)) & out_valid),
             self.channel_stream_out.channel_no.eq(out_channel_no),
         ]
 

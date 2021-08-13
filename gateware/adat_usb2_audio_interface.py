@@ -371,11 +371,14 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.usb_to_channel_stream = usb_to_channel_stream = \
             DomainRenamer("usb")(USBStreamToChannels(self.NR_CHANNELS))
 
+        num_channels = Signal(range(self.NR_CHANNELS * 2), reset=2)
+        m.d.comb += usb_to_channel_stream.no_channels_in.eq(num_channels)
+
         with m.Switch(class_request_handler.output_interface_altsetting_nr):
             with m.Case(2):
-                m.d.comb += usb_to_channel_stream.no_channels_in.eq(8)
+                m.d.usb += num_channels.eq(8)
             with m.Default():
-                m.d.comb += usb_to_channel_stream.no_channels_in.eq(2)
+                m.d.usb += num_channels.eq(2)
 
         nr_channel_bits = Shape.cast(range(self.NR_CHANNELS)).width
         m.submodules.usb_to_adat_fifo = usb_to_adat_fifo = \
@@ -421,7 +424,6 @@ class USB2AudioInterface(Elaboratable):
 
             signals = [
                 usb.sof_detected,
-                sof_wrap,
                 #ep1_out.stream.valid,
                 #ep1_out.stream.ready,
                 #ep1_out.stream.payload,
@@ -431,6 +433,9 @@ class USB2AudioInterface(Elaboratable):
                 #usb_to_channel_stream_in.ready,
                 #usb_to_channel_stream_in.payload,
                 #usb_to_channel_stream_in.first,
+                class_request_handler.interface_settings_changed,
+                class_request_handler.output_interface_altsetting_nr,
+                num_channels,
                 usb_to_channel_stream.usb_stream_in.last,
                 #usb_to_channel_stream.channel_stream_out.valid,
                 #usb_to_channel_stream.channel_stream_out.payload,
@@ -450,7 +455,7 @@ class USB2AudioInterface(Elaboratable):
             ]
 
             signals_bits = sum([s.width for s in signals])
-            depth = int(33*9*1024/signals_bits)
+            depth = int(33*8*1024/signals_bits)
             m.submodules.ila = ila = \
                 StreamILA(
                     signals=signals,
