@@ -34,7 +34,7 @@ from requesthandlers        import UAC2RequestHandlers
 
 class USB2AudioInterface(Elaboratable):
     """ USB Audio Class v2 interface """
-    NR_CHANNELS = 2
+    NR_CHANNELS = 8
     MAX_PACKET_SIZE = 512 # NR_CHANNELS * 24 + 4
     USE_ILA = False
     ILA_MAX_PACKET_SIZE = 512
@@ -88,6 +88,7 @@ class USB2AudioInterface(Elaboratable):
 
         return descriptors
 
+
     def create_audio_control_interface_descriptor(self):
         audioControlInterface = uac2.ClassSpecificAudioControlInterfaceDescriptorEmitter()
 
@@ -103,7 +104,11 @@ class USB2AudioInterface(Elaboratable):
         inputTerminal               = uac2.InputTerminalDescriptorEmitter()
         inputTerminal.bTerminalID   = 2
         inputTerminal.wTerminalType = uac2.USBTerminalTypes.USB_STREAMING
-        inputTerminal.bNrChannels   = self.NR_CHANNELS
+        # The number of channels needs to be 2 here in order to be recognized
+        # default audio out device by Windows. We provide an alternate
+        # setting with the full channel count, which also references
+        # this terminal ID
+        inputTerminal.bNrChannels   = 2
         inputTerminal.bCSourceID    = 1
         audioControlInterface.add_subordinate_descriptor(inputTerminal)
 
@@ -119,7 +124,7 @@ class USB2AudioInterface(Elaboratable):
         inputTerminal               = uac2.InputTerminalDescriptorEmitter()
         inputTerminal.bTerminalID   = 4
         inputTerminal.wTerminalType = uac2.InputTerminalTypes.MICROPHONE
-        inputTerminal.bNrChannels   = self.NR_CHANNELS
+        inputTerminal.bNrChannels   = 8
         inputTerminal.bCSourceID    = 1
         audioControlInterface.add_subordinate_descriptor(inputTerminal)
 
@@ -133,18 +138,12 @@ class USB2AudioInterface(Elaboratable):
 
         return audioControlInterface
 
-    def create_output_channels_descriptor(self, c):
-        #
-        # Interface Descriptor (Streaming, OUT, quiet setting)
-        #
-        quietAudioStreamingInterface                  = uac2.AudioStreamingInterfaceDescriptorEmitter()
-        quietAudioStreamingInterface.bInterfaceNumber = 1
-        c.add_subordinate_descriptor(quietAudioStreamingInterface)
 
+    def create_output_streaming_interface(self, c, *, nr_channels, alt_setting_nr):
         # Interface Descriptor (Streaming, OUT, active setting)
         activeAudioStreamingInterface                   = uac2.AudioStreamingInterfaceDescriptorEmitter()
         activeAudioStreamingInterface.bInterfaceNumber  = 1
-        activeAudioStreamingInterface.bAlternateSetting = 1
+        activeAudioStreamingInterface.bAlternateSetting = alt_setting_nr
         activeAudioStreamingInterface.bNumEndpoints     = 2
         c.add_subordinate_descriptor(activeAudioStreamingInterface)
 
@@ -153,7 +152,7 @@ class USB2AudioInterface(Elaboratable):
         audioStreamingInterface.bTerminalLink = 2
         audioStreamingInterface.bFormatType   = uac2.FormatTypes.FORMAT_TYPE_I
         audioStreamingInterface.bmFormats     = uac2.TypeIFormats.PCM
-        audioStreamingInterface.bNrChannels   = self.NR_CHANNELS
+        audioStreamingInterface.bNrChannels   = nr_channels
         c.add_subordinate_descriptor(audioStreamingInterface)
 
         # AudioStreaming Interface Descriptor (Type I)
@@ -186,27 +185,38 @@ class USB2AudioInterface(Elaboratable):
         feedbackInEndpoint.bInterval         = 4
         c.add_subordinate_descriptor(feedbackInEndpoint)
 
-    def create_input_channels_descriptor(self, c):
+
+    def create_output_channels_descriptor(self, c):
         #
-        # Interface Descriptor (Streaming, IN, quiet setting)
+        # Interface Descriptor (Streaming, OUT, quiet setting)
         #
-        quietAudioStreamingInterface                  = uac2.AudioStreamingInterfaceDescriptorEmitter()
-        quietAudioStreamingInterface.bInterfaceNumber = 2
+        quietAudioStreamingInterface = uac2.AudioStreamingInterfaceDescriptorEmitter()
+        quietAudioStreamingInterface.bInterfaceNumber  = 1
+        quietAudioStreamingInterface.bAlternateSetting = 0
         c.add_subordinate_descriptor(quietAudioStreamingInterface)
 
+        # we need the default alternate setting to be stereo
+        # out for windows to automatically recognize
+        # and use this audio interface
+        self.create_output_streaming_interface(c, nr_channels=2, alt_setting_nr=1)
+        self.create_output_streaming_interface(c, nr_channels=self.NR_CHANNELS, alt_setting_nr=2)
+
+
+    def create_input_streaming_interface(self, c, *, nr_channels, alt_setting_nr, channel_config=0):
         # Interface Descriptor (Streaming, IN, active setting)
-        activeAudioStreamingInterface                   = uac2.AudioStreamingInterfaceDescriptorEmitter()
+        activeAudioStreamingInterface = uac2.AudioStreamingInterfaceDescriptorEmitter()
         activeAudioStreamingInterface.bInterfaceNumber  = 2
-        activeAudioStreamingInterface.bAlternateSetting = 1
+        activeAudioStreamingInterface.bAlternateSetting = alt_setting_nr
         activeAudioStreamingInterface.bNumEndpoints     = 1
         c.add_subordinate_descriptor(activeAudioStreamingInterface)
 
         # AudioStreaming Interface Descriptor (General)
-        audioStreamingInterface               = uac2.ClassSpecificAudioStreamingInterfaceDescriptorEmitter()
-        audioStreamingInterface.bTerminalLink = 5
-        audioStreamingInterface.bFormatType   = uac2.FormatTypes.FORMAT_TYPE_I
-        audioStreamingInterface.bmFormats     = uac2.TypeIFormats.PCM
-        audioStreamingInterface.bNrChannels   = self.NR_CHANNELS
+        audioStreamingInterface                 = uac2.ClassSpecificAudioStreamingInterfaceDescriptorEmitter()
+        audioStreamingInterface.bTerminalLink   = 5
+        audioStreamingInterface.bFormatType     = uac2.FormatTypes.FORMAT_TYPE_I
+        audioStreamingInterface.bmFormats       = uac2.TypeIFormats.PCM
+        audioStreamingInterface.bNrChannels     = nr_channels
+        audioStreamingInterface.bmChannelConfig = channel_config
         c.add_subordinate_descriptor(audioStreamingInterface)
 
         # AudioStreaming Interface Descriptor (Type I)
@@ -229,6 +239,21 @@ class USB2AudioInterface(Elaboratable):
         audioControlEndpoint = uac2.ClassSpecificAudioStreamingIsochronousAudioDataEndpointDescriptorEmitter()
         c.add_subordinate_descriptor(audioControlEndpoint)
 
+
+    def create_input_channels_descriptor(self, c):
+        #
+        # Interface Descriptor (Streaming, IN, quiet setting)
+        #
+        quietAudioStreamingInterface = uac2.AudioStreamingInterfaceDescriptorEmitter()
+        quietAudioStreamingInterface.bInterfaceNumber  = 2
+        quietAudioStreamingInterface.bAlternateSetting = 0
+        c.add_subordinate_descriptor(quietAudioStreamingInterface)
+
+        # Windows wants a stereo pair as default setting, so let's have it
+        self.create_input_streaming_interface(c, nr_channels=2, alt_setting_nr=1, channel_config=0x3)
+        self.create_input_streaming_interface(c, nr_channels=self.NR_CHANNELS, alt_setting_nr=2, channel_config=0x0)
+
+
     def elaborate(self, platform):
         m = Module()
 
@@ -248,7 +273,8 @@ class USB2AudioInterface(Elaboratable):
         ])
 
         # Attach our class request handlers.
-        control_ep.add_request_handler(UAC2RequestHandlers())
+        class_request_handler = UAC2RequestHandlers()
+        control_ep.add_request_handler(class_request_handler)
 
         # Attach class-request handlers that stall any vendor or reserved requests,
         # as we don't have or need any.
@@ -345,6 +371,12 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.usb_to_channel_stream = usb_to_channel_stream = \
             DomainRenamer("usb")(USBStreamToChannels(self.NR_CHANNELS))
 
+        with m.Switch(class_request_handler.output_interface_altsetting_nr):
+            with m.Case(2):
+                m.d.comb += usb_to_channel_stream.no_channels_in.eq(8)
+            with m.Default():
+                m.d.comb += usb_to_channel_stream.no_channels_in.eq(2)
+
         nr_channel_bits = Shape.cast(range(self.NR_CHANNELS)).width
         m.submodules.usb_to_adat_fifo = usb_to_adat_fifo = \
             AsyncFIFO(width=24 + nr_channel_bits + 2, depth=64, w_domain="usb", r_domain="sync")
@@ -356,18 +388,27 @@ class USB2AudioInterface(Elaboratable):
 
         m.d.comb += [
             # wire USB to FIFO
-            usb_to_channel_stream.usb_stream.stream_eq(ep1_out.stream),
-            *connect_stream_to_fifo(usb_to_channel_stream.channel_stream, usb_to_adat_fifo),
-            usb_to_adat_fifo.w_data[24:(24 + nr_channel_bits)].eq(usb_to_channel_stream.channel_stream.channel_no),
-            usb_to_adat_fifo.w_data[(24 + nr_channel_bits)].eq(usb_to_channel_stream.channel_stream.first),
-            usb_to_adat_fifo.w_data[(24 + nr_channel_bits + 1)].eq(usb_to_channel_stream.channel_stream.last),
+            usb_to_channel_stream.usb_stream_in.stream_eq(ep1_out.stream),
+            *connect_stream_to_fifo(usb_to_channel_stream.channel_stream_out, usb_to_adat_fifo),
+
+            usb_to_adat_fifo.w_data[24:(24 + nr_channel_bits)]
+                .eq(usb_to_channel_stream.channel_stream_out.channel_no),
+
+            usb_to_adat_fifo.w_data[(24 + nr_channel_bits)]
+                .eq(usb_to_channel_stream.channel_stream_out.first),
+
+            usb_to_adat_fifo.w_data[(24 + nr_channel_bits + 1)]
+                .eq(usb_to_channel_stream.channel_stream_out.last),
+
             usb_to_adat_fifo.r_en.eq(adat_transmitter.ready_out),
+
             # wire FIFO to ADAT transmitter
-            adat_transmitter.sample_in.eq(usb_to_adat_fifo.r_data[0:24]),
-            adat_transmitter.addr_in.eq(usb_to_adat_fifo.r_data[24:(24 + nr_channel_bits)]),
-            adat_transmitter.last_in.eq(usb_to_adat_fifo.r_data[-1]),
-            adat_transmitter.valid_in.eq(usb_to_adat_fifo.r_rdy & usb_to_adat_fifo.r_en),
-            adat_transmitter.user_data_in.eq(0),
+            adat_transmitter.sample_in    .eq(usb_to_adat_fifo.r_data[0:24]),
+            adat_transmitter.addr_in      .eq(usb_to_adat_fifo.r_data[24:(24 + nr_channel_bits)]),
+            adat_transmitter.last_in      .eq(usb_to_adat_fifo.r_data[-1]),
+            adat_transmitter.valid_in     .eq(usb_to_adat_fifo.r_rdy & usb_to_adat_fifo.r_en),
+            adat_transmitter.user_data_in .eq(0),
+
             # ADAT output
             adat.tx.eq(adat_transmitter.adat_out)
         ]
@@ -386,24 +427,26 @@ class USB2AudioInterface(Elaboratable):
                 #ep1_out.stream.payload,
                 #ep1_out.stream.first,
                 #ep1_out.stream.last,
-                #usb_to_channel_stream.usb_stream.valid,
-                #usb_to_channel_stream.usb_stream.ready,
-                #usb_to_channel_stream.usb_stream.payload,
-                #usb_to_channel_stream.usb_stream.first,
-                #usb_to_channel_stream.usb_stream.last,
-                #usb_to_channel_stream.channel_stream.valid,
-                #usb_to_channel_stream.channel_stream.payload,
-                #usb_to_channel_stream.channel_stream.last,
-                #usb_to_channel_stream.channel_stream.channel_no,
-                #usb_to_adat_fifo.r_level,
-                usb_to_adat_fifo.r_rdy,
-                adat_transmitter.underflow_out,
-                adat_transmitter.adat_out,
-                adat_transmitter.last_in,
+                #usb_to_channel_stream_in.valid,
+                #usb_to_channel_stream_in.ready,
+                #usb_to_channel_stream_in.payload,
+                #usb_to_channel_stream_in.first,
+                usb_to_channel_stream.usb_stream_in.last,
+                #usb_to_channel_stream.channel_stream_out.valid,
+                #usb_to_channel_stream.channel_stream_out.payload,
+                #usb_to_channel_stream.channel_stream_out.last,
+                #usb_to_channel_stream.channel_stream_out.channel_no,
+                usb_to_adat_fifo.r_level,
+                #usb_to_adat_fifo.r_rdy,
                 adat_transmitter.valid_in,
                 adat_transmitter.ready_out,
-                adat_transmitter.addr_in,
+                #adat_transmitter.addr_in,
+                adat_transmitter.last_in,
                 #adat_transmitter.sample_in,
+                #adat_transmitter.fifo_level_out,
+                adat_transmitter.frame_out,
+                adat_transmitter.underflow_out,
+                #adat_transmitter.adat_out,
             ]
 
             signals_bits = sum([s.width for s in signals])

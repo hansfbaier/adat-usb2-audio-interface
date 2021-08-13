@@ -8,6 +8,11 @@ from luna.gateware.usb.stream                 import USBInStreamInterface
 
 class UAC2RequestHandlers(USBRequestHandler):
     """ request handlers to implement UAC2 functionality. """
+    def __init__(self):
+        super().__init__()
+
+        self.output_interface_altsetting_nr = Signal(3)
+        self.input_interface_altsetting_nr  = Signal(3)
 
     def elaborate(self, platform):
         m = Module()
@@ -24,6 +29,15 @@ class UAC2RequestHandlers(USBRequestHandler):
         with m.If(setup.type == USBRequestType.STANDARD):
             with m.If((setup.recipient == USBRequestRecipient.INTERFACE) &
                       (setup.request == USBStandardRequests.SET_INTERFACE)):
+
+                interface_nr   = setup.index
+                alt_setting_nr = setup.value
+
+                with m.Switch(interface_nr):
+                    with m.Case(1):
+                        m.d.usb += self.output_interface_altsetting_nr.eq(alt_setting_nr)
+                    with m.Case(2):
+                        m.d.usb += self.input_interface_altsetting_nr.eq(alt_setting_nr)
 
                 # Always ACK the data out...
                 with m.If(interface.rx_ready_for_response):

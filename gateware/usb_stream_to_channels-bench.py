@@ -7,27 +7,27 @@ if __name__ == "__main__":
 
     def send_one_frame(seamless=False, drop_ready=False):
         data = [n % 4 + (n//4 << 4) for n in range(32)]
-        yield dut.usb_stream.valid.eq(1)
-        yield dut.usb_stream.first.eq(1)
-        yield dut.channel_stream.ready.eq(1)
+        yield dut.usb_stream_in.valid.eq(1)
+        yield dut.usb_stream_in.first.eq(1)
+        yield dut.channel_stream_out.ready.eq(1)
         for pos, byte in enumerate(data):
-            yield dut.usb_stream.payload.eq(byte)
+            yield dut.usb_stream_in.payload.eq(byte)
             yield Tick()
-            yield dut.usb_stream.first.eq(0)
+            yield dut.usb_stream_in.first.eq(0)
             if drop_ready and pos == 7 * 4 + 3:
-                yield dut.channel_stream.valid.eq(0)
+                yield dut.channel_stream_out.valid.eq(0)
                 for _ in range(4): yield Tick()
-                yield dut.channel_stream.valid.eq(1)
-        yield dut.usb_stream.last.eq(1)
-        yield dut.usb_stream.valid.eq(0)
+                yield dut.channel_stream_out.valid.eq(1)
+        yield dut.usb_stream_in.last.eq(1)
+        yield dut.usb_stream_in.valid.eq(0)
         if not seamless:
             for _ in range(10): yield Tick()
-            yield dut.usb_stream.first.eq(1)
-            yield dut.usb_stream.payload.eq(data[0])
-        yield dut.usb_stream.last.eq(0)
+            yield dut.usb_stream_in.first.eq(1)
+            yield dut.usb_stream_in.payload.eq(data[0])
+        yield dut.usb_stream_in.last.eq(0)
 
     def process():
-        yield dut.usb_stream.payload.eq(0xff)
+        yield dut.usb_stream_in.payload.eq(0xff)
         yield Tick()
         yield from send_one_frame()
         yield Tick()
