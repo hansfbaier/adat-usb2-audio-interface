@@ -37,6 +37,8 @@ class TinyBxAdatDomainGenerator(Elaboratable):
 
 class TinyBxAdatPlatform(TinyFPGABxPlatform):
   clock_domain_generator = TinyBxAdatDomainGenerator
+  number_of_channels = 4
+  bitwidth           = 24
 
   def __init__(self):
     self.resources += [

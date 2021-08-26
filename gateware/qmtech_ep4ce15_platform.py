@@ -104,6 +104,8 @@ class ADATFaceClockDomainGenerator(Elaboratable):
 class ADATFacePlatform(QMTechEP4CE15Platform, LUNAPlatform):
     clock_domain_generator = ADATFaceClockDomainGenerator
     default_usb_connection = "ulpi"
+    number_of_channels     = 8
+    bitwidth               = 24
 
     @property
     def file_templates(self):

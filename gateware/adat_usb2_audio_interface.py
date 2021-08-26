@@ -34,7 +34,8 @@ from requesthandlers        import UAC2RequestHandlers
 
 class USB2AudioInterface(Elaboratable):
     """ USB Audio Class v2 interface """
-    NR_CHANNELS = 8
+    number_of_channels = 8
+    bitwidth           = 24
     MAX_PACKET_SIZE = 512 # NR_CHANNELS * 24 + 4
     USE_ILA = False
     ILA_MAX_PACKET_SIZE = 512
@@ -124,7 +125,7 @@ class USB2AudioInterface(Elaboratable):
         inputTerminal               = uac2.InputTerminalDescriptorEmitter()
         inputTerminal.bTerminalID   = 4
         inputTerminal.wTerminalType = uac2.InputTerminalTypes.MICROPHONE
-        inputTerminal.bNrChannels   = 8
+        inputTerminal.bNrChannels   = self.number_of_channels
         inputTerminal.bCSourceID    = 1
         audioControlInterface.add_subordinate_descriptor(inputTerminal)
 
@@ -199,7 +200,8 @@ class USB2AudioInterface(Elaboratable):
         # out for windows to automatically recognize
         # and use this audio interface
         self.create_output_streaming_interface(c, nr_channels=2, alt_setting_nr=1)
-        self.create_output_streaming_interface(c, nr_channels=self.NR_CHANNELS, alt_setting_nr=2)
+        if self.number_of_channels > 2:
+            self.create_output_streaming_interface(c, nr_channels=self.number_of_channels, alt_setting_nr=2)
 
 
     def create_input_streaming_interface(self, c, *, nr_channels, alt_setting_nr, channel_config=0):
@@ -251,11 +253,15 @@ class USB2AudioInterface(Elaboratable):
 
         # Windows wants a stereo pair as default setting, so let's have it
         self.create_input_streaming_interface(c, nr_channels=2, alt_setting_nr=1, channel_config=0x3)
-        self.create_input_streaming_interface(c, nr_channels=self.NR_CHANNELS, alt_setting_nr=2, channel_config=0x0)
+        if self.number_of_channels > 2:
+            self.create_input_streaming_interface(c, nr_channels=self.number_of_channels, alt_setting_nr=2, channel_config=0x0)
 
 
     def elaborate(self, platform):
         m = Module()
+
+        self.number_of_channels = platform.number_of_channels
+        self.bitwidth           = platform.bitwidth
 
         # Generate our domain clocks/resets.
         m.submodules.car = platform.clock_domain_generator()
@@ -299,7 +305,7 @@ class USB2AudioInterface(Elaboratable):
         usb.add_endpoint(ep2_in)
 
         # calculate bytes in frame for audio in
-        audio_in_frame_bytes = Signal(range(self.MAX_PACKET_SIZE), reset=24 * self.NR_CHANNELS)
+        audio_in_frame_bytes = Signal(range(self.MAX_PACKET_SIZE), reset=24 * self.number_of_channels)
         audio_in_frame_bytes_counting = Signal()
 
         with m.If(audio_in_frame_bytes_counting):
@@ -369,9 +375,9 @@ class USB2AudioInterface(Elaboratable):
         ]
 
         m.submodules.usb_to_channel_stream = usb_to_channel_stream = \
-            DomainRenamer("usb")(USBStreamToChannels(self.NR_CHANNELS))
+            DomainRenamer("usb")(USBStreamToChannels(self.number_of_channels))
 
-        num_channels = Signal(range(self.NR_CHANNELS * 2), reset=2)
+        num_channels = Signal(range(self.number_of_channels * 2), reset=2)
         m.d.comb += usb_to_channel_stream.no_channels_in.eq(num_channels)
 
         with m.Switch(class_request_handler.output_interface_altsetting_nr):
@@ -380,7 +386,7 @@ class USB2AudioInterface(Elaboratable):
             with m.Default():
                 m.d.usb += num_channels.eq(2)
 
-        nr_channel_bits = Shape.cast(range(self.NR_CHANNELS)).width
+        nr_channel_bits = Shape.cast(range(self.number_of_channels)).width
         m.submodules.usb_to_adat_fifo = usb_to_adat_fifo = \
             AsyncFIFO(width=24 + nr_channel_bits + 2, depth=64, w_domain="usb", r_domain="sync")
 
