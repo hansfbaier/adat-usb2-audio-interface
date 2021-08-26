@@ -8,7 +8,7 @@ from nmigen              import *
 from nmigen.lib.fifo     import AsyncFIFO
 from nmigen.lib.cdc      import FFSynchronizer
 
-from nmigen_library.stream.fifo  import connect_stream_to_fifo, connect_fifo_to_stream
+from nmigen_library.stream  import connect_stream_to_fifo, connect_fifo_to_stream
 
 from luna                import top_level_cli
 from luna.usb2           import USBDevice, USBIsochronousInMemoryEndpoint, USBIsochronousOutStreamEndpoint, USBIsochronousInStreamEndpoint
@@ -490,4 +490,5 @@ class USB2AudioInterface(Elaboratable):
 
 if __name__ == "__main__":
     os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce15_platform:ADATFacePlatform"
+    #os.environ["LUNA_PLATFORM"] = "tinybx_luna:TinyBxAdatPlatform"
     top_level_cli(USB2AudioInterface)

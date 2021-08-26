@@ -3,3 +3,4 @@ git+https://github.com/hansfbaier/nmigen-boards.git@qmtech-boards
 git+https://github.com/hansfbaier/usb2-highspeed-core.git
 git+https://github.com/hansfbaier/adat-core.git
 git+https://github.com/hansfbaier/nmigen-library.git
+nmigen-yosys
