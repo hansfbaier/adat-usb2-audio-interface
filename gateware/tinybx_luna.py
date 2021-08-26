@@ -6,7 +6,7 @@ create an audio clock domain
 Issues:
 The audio clock is just a carbon copy of usb 12MHz because the Bx only has one PLL.
 
-""" 
+"""
 
 import os
 import logging
