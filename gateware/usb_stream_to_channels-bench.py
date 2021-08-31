@@ -7,6 +7,7 @@ if __name__ == "__main__":
 
     def send_one_frame(seamless=False, drop_valid=False, drop_ready=False):
         data = [n % 4 + (n//4 << 4) for n in range(32)]
+        yield dut.no_channels_in.eq(8)
         yield dut.usb_stream_in.valid.eq(1)
         yield dut.usb_stream_in.first.eq(1)
         yield dut.channel_stream_out.ready.eq(1)

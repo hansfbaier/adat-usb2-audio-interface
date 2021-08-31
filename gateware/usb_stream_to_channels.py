@@ -23,12 +23,15 @@ class USBStreamToChannels(Elaboratable):
         usb_payload      = Signal(8)
         out_ready        = Signal()
 
+        last_channel  = Signal(self._channel_bits)
+
         m.d.comb += [
             usb_first.eq(self.usb_stream_in.first),
             usb_valid.eq(self.usb_stream_in.valid),
             usb_payload.eq(self.usb_stream_in.payload),
             out_ready.eq(self.channel_stream_out.ready),
             self.usb_stream_in.ready.eq(out_ready),
+            last_channel.eq(self.no_channels_in - 1),
         ]
 
         m.d.sync += [
@@ -61,8 +64,12 @@ class USBStreamToChannels(Elaboratable):
                         self.channel_stream_out.valid.eq(1),
                         self.channel_stream_out.channel_no.eq(out_channel_no),
                         self.channel_stream_out.first.eq(out_channel_no == 0),
-                        self.channel_stream_out.last.eq(out_channel_no == (2**self._channel_bits - 1)),
+                        self.channel_stream_out.last.eq(out_channel_no == last_channel),
                     ]
+
+                    with m.If(out_channel_no == last_channel):
+                        m.d.sync += out_channel_no.eq(-1)
+
                     m.next = "B0"
 
         return m
