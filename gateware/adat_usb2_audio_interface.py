@@ -30,6 +30,7 @@ from adat import ADATTransmitter, ADATReceiver
 from adat import EdgeToPulse
 
 from usb_stream_to_channels import USBStreamToChannels
+from channels_to_usb_stream import ChannelsToUSBStream
 from requesthandlers        import UAC2RequestHandlers
 
 class USB2AudioInterface(Elaboratable):
@@ -260,6 +261,11 @@ class USB2AudioInterface(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
+        # actually these are defined in the platform's CRG,
+        # but nmigen gets a hiccup if I don't define them here
+        m.domains.adat = ClockDomain()
+        m.domains.fast = ClockDomain()
+
         self.number_of_channels = platform.number_of_channels
         self.bitwidth           = platform.bitwidth
 
@@ -299,7 +305,7 @@ class USB2AudioInterface(Elaboratable):
             max_packet_size=4)
         usb.add_endpoint(ep1_in)
 
-        ep2_in = USBIsochronousInMemoryEndpoint(
+        ep2_in = USBIsochronousInStreamEndpoint(
             endpoint_number=2, # EP 2 IN
             max_packet_size=self.MAX_PACKET_SIZE)
         usb.add_endpoint(ep2_in)
@@ -308,10 +314,10 @@ class USB2AudioInterface(Elaboratable):
         audio_in_frame_bytes = Signal(range(self.MAX_PACKET_SIZE), reset=24 * self.number_of_channels)
         audio_in_frame_bytes_counting = Signal()
 
-        with m.If(audio_in_frame_bytes_counting):
-            m.d.usb += audio_in_frame_bytes.eq(audio_in_frame_bytes + 1)
-
         with m.If(ep1_out.stream.valid & ep1_out.stream.ready):
+            with m.If(audio_in_frame_bytes_counting):
+                m.d.usb += audio_in_frame_bytes.eq(audio_in_frame_bytes + 1)
+
             with m.If(ep1_out.stream.first):
                 m.d.usb += [
                     audio_in_frame_bytes.eq(1),
@@ -371,11 +377,13 @@ class USB2AudioInterface(Elaboratable):
         m.d.comb += [
             bitPos.eq(ep1_in.address << 3),
             ep1_in.value.eq(0xff & (feedbackValue >> bitPos)),
-            ep2_in.value.eq(ep2_in.address),
         ]
 
         m.submodules.usb_to_channel_stream = usb_to_channel_stream = \
             DomainRenamer("usb")(USBStreamToChannels(self.number_of_channels))
+
+        m.submodules.channels_to_usb_stream = channels_to_usb_stream = \
+            DomainRenamer("usb")(ChannelsToUSBStream(self.number_of_channels))
 
         num_channels = Signal(range(self.number_of_channels * 2), reset=2)
         m.d.comb += usb_to_channel_stream.no_channels_in.eq(num_channels)
@@ -390,13 +398,16 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.usb_to_adat_fifo = usb_to_adat_fifo = \
             AsyncFIFO(width=24 + nr_channel_bits + 2, depth=64, w_domain="usb", r_domain="sync")
 
+        m.submodules.adat_to_usb_fifo = adat_to_usb_fifo = \
+            AsyncFIFO(width=24 + nr_channel_bits + 2, depth=64, w_domain="fast", r_domain="usb")
+
         m.submodules.adat_transmitter = adat_transmitter = ADATTransmitter(fifo_depth=4)
-        #m.submodules.adat_receiver    = adat_receiver    = ADATReceiver()
+        m.submodules.adat_receiver    = adat_receiver    = DomainRenamer("fast")(ADATReceiver(int(30e6)))
 
         adat = platform.request("adat")
 
         m.d.comb += [
-            # wire USB to FIFO
+            # convert USB stream to audio stream
             usb_to_channel_stream.usb_stream_in.stream_eq(ep1_out.stream),
             *connect_stream_to_fifo(usb_to_channel_stream.channel_stream_out, usb_to_adat_fifo),
 
@@ -411,7 +422,7 @@ class USB2AudioInterface(Elaboratable):
 
             usb_to_adat_fifo.r_en.eq(adat_transmitter.ready_out),
 
-            # wire FIFO to ADAT transmitter
+            # wire transmit FIFO to ADAT transmitter
             adat_transmitter.sample_in    .eq(usb_to_adat_fifo.r_data[0:24]),
             adat_transmitter.addr_in      .eq(usb_to_adat_fifo.r_data[24:(24 + nr_channel_bits)]),
             adat_transmitter.last_in      .eq(usb_to_adat_fifo.r_data[-1]),
@@ -419,7 +430,24 @@ class USB2AudioInterface(Elaboratable):
             adat_transmitter.user_data_in .eq(0),
 
             # ADAT output
-            adat.tx.eq(adat_transmitter.adat_out)
+            adat.tx.eq(adat_transmitter.adat_out),
+
+            # ADAT input
+            adat_receiver.adat_in.eq(adat.rx),
+
+            # wire up receive FIFO to ADAT receiver
+            adat_to_usb_fifo.w_data[0:24]  .eq(adat_receiver.sample_out),
+            adat_to_usb_fifo.w_data[24:27] .eq(adat_receiver.addr_out),
+            adat_to_usb_fifo.w_en          .eq(adat_receiver.output_enable),
+
+            # convert audio stream to USB stream
+            channels_to_usb_stream.channel_stream_in.payload.eq(adat_to_usb_fifo.r_data[0:24]),
+            channels_to_usb_stream.channel_stream_in.channel_no.eq(adat_to_usb_fifo.r_data[24:27]),
+            channels_to_usb_stream.channel_stream_in.valid.eq(adat_to_usb_fifo.r_rdy),
+            adat_to_usb_fifo.r_en.eq(channels_to_usb_stream.channel_stream_in.ready),
+
+            # wire up USB audio IN
+            ep2_in.stream.stream_eq(channels_to_usb_stream.usb_stream_out),
         ]
 
         if self.USE_ILA:
