@@ -261,11 +261,6 @@ class USB2AudioInterface(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        # actually these are defined in the platform's CRG,
-        # but nmigen gets a hiccup if I don't define them here
-        m.domains.adat = ClockDomain()
-        m.domains.fast = ClockDomain()
-
         self.number_of_channels = platform.number_of_channels
         self.bitwidth           = platform.bitwidth
 
@@ -402,7 +397,7 @@ class USB2AudioInterface(Elaboratable):
             AsyncFIFO(width=24 + nr_channel_bits + 2, depth=64, w_domain="fast", r_domain="usb")
 
         m.submodules.adat_transmitter = adat_transmitter = ADATTransmitter(fifo_depth=4)
-        m.submodules.adat_receiver    = adat_receiver    = DomainRenamer("fast")(ADATReceiver(int(30e6)))
+        m.submodules.adat_receiver    = adat_receiver    = DomainRenamer("fast")(ADATReceiver(int(100e6)))
 
         adat = platform.request("adat")
 

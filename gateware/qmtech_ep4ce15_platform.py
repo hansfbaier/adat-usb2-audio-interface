@@ -13,12 +13,12 @@ class ADATFaceClockDomainGenerator(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        # Create our domains; but don't do anything else for them, for now.
-        m.domains.fast = ClockDomain()
-        m.domains.sync = ClockDomain()
-        m.domains.usb  = ClockDomain()
-        m.domains.jt51 = ClockDomain()
-        m.domains.adat = ClockDomain()
+        # Create our domains
+        m.domains.usb  = ClockDomain("usb")
+        m.domains.sync = ClockDomain("sync")
+        m.domains.fast = ClockDomain("fast")
+        m.domains.adat = ClockDomain("adat")
+        m.domains.jt51 = ClockDomain("jt51")
 
         clk = platform.request(platform.default_clk)
 
