@@ -29,12 +29,12 @@ top.usb_payload[7:0]
 @28
 top.fsm_state
 @24
-top.out_channel_no[2:0]
+top.out_channel_nr[2:0]
 @200
 -Output Stream
 @25
 [color] 2
-top.channel_no[2:0]
+top.channel_nr[2:0]
 @22
 [color] 2
 top.payload$1[23:0]

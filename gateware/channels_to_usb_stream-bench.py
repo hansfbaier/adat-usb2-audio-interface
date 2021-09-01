@@ -6,7 +6,7 @@ if __name__ == "__main__":
     dut = ChannelsToUSBStream(8)
 
     def send_one_frame(sample: int, channel: int):
-        yield dut.channel_stream_in.channel_no.eq(channel)
+        yield dut.channel_stream_in.channel_nr.eq(channel)
         yield dut.channel_stream_in.payload.eq(sample)
         yield dut.channel_stream_in.valid.eq(1)
         yield

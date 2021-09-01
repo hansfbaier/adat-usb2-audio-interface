@@ -23,7 +23,7 @@ top.channel_payload[23:0]
 top.channel_ready
 top.channel_valid
 @25
-top.channel_no[2:0]
+top.channel_nr[2:0]
 @200
 -Channels To USB
 @28

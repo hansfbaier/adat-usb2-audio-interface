@@ -15,7 +15,7 @@ class ChannelsToUSBStream(Elaboratable):
 
         # ports
         self.usb_stream_out      = StreamInterface()
-        self.channel_stream_in   = StreamInterface(self._sample_width, extra_fields=[("channel_no", self._channel_bits)])
+        self.channel_stream_in   = StreamInterface(self._sample_width, extra_fields=[("channel_nr", self._channel_bits)])
 
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
@@ -50,7 +50,7 @@ class ChannelsToUSBStream(Elaboratable):
                 with m.State("WAIT-FIRST"):
                     # we have to accept data until we find a first channel sample
                     m.d.comb += channel_ready.eq(1)
-                    with m.If(channel_valid & (channel_stream.channel_no == 0)):
+                    with m.If(channel_valid & (channel_stream.channel_nr == 0)):
                         m.d.sync += [
                             current_sample.eq(channel_payload << shift),
                             current_channel.eq(0),
@@ -73,7 +73,7 @@ class ChannelsToUSBStream(Elaboratable):
 
                             m.d.sync += current_channel.eq(current_channel_next)
 
-                            with m.If(current_channel_next == channel_stream.channel_no):
+                            with m.If(current_channel_next == channel_stream.channel_nr):
                                 m.d.sync += current_sample.eq(channel_payload << shift)
                                 m.next = "SEND"
                             with m.Else():

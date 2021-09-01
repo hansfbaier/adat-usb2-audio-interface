@@ -407,7 +407,7 @@ class USB2AudioInterface(Elaboratable):
             *connect_stream_to_fifo(usb_to_channel_stream.channel_stream_out, usb_to_adat_fifo),
 
             usb_to_adat_fifo.w_data[24:(24 + nr_channel_bits)]
-                .eq(usb_to_channel_stream.channel_stream_out.channel_no),
+                .eq(usb_to_channel_stream.channel_stream_out.channel_nr),
 
             usb_to_adat_fifo.w_data[(24 + nr_channel_bits)]
                 .eq(usb_to_channel_stream.channel_stream_out.first),
@@ -437,7 +437,7 @@ class USB2AudioInterface(Elaboratable):
 
             # convert audio stream to USB stream
             channels_to_usb_stream.channel_stream_in.payload.eq(adat_to_usb_fifo.r_data[0:24]),
-            channels_to_usb_stream.channel_stream_in.channel_no.eq(adat_to_usb_fifo.r_data[24:27]),
+            channels_to_usb_stream.channel_stream_in.channel_nr.eq(adat_to_usb_fifo.r_data[24:27]),
             channels_to_usb_stream.channel_stream_in.valid.eq(adat_to_usb_fifo.r_rdy),
             adat_to_usb_fifo.r_en.eq(channels_to_usb_stream.channel_stream_in.ready),
 
@@ -451,40 +451,47 @@ class USB2AudioInterface(Elaboratable):
             sof_wrap = Signal()
             m.d.comb += sof_wrap.eq(sof_counter == 0)
 
+            in_first = Signal()
+            in_valid = Signal()
+            in_ready = Signal()
+            in_payload = Signal()
+
+            m.d.comb += [
+                in_valid.eq(usb_to_channel_stream.usb_stream_in.valid),
+                in_ready.eq(usb_to_channel_stream.usb_stream_in.ready),
+                in_payload.eq(usb_to_channel_stream.usb_stream_in.payload),
+                in_first.eq(usb_to_channel_stream.usb_stream_in.first),
+            ]
+
             signals = [
-                usb.sof_detected,
-                #ep1_out.stream.valid,
-                #ep1_out.stream.ready,
-                #ep1_out.stream.payload,
-                #ep1_out.stream.first,
-                #ep1_out.stream.last,
-                #usb_to_channel_stream_in.valid,
-                #usb_to_channel_stream_in.ready,
-                #usb_to_channel_stream_in.payload,
-                #usb_to_channel_stream_in.first,
-                class_request_handler.interface_settings_changed,
-                class_request_handler.output_interface_altsetting_nr,
-                num_channels,
-                usb_to_channel_stream.usb_stream_in.last,
-                #usb_to_channel_stream.channel_stream_out.valid,
+                #usb.sof_detected,
+                #usb_to_channel_stream.usb_stream_in.last,
+                in_payload,
+                in_valid,
+                in_ready,
+                in_first,
+                usb_to_channel_stream.channel_stream_out.channel_nr,
+                usb_to_channel_stream.channel_stream_out.valid,
+                usb_to_channel_stream.state,
                 #usb_to_channel_stream.channel_stream_out.payload,
-                #usb_to_channel_stream.channel_stream_out.last,
-                #usb_to_channel_stream.channel_stream_out.channel_no,
-                usb_to_adat_fifo.r_level,
+                usb_to_channel_stream.channel_stream_out.first,
+                usb_to_channel_stream.channel_stream_out.last,
+                #usb_to_channel_stream.channel_stream_out.ready,
+                #usb_to_adat_fifo.r_level,
                 #usb_to_adat_fifo.r_rdy,
-                adat_transmitter.valid_in,
-                adat_transmitter.ready_out,
+                #adat_transmitter.valid_in,
+                #adat_transmitter.ready_out,
                 #adat_transmitter.addr_in,
-                adat_transmitter.last_in,
+                #adat_transmitter.last_in,
                 #adat_transmitter.sample_in,
                 #adat_transmitter.fifo_level_out,
-                adat_transmitter.frame_out,
-                adat_transmitter.underflow_out,
+                #adat_transmitter.frame_out,
+                #adat_transmitter.underflow_out,
                 #adat_transmitter.adat_out,
             ]
 
             signals_bits = sum([s.width for s in signals])
-            depth = int(33*8*1024/signals_bits)
+            depth = int(20*8*1024/signals_bits)
             m.submodules.ila = ila = \
                 StreamILA(
                     signals=signals,
