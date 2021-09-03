@@ -1,18 +1,19 @@
 [*]
 [*] GTKWave Analyzer v3.3.109 (w)1999-2020 BSI
-[*] Tue Aug 31 03:23:18 2021
+[*] Fri Sep  3 06:34:16 2021
 [*]
 [dumpfile] "channels_to_usb_stream.vcd"
-[dumpfile_mtime] "Tue Aug 31 03:22:55 2021"
-[dumpfile_size] 43794
+[dumpfile_mtime] "Fri Sep  3 06:33:25 2021"
+[dumpfile_size] 58650
 [savefile] "gateware/channels_to_usb_stream-bench.gtkw"
 [timestart] 0
 [size] 3828 2090
 [pos] -1 -1
-*-16.000000 542600 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-16.270115 854700 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] top.
+[treeopen] top.out_fifo.
 [sst_width] 447
-[signals_width] 345
+[signals_width] 360
 [sst_expanded] 1
 [sst_vpaned_height] 658
 @28
@@ -22,12 +23,12 @@ top.channel_payload[23:0]
 @28
 top.channel_ready
 top.channel_valid
-@25
+@24
 top.channel_nr[2:0]
 @200
 -Channels To USB
 @28
-top.fsm_state
+top.fifo_feeder_state
 @22
 top.current_sample[31:0]
 @24
@@ -35,17 +36,31 @@ top.current_channel[2:0]
 top.current_byte[1:0]
 @200
 -Output FIFO
-@22
-[color] 3
-top.w_data[7:0]
 @28
 [color] 3
 top.out_fifo.w_en
+@22
+[color] 3
+top.w_data[10:0]
+@23
+[color] 3
+top.r_data[10:0]
 @24
 [color] 3
 top.out_fifo.level[9:0]
+@28
+[color] 3
+top.r_en
 @200
 -USB Stream
+@28
+[color] 2
+top.packet_start_in
+[color] 2
+top.fifo_postprocess_state
+@24
+[color] 2
+top.out_channel[2:0]
 @22
 [color] 2
 top.payload[7:0]
@@ -53,6 +68,9 @@ top.payload[7:0]
 [color] 2
 top.valid
 [color] 2
-top.ready
++{out_ready} top.ready$1
+@24
+[color] 2
+top.done[8:0]
 [pattern_trace] 1
 [pattern_trace] 0

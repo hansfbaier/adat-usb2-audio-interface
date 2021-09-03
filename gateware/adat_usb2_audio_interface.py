@@ -37,7 +37,7 @@ class USB2AudioInterface(Elaboratable):
     """ USB Audio Class v2 interface """
     number_of_channels = 8
     bitwidth           = 24
-    MAX_PACKET_SIZE = 512 # NR_CHANNELS * 24 + 4
+    MAX_PACKET_SIZE    = 256
     USE_ILA = False
     ILA_MAX_PACKET_SIZE = 512
 
@@ -378,7 +378,7 @@ class USB2AudioInterface(Elaboratable):
             DomainRenamer("usb")(USBStreamToChannels(self.number_of_channels))
 
         m.submodules.channels_to_usb_stream = channels_to_usb_stream = \
-            DomainRenamer("usb")(ChannelsToUSBStream(self.number_of_channels))
+            DomainRenamer("usb")(ChannelsToUSBStream(self.number_of_channels, max_packet_size=self.MAX_PACKET_SIZE))
 
         num_channels = Signal(range(self.number_of_channels * 2), reset=2)
         m.d.comb += usb_to_channel_stream.no_channels_in.eq(num_channels)
@@ -439,6 +439,7 @@ class USB2AudioInterface(Elaboratable):
             channels_to_usb_stream.channel_stream_in.payload.eq(adat_to_usb_fifo.r_data[0:24]),
             channels_to_usb_stream.channel_stream_in.channel_nr.eq(adat_to_usb_fifo.r_data[24:27]),
             channels_to_usb_stream.channel_stream_in.valid.eq(adat_to_usb_fifo.r_rdy),
+            channels_to_usb_stream.packet_start_in.eq(ep2_in.data_requested),
             adat_to_usb_fifo.r_en.eq(channels_to_usb_stream.channel_stream_in.ready),
 
             # wire up USB audio IN
@@ -457,25 +458,29 @@ class USB2AudioInterface(Elaboratable):
             in_payload = Signal()
 
             m.d.comb += [
-                in_valid.eq(usb_to_channel_stream.usb_stream_in.valid),
-                in_ready.eq(usb_to_channel_stream.usb_stream_in.ready),
-                in_payload.eq(usb_to_channel_stream.usb_stream_in.payload),
-                in_first.eq(usb_to_channel_stream.usb_stream_in.first),
+                in_valid.eq(ep2_in.stream.valid),
+                in_ready.eq(ep2_in.stream.ready),
+                in_payload.eq(ep2_in.stream.payload),
+                in_first.eq(ep2_in.stream.first),
             ]
 
             signals = [
                 #usb.sof_detected,
                 #usb_to_channel_stream.usb_stream_in.last,
-                in_payload,
+                #in_payload,
+                channels_to_usb_stream.channel_stream_in.valid,
+                channels_to_usb_stream.channel_stream_in.ready,
+                channels_to_usb_stream.channel_stream_in.channel_nr,
+                channels_to_usb_stream.state,
+                channels_to_usb_stream.level,
+                channels_to_usb_stream.out_channel,
+                ep2_in.data_requested,
                 in_valid,
                 in_ready,
                 in_first,
-                usb_to_channel_stream.channel_stream_out.channel_nr,
-                usb_to_channel_stream.channel_stream_out.valid,
-                usb_to_channel_stream.state,
                 #usb_to_channel_stream.channel_stream_out.payload,
-                usb_to_channel_stream.channel_stream_out.first,
-                usb_to_channel_stream.channel_stream_out.last,
+                #usb_to_channel_stream.channel_stream_out.first,
+                #usb_to_channel_stream.channel_stream_out.last,
                 #usb_to_channel_stream.channel_stream_out.ready,
                 #usb_to_adat_fifo.r_level,
                 #usb_to_adat_fifo.r_rdy,
@@ -497,7 +502,7 @@ class USB2AudioInterface(Elaboratable):
                     signals=signals,
                     sample_depth=depth,
                     domain="usb", o_domain="usb",
-                    samples_pretrigger=512)
+                    samples_pretrigger=256)
 
             stream_ep = USBMultibyteStreamInEndpoint(
                 endpoint_number=3, # EP 3 IN
@@ -508,7 +513,7 @@ class USB2AudioInterface(Elaboratable):
 
             m.d.comb += [
                 stream_ep.stream.stream_eq(ila.stream),
-                ila.trigger.eq(adat_transmitter.underflow_out),
+                ila.trigger.eq(1),
             ]
 
             ILACoreParameters(ila).pickle()
@@ -525,6 +530,7 @@ class USB2AudioInterface(Elaboratable):
         return m
 
 if __name__ == "__main__":
+    #os.environ["LUNA_PLATFORM"] = "qmtech_xc7a35t_platform:JT51SynthPlatform"
     os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce15_platform:ADATFacePlatform"
     #os.environ["LUNA_PLATFORM"] = "tinybx_luna:TinyBxAdatPlatform"
     top_level_cli(USB2AudioInterface)
