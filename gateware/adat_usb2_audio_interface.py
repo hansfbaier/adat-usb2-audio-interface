@@ -439,7 +439,8 @@ class USB2AudioInterface(Elaboratable):
             channels_to_usb_stream.channel_stream_in.payload.eq(adat_to_usb_fifo.r_data[0:24]),
             channels_to_usb_stream.channel_stream_in.channel_nr.eq(adat_to_usb_fifo.r_data[24:27]),
             channels_to_usb_stream.channel_stream_in.valid.eq(adat_to_usb_fifo.r_rdy),
-            channels_to_usb_stream.packet_start_in.eq(ep2_in.data_requested),
+            channels_to_usb_stream.data_requested_in.eq(ep2_in.data_requested),
+            channels_to_usb_stream.frame_finished_in.eq(ep2_in.frame_finished),
             adat_to_usb_fifo.r_en.eq(channels_to_usb_stream.channel_stream_in.ready),
 
             # wire up USB audio IN
@@ -452,32 +453,34 @@ class USB2AudioInterface(Elaboratable):
             sof_wrap = Signal()
             m.d.comb += sof_wrap.eq(sof_counter == 0)
 
-            in_first = Signal()
-            in_valid = Signal()
-            in_ready = Signal()
+            usb_valid = Signal()
+            usb_ready = Signal()
             in_payload = Signal()
 
             m.d.comb += [
-                in_valid.eq(ep2_in.stream.valid),
-                in_ready.eq(ep2_in.stream.ready),
+                usb_valid.eq(ep2_in.stream.valid),
+                usb_ready.eq(ep2_in.stream.ready),
                 in_payload.eq(ep2_in.stream.payload),
-                in_first.eq(ep2_in.stream.first),
             ]
 
             signals = [
                 #usb.sof_detected,
                 #usb_to_channel_stream.usb_stream_in.last,
                 #in_payload,
-                channels_to_usb_stream.channel_stream_in.valid,
-                channels_to_usb_stream.channel_stream_in.ready,
+                #channels_to_usb_stream.channel_stream_in.valid,
+                #channels_to_usb_stream.channel_stream_in.ready,
                 channels_to_usb_stream.channel_stream_in.channel_nr,
-                channels_to_usb_stream.state,
                 channels_to_usb_stream.level,
                 channels_to_usb_stream.out_channel,
+                audio_in_frame_bytes,
                 ep2_in.data_requested,
-                in_valid,
-                in_ready,
-                in_first,
+                ep2_in.frame_finished,
+                channels_to_usb_stream.done,
+                channels_to_usb_stream.skipping,
+                channels_to_usb_stream.filling,
+                channels_to_usb_stream.channel_mismatch,
+                usb_valid,
+                usb_ready,
                 #usb_to_channel_stream.channel_stream_out.payload,
                 #usb_to_channel_stream.channel_stream_out.first,
                 #usb_to_channel_stream.channel_stream_out.last,
@@ -513,7 +516,7 @@ class USB2AudioInterface(Elaboratable):
 
             m.d.comb += [
                 stream_ep.stream.stream_eq(ila.stream),
-                ila.trigger.eq(1),
+                ila.trigger.eq(channels_to_usb_stream.channel_mismatch),
             ]
 
             ILACoreParameters(ila).pickle()

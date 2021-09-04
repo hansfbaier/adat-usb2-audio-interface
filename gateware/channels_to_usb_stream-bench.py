@@ -17,9 +17,9 @@ if __name__ == "__main__":
 
     def process():
         yield dut.usb_stream_out.ready.eq(0)
-        yield dut.packet_start_in.eq(1)
+        yield dut.frame_finished_in.eq(1)
         yield
-        yield dut.packet_start_in.eq(0)
+        yield dut.frame_finished_in.eq(0)
         yield
         yield
         yield
@@ -43,9 +43,9 @@ if __name__ == "__main__":
         yield dut.usb_stream_out.ready.eq(0)
         yield
         for _ in range(15): yield
-        yield dut.packet_start_in.eq(1)
+        yield dut.frame_finished_in.eq(1)
         yield
-        yield dut.packet_start_in.eq(0)
+        yield dut.frame_finished_in.eq(0)
         for _ in range(35): yield
         yield from send_one_frame(0x030201, 0)
         yield from send_one_frame(0x131211, 1)
