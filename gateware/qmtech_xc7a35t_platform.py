@@ -15,17 +15,19 @@ class JT51SynthClockDomainGenerator(Elaboratable):
         m = Module()
 
         # Create our domains
+        m.domains.fast    = ClockDomain()
         m.domains.sync    = ClockDomain()
         m.domains.usb     = ClockDomain()
+        m.domains.adat    = ClockDomain()
         m.domains.jt51    = ClockDomain()
         m.domains.jt51int = ClockDomain()
-        m.domains.adat    = ClockDomain()
 
-        usb_clock     = Signal()
+        fast_clock    = Signal()
         sync_clock    = Signal()
-        jt51_clock = Signal()
-        jt51_clock    = Signal()
+        usb_clock     = Signal()
         adat_clock    = Signal()
+        jt51_clock    = Signal()
+        jt51_clock    = Signal()
 
         mainpll_locked   = Signal()
         mainpll_feedback = Signal()
@@ -52,11 +54,16 @@ class JT51SynthClockDomainGenerator(Elaboratable):
             p_CLKOUT1_PHASE        = 0.000,
             p_CLKOUT1_DUTY_CYCLE   = 0.500,
             p_CLKIN1_PERIOD        = 20,
+            p_CLKOUT2_DIVIDE       = 15,  # 100MHz
+            p_CLKOUT2_PHASE        = 0.000,
+            p_CLKOUT2_DUTY_CYCLE   = 0.500,
+            p_CLKIN2_PERIOD        = 10,
             i_CLKFBIN              = mainpll_feedback,
             o_CLKFBOUT             = mainpll_feedback,
             i_CLKIN1               = clk_50,
             o_CLKOUT0              = usb_clock,
             o_CLKOUT1              = sync_clock,
+            o_CLKOUT2              = fast_clock,
             o_LOCKED               = mainpll_locked,
         )
 
@@ -110,26 +117,25 @@ class JT51SynthClockDomainGenerator(Elaboratable):
         # Connect up our clock domains.
         m.d.comb += [
             locked.eq(mainpll_locked & adatpll_locked & jt51pll_locked),
+            ClockSignal("fast").eq(fast_clock),
             ClockSignal("sync").eq(sync_clock),
             ClockSignal("usb").eq(usb_clock),
-            ClockSignal("jt51").eq(jt51_clock),
             ClockSignal("adat").eq(adat_clock),
+            ClockSignal("jt51").eq(jt51_clock),
             ResetSignal("sync").eq(locked),
+            ResetSignal("fast").eq(locked),
             ResetSignal("jt51").eq(locked),
             ResetSignal("adat").eq(locked),
             ResetSignal("sync").eq(locked),
         ]
-
-        #platform.add_clock_constraint(main_clock, 60e6)
-
-        ground = platform.request("ground")
-        m.d.comb += ground.eq(0)
 
         return m
 
 class JT51SynthPlatform(QMTechXC7A35TPlatform, LUNAPlatform):
     clock_domain_generator = JT51SynthClockDomainGenerator
     default_usb_connection = "ulpi"
+    number_of_channels     = 8
+    bitwidth               = 24
 
     def toolchain_prepare(self, fragment, name, **kwargs):
         plan = super().toolchain_prepare(fragment, name, **kwargs)
@@ -148,28 +154,18 @@ class JT51SynthPlatform(QMTechXC7A35TPlatform, LUNAPlatform):
         self.resources += [
             # USB2 / ULPI section of the USB3300.
             ULPIResource("ulpi", 0,
-                data="J_3:31 J_3:29 J_3:27 J_3:25 J_3:23 J_3:21 J_3:19 J_3:17",
-                clk="J_3:9", clk_dir="o",
-                dir="J_3:11", nxt="J_3:13", stp="J_3:15", rst="J_3:7", rst_invert=True, # USB3320 reset is active low
-                attrs=Attrs(IOSTANDARD="LVCMOS18", SLEW="FAST")),
+                data="J_2:17 J_2:19 J_2:21 J_2:23 J_2:18 J_2:20 J_2:22 J_2:24",
+                clk="J_2:7", clk_dir="o", # this needs to be a clock pin of the FPGA or the core won't work
+                dir="J_2:11", nxt="J_2:13", stp="J_2:9", rst="J_2:8", rst_invert=True, # USB3320 reset is active low
+                attrs=Attrs(IOSTANDARD="LVCMOS33")),
 
-            Resource("ground", 0, Pins(" ".join([f"J_3:{i}" for i in range(8, 33, 2)]), dir="o"), Attrs(IOSTANDARD="LVCMOS18")),
-
-            Resource("debug_led", 0, Pins("J_2:34", dir="o"), Attrs(IOSTANDARD="LVCMOS33")),
-            Resource("debug_led", 1, Pins("J_2:36", dir="o"), Attrs(IOSTANDARD="LVCMOS33")),
-            Resource("debug_led", 2, Pins("J_2:38", dir="o"), Attrs(IOSTANDARD="LVCMOS33")),
-            Resource("debug_led", 3, Pins("J_2:40", dir="o"), Attrs(IOSTANDARD="LVCMOS33")),
-            Resource("debug_led", 4, Pins("J_2:42", dir="o"), Attrs(IOSTANDARD="LVCMOS33")),
-            Resource("debug_led", 5, Pins("J_2:44", dir="o"), Attrs(IOSTANDARD="LVCMOS33")),
-            Resource("debug_led", 6, Pins("J_2:46", dir="o"), Attrs(IOSTANDARD="LVCMOS33")),
-            Resource("debug_led", 7, Pins("J_2:48", dir="o"), Attrs(IOSTANDARD="LVCMOS33")),
-
-            UARTResource(0, rx="J_2:8", tx="J_2:10", attrs=Attrs(IOSTANDARD="LVCMOS33")),
+            Resource("debug_led", 0, PinsN("J_2:40 J_2:39 J_2:38 J_2:37 J_2:36", dir="o"),
+                Attrs(IOSTANDARD="LVCMOS33")),
 
             Resource("adat", 0,
-                Subsignal("tx", Pins("J_2:12", dir="o")),
-                Subsignal("rx", Pins("J_2:14", dir="i")),
+                Subsignal("tx", Pins("J_1:5", dir="o")),
+                Subsignal("rx", Pins("J_1:6", dir="i")),
                 Attrs(IOSTANDARD="LVCMOS33"))
         ]
 
-        super().__init__(standalone=True, toolchain=toolchain)
+        super().__init__(standalone=False, toolchain=toolchain)
