@@ -534,6 +534,8 @@ class USB2AudioInterface(Elaboratable):
 
 if __name__ == "__main__":
     #os.environ["LUNA_PLATFORM"] = "qmtech_xc7a35t_platform:JT51SynthPlatform"
+    #os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce15_platform:ADATFacePlatform"
+    os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce55_platform:ADATFacePlatform"
     os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce15_platform:ADATFacePlatform"
     #os.environ["LUNA_PLATFORM"] = "tinybx_luna:TinyBxAdatPlatform"
     top_level_cli(USB2AudioInterface)
