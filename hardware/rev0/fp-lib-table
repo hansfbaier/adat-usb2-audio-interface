@@ -1,0 +1,4 @@
+(fp_lib_table
+  (lib (name "toslink")(type "KiCad")(uri "/home/jack/EDA/kicad-libraries/toslink")(options "")(descr ""))
+  (lib (name "footprints")(type "KiCad")(uri "${KIPRJMOD}/footprints")(options "")(descr ""))
+)

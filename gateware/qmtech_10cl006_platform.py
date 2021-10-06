@@ -6,6 +6,8 @@ from nmigen_boards.qmtech_10cl006 import QMTech10CL006Platform
 
 from luna.gateware.platform.core import LUNAPlatform
 
+from adatface_rev0_baseboard import ADATFaceRev0Baseboard
+
 class ADATFaceClockDomainGenerator(Elaboratable):
     def __init__(self, *, clock_frequencies=None, clock_signal_name=None):
         pass
@@ -121,21 +123,10 @@ class ADATFacePlatform(QMTech10CL006Platform, LUNAPlatform):
         return templates
 
     def __init__(self):
-        self.resources += [
-            # USB2 / ULPI section of the USB3300.
-            ULPIResource("ulpi", 0,
-                data="J_2:17 J_2:19 J_2:21 J_2:23 J_2:18 J_2:20 J_2:22 J_2:24",
-                clk="J_2:7", clk_dir="o", # this needs to be a clock pin of the FPGA or the core won't work
-                dir="J_2:11", nxt="J_2:13", stp="J_2:9", rst="J_2:8", rst_invert=True, # USB3320 reset is active low
-                attrs=Attrs(io_standard="3.3-V LVCMOS")),
-
-            Resource("debug_led", 0, PinsN("J_2:40 J_2:39 J_2:38 J_2:37 J_2:36", dir="o"),
-                Attrs(io_standard="3.3-V LVCMOS")),
-
-            Resource("adat", 0,
-                Subsignal("tx", Pins("J_1:5", dir="o")),
-                Subsignal("rx", Pins("J_1:6", dir="i")),
-                Attrs(io_standard="3.3-V LVCMOS"))
-        ]
+        self.resources += ADATFaceRev0Baseboard.resources
+        # swap connector numbers, because on ADATface the connector
+        # names are swapped compared to the QMTech daughterboard
+        self.connectors[0].number = 3
+        self.connectors[1].number = 2
 
         super().__init__(standalone=False)

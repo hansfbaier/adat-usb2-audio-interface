@@ -2,9 +2,10 @@ from nmigen import *
 from nmigen.build import *
 
 from nmigen_boards.resources import *
-from nmigen_boards.qmtech_ep4ce15 import QMTechEP4CE15Platform
+from nmigen_boards.qmtech_ep4ce import QMTechEP4CEPlatform
 
 from luna.gateware.platform.core import LUNAPlatform
+from adatface_rev0_baseboard import ADATFaceRev0Baseboard
 
 class ADATFaceClockDomainGenerator(Elaboratable):
     def __init__(self, *, clock_frequencies=None, clock_signal_name=None):
@@ -101,7 +102,7 @@ class ADATFaceClockDomainGenerator(Elaboratable):
 
         return m
 
-class ADATFacePlatform(QMTechEP4CE15Platform, LUNAPlatform):
+class ADATFacePlatform(QMTechEP4CEPlatform, LUNAPlatform):
     clock_domain_generator = ADATFaceClockDomainGenerator
     default_usb_connection = "ulpi"
     number_of_channels     = 8
@@ -124,28 +125,9 @@ class ADATFacePlatform(QMTechEP4CE15Platform, LUNAPlatform):
         return templates
 
     def __init__(self):
-        self.resources += [
-            # USB2 / ULPI section of the USB3300.
-            ULPIResource("ulpi", 0,
-                data="J_2:31 J_2:29 J_2:27 J_2:25 J_2:23 J_2:21 J_2:19 J_2:17",
-                clk="J_2:9", clk_dir="o", # this needs to be a clock pin of the FPGA or the core won't work
-                dir="J_2:11", nxt="J_2:13", stp="J_2:15", rst="J_2:7", rst_invert=True, # USB3320 reset is active low
-                attrs=Attrs(io_standard="3.3-V LVCMOS")),
-
-            Resource("ground", 0, Pins(" ".join([f"J_2:{i}" for i in range(12, 33, 2)]), dir="o"),
-                Attrs(io_standard="3.3-V LVCMOS")),
-
-            Resource("debug_led", 0, Pins("J_2:34 J_2:36 J_2:38 J_2:40 J_2:42 J_2:44 J_2:46 J_2:48 ", dir="o"),
-                Attrs(io_standard="3.3-V LVCMOS")),
-            Resource("debug", 0, Pins("J_2:49 J_2:50 J_2:51 J_2:52 J_2:53 J_2:54 J_2:55 J_2:56", dir="o"),
-                Attrs(io_standard="3.3-V LVCMOS")),
-
-            UARTResource(0, rx="J_2:8", tx="J_2:10", attrs=Attrs(io_standard="3.3-V LVCMOS")),
-
-            Resource("adat", 0,
-                Subsignal("tx", Pins("J_3:7", dir="o")),
-                Subsignal("rx", Pins("J_3:8", dir="i")),
-                Attrs(io_standard="3.3-V LVCMOS"))
-        ]
-
-        super().__init__(standalone=True)
+        self.resources += ADATFaceRev0Baseboard.resources
+        # swap connector numbers, because on ADATface the connector
+        # names are swapped compared to the QMTech daughterboard
+        self.connectors[0].number = 3
+        self.connectors[1].number = 2
+        super().__init__(no_kluts=15, standalone=False)

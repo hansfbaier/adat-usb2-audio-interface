@@ -8,7 +8,7 @@ from nmigen              import *
 from nmigen.lib.fifo     import AsyncFIFO
 from nmigen.lib.cdc      import FFSynchronizer
 
-from nmigen_library.stream  import connect_stream_to_fifo, connect_fifo_to_stream
+from nmigen_library.stream  import connect_stream_to_fifo
 
 from luna                import top_level_cli
 from luna.usb2           import USBDevice, USBIsochronousInMemoryEndpoint, USBIsochronousOutStreamEndpoint, USBIsochronousInStreamEndpoint
@@ -268,7 +268,7 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.car = platform.clock_domain_generator()
 
         # Create our USB-to-serial converter.
-        ulpi = platform.request(platform.default_usb_connection)
+        ulpi = platform.request(platform.default_usb_connection, 1)
         m.submodules.usb = usb = USBDevice(bus=ulpi)
 
         # Add our standard control endpoint to the device.
@@ -399,7 +399,7 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.adat_transmitter = adat_transmitter = ADATTransmitter(fifo_depth=4)
         m.submodules.adat_receiver    = adat_receiver    = DomainRenamer("fast")(ADATReceiver(int(100e6)))
 
-        adat = platform.request("adat")
+        adat = platform.request("toslink", 1)
 
         m.d.comb += [
             # convert USB stream to audio stream
@@ -521,21 +521,22 @@ class USB2AudioInterface(Elaboratable):
 
             ILACoreParameters(ila).pickle()
 
-        led = platform.request("debug_led")
+        usb_aux1 = platform.request("usb_aux", 1)
+        usb_aux2 = platform.request("usb_aux", 2)
+        leds = platform.request("leds")
         m.d.comb += [
-            led[0].eq(usb.tx_activity_led),
-            led[1].eq(usb.rx_activity_led),
-            led[2].eq(usb.suspended),
-            led[3].eq(usb.reset_detected),
-            led[4].eq(adat_transmitter.underflow_out),
+            leds.active1.eq(usb.tx_activity_led | usb.rx_activity_led),
+            leds.suspended1.eq(usb.suspended),
+            leds.active2.eq(0),
+            leds.suspended2.eq(0),
+            leds.usb1.eq(usb_aux1.vbus),
+            leds.usb2.eq(usb_aux2.vbus),
         ]
 
         return m
 
 if __name__ == "__main__":
-    #os.environ["LUNA_PLATFORM"] = "qmtech_xc7a35t_platform:JT51SynthPlatform"
     #os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce15_platform:ADATFacePlatform"
     os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce55_platform:ADATFacePlatform"
-    os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce15_platform:ADATFacePlatform"
-    #os.environ["LUNA_PLATFORM"] = "tinybx_luna:TinyBxAdatPlatform"
+    #os.environ["LUNA_PLATFORM"] = "qmtech_10cl006_platform:ADATFacePlatform"
     top_level_cli(USB2AudioInterface)
