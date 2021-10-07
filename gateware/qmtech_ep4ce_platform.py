@@ -21,7 +21,7 @@ class ADATFaceClockDomainGenerator(Elaboratable):
         m.domains.sync = ClockDomain("sync")
         m.domains.fast = ClockDomain("fast")
         m.domains.adat = ClockDomain("adat")
-        m.domains.jt51 = ClockDomain("jt51")
+        m.domains.dac  = ClockDomain("dac")
 
         clk = platform.request(platform.default_clk)
 
@@ -30,7 +30,7 @@ class ADATFaceClockDomainGenerator(Elaboratable):
 
         sys_locked   = Signal()
         sound_locked = Signal()
-        reset       = Signal()
+        reset        = Signal()
 
         m.submodules.mainpll = Instance("ALTPLL",
             p_BANDWIDTH_TYPE         = "AUTO",
@@ -63,18 +63,17 @@ class ADATFaceClockDomainGenerator(Elaboratable):
         adat_locked = Signal()
         m.submodules.soundpll = Instance("ALTPLL",
             p_BANDWIDTH_TYPE         = "AUTO",
+
             # ADAT clock = 12.288 MHz = 48 kHz * 256
             p_CLK0_DIVIDE_BY         = 83,
             p_CLK0_DUTY_CYCLE        = 50,
             p_CLK0_MULTIPLY_BY       = 17,
             p_CLK0_PHASE_SHIFT       = 0,
-            # 56 kHz output sample rate is about 2 cents off of A=440Hz
-            # but at least we have a frequency a PLL can generate without
-            # a dedicated 3.579545 MHz NTSC crystal
-            # 3.584 MHz = 56kHz * 64 (1 sample takes 64 JT51 cycles)
-            p_CLK1_DIVIDE_BY         = 318,
+
+            # I2S DAC clock 48k = 3.072 MHz = 48 kHz * 32 bit * 2 channels
+            p_CLK1_DIVIDE_BY         = 83 * 4,
             p_CLK1_DUTY_CYCLE        = 50,
-            p_CLK1_MULTIPLY_BY       = 19,
+            p_CLK1_MULTIPLY_BY       = 17,
             p_CLK1_PHASE_SHIFT       = 0,
 
             p_INCLK0_INPUT_FREQUENCY = 16667,
@@ -90,12 +89,12 @@ class ADATFaceClockDomainGenerator(Elaboratable):
             ClockSignal("fast").eq(sys_clocks[0]),
             ClockSignal("usb") .eq(sys_clocks[1]),
             ClockSignal("sync").eq(sys_clocks[2]),
-            ClockSignal("jt51").eq(sound_clocks[1]),
+            ClockSignal("dac").eq(sound_clocks[1]),
             ClockSignal("adat").eq(sound_clocks[0]),
             ResetSignal("fast").eq(reset),
             ResetSignal("usb") .eq(reset),
             ResetSignal("sync").eq(reset),
-            ResetSignal("jt51").eq(reset),
+            ResetSignal("dac").eq(reset),
             ResetSignal("adat").eq(reset),
         ]
 
@@ -103,7 +102,6 @@ class ADATFaceClockDomainGenerator(Elaboratable):
 
 class ADATFacePlatform(QMTechEP4CEPlatform, LUNAPlatform):
     clock_domain_generator = ADATFaceClockDomainGenerator
-    default_usb_connection = "ulpi"
     number_of_channels     = 8
     bitwidth               = 24
 

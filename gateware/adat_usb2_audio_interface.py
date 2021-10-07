@@ -269,7 +269,7 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.car = platform.clock_domain_generator()
 
         # Create our USB-to-serial converter.
-        ulpi1 = platform.request(platform.default_usb_connection, 1)
+        ulpi1 = platform.request("ulpi", 1)
         m.submodules.usb1 = usb1 = USBDevice(bus=ulpi1)
 
         # Add our standard control endpoint to the device.
@@ -541,7 +541,6 @@ class USB2AudioInterface(Elaboratable):
         return m
 
 if __name__ == "__main__":
-    #os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce15_platform:ADATFacePlatform"
-    os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce55_platform:ADATFacePlatform"
+    os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce_platform:ADATFacePlatform"
     #os.environ["LUNA_PLATFORM"] = "qmtech_10cl006_platform:ADATFacePlatform"
     top_level_cli(USB2AudioInterface)
