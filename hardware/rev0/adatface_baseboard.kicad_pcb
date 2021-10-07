@@ -702,6 +702,11 @@
       (net 27 "/TOSLINK1_RX") (pinfunction "VOUT") (pintype "output") (tstamp 7db24aa5-c55b-4057-8e4f-f8257cabb0fe))
     (pad "NC1" thru_hole circle locked (at 2.54 0 90) (size 1.65 1.65) (drill 1.1) (layers *.Cu *.Mask) (tstamp 062f8759-348c-4794-8302-9ae026f840a7))
     (pad "NC2" thru_hole circle locked (at -2.54 0 90) (size 1.65 1.65) (drill 1.1) (layers *.Cu *.Mask) (tstamp 6ed07f00-f2ae-492c-94b2-e06661f7bbaa))
+    (model "${KIPRJMOD}/3d/PLT133_T10.step"
+      (offset (xyz 0 8.5 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz -90 0 0))
+    )
   )
 
   (footprint "toslink:T10W" (layer "F.Cu")
@@ -747,6 +752,11 @@
       (net 96 "unconnected-(TR2-Pad4)") (pinfunction "NC") (pintype "no_connect") (tstamp cbbe4b3a-a2d6-4c39-aa1e-4a7762c146c2))
     (pad "5" thru_hole circle locked (at 2.54 0 270) (size 1.725 1.725) (drill 1.15) (layers *.Cu *.Mask)
       (net 95 "unconnected-(TR2-Pad5)") (pinfunction "NC") (pintype "no_connect") (tstamp b48d78b4-0060-4029-9d2d-fad37ece133c))
+    (model "${KIPRJMOD}/3d/PLT133_T10.step"
+      (offset (xyz 0 -8.5 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz -90 0 180))
+    )
   )
 
   (footprint "Inductor_SMD:L_0805_2012Metric" placed (layer "F.Cu")
@@ -835,6 +845,11 @@
       (net 98 "unconnected-(TR3-Pad4)") (pinfunction "NC") (pintype "no_connect") (tstamp f372fa95-2575-4907-b3d2-6bd4e465c314))
     (pad "5" thru_hole circle locked (at 2.54 0 270) (size 1.725 1.725) (drill 1.15) (layers *.Cu *.Mask)
       (net 97 "unconnected-(TR3-Pad5)") (pinfunction "NC") (pintype "no_connect") (tstamp 84cb2d76-7f26-4441-9375-23b0ad08bcca))
+    (model "${KIPRJMOD}/3d/PLT133_T10.step"
+      (offset (xyz 0 -8.5 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz -90 0 180))
+    )
   )
 
   (footprint "Capacitor_SMD:C_0603_1608Metric" placed (layer "F.Cu")
@@ -1600,6 +1615,11 @@
       (net 39 "/TOSLINK4_RX") (pinfunction "VOUT") (pintype "output") (tstamp f889e1f5-7740-4af9-9721-c239435cecf2))
     (pad "NC1" thru_hole circle locked (at 2.54 0 90) (size 1.65 1.65) (drill 1.1) (layers *.Cu *.Mask) (tstamp f8799f30-a0fe-4aa7-a4b8-5abc4d72e640))
     (pad "NC2" thru_hole circle locked (at -2.54 0 90) (size 1.65 1.65) (drill 1.1) (layers *.Cu *.Mask) (tstamp 5fb24e2a-dac2-4a52-97ae-719e0f57eac2))
+    (model "${KIPRJMOD}/3d/PLT133_T10.step"
+      (offset (xyz 0 8.5 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz -90 0 0))
+    )
   )
 
   (footprint "LED_SMD:LED_0603_1608Metric" placed (layer "F.Cu")
@@ -2284,10 +2304,10 @@
       (net 85 "Net-(J4-PadS1)") (pinfunction "SHIELD") (pintype "passive") (tstamp b16445b0-e319-4e98-8daa-0b65a6dddfca))
     (pad "S1" thru_hole oval locked (at 4.32 -3.105 90) (size 1 2.1) (drill oval 0.6 1.7) (layers *.Cu *.Mask)
       (net 85 "Net-(J4-PadS1)") (pinfunction "SHIELD") (pintype "passive") (tstamp b6062dce-e9cb-4ff2-bf2b-b61b9b6c2a65))
-    (model "${KISYS3DMOD}/Connector_USB.3dshapes/USB_C_Receptacle_XKB_U262-16XN-4BVC11.wrl"
-      (offset (xyz 0 0 0))
+    (model "${KIPRJMOD}/3d/HRO TYPE-C-31-M-12.step"
+      (offset (xyz -4.5 -3.8 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
+      (rotate (xyz 90 180 180))
     )
   )
 
@@ -2685,6 +2705,11 @@
       (net 35 "/TOSLINK3_RX") (pinfunction "VOUT") (pintype "output") (tstamp d6e2f080-c21f-44f1-a8ee-ccd24f1a840a))
     (pad "NC1" thru_hole circle locked (at 2.54 0 90) (size 1.65 1.65) (drill 1.1) (layers *.Cu *.Mask) (tstamp 69cf5c3c-44c2-47d7-b84b-01aa09a86ab8))
     (pad "NC2" thru_hole circle locked (at -2.54 0 90) (size 1.65 1.65) (drill 1.1) (layers *.Cu *.Mask) (tstamp c75b1554-44af-451e-9a2d-f3b036435449))
+    (model "${KIPRJMOD}/3d/PLT133_T10.step"
+      (offset (xyz 0 8.5 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz -90 0 0))
+    )
   )
 
   (footprint "Capacitor_SMD:C_0603_1608Metric" placed (layer "F.Cu")
@@ -3668,6 +3693,11 @@
       (net 100 "unconnected-(TR4-Pad4)") (pinfunction "NC") (pintype "no_connect") (tstamp 46716b68-f181-4c58-8aa1-86f02ba13ec4))
     (pad "5" thru_hole circle locked (at 2.54 0 270) (size 1.725 1.725) (drill 1.15) (layers *.Cu *.Mask)
       (net 99 "unconnected-(TR4-Pad5)") (pinfunction "NC") (pintype "no_connect") (tstamp 4419396b-c2bc-4022-9a83-6e48012ff8ba))
+    (model "${KIPRJMOD}/3d/PLT133_T10.step"
+      (offset (xyz 0 -8.5 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz -90 0 180))
+    )
   )
 
   (footprint "Resistor_SMD:R_0603_1608Metric" placed (layer "F.Cu")
@@ -4127,6 +4157,11 @@
       (net 31 "/TOSLINK2_RX") (pinfunction "VOUT") (pintype "output") (tstamp 42b3424f-8ab5-4886-8344-11b690ccbfec))
     (pad "NC1" thru_hole circle locked (at 2.54 0 90) (size 1.65 1.65) (drill 1.1) (layers *.Cu *.Mask) (tstamp daaf2415-e2f1-4097-8c6e-0efdc33308db))
     (pad "NC2" thru_hole circle locked (at -2.54 0 90) (size 1.65 1.65) (drill 1.1) (layers *.Cu *.Mask) (tstamp 070e124c-72c0-4c6c-83fc-993d4bd021ec))
+    (model "${KIPRJMOD}/3d/PLT133_T10.step"
+      (offset (xyz 0 8.5 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz -90 0 0))
+    )
   )
 
   (footprint "Capacitor_SMD:C_0603_1608Metric" placed (layer "F.Cu")
@@ -4264,6 +4299,11 @@
       (net 94 "unconnected-(TR1-Pad4)") (pinfunction "NC") (pintype "no_connect") (tstamp ffde2b6f-7653-4f1e-b280-b86fd3310dcb))
     (pad "5" thru_hole circle locked (at 2.54 0 270) (size 1.725 1.725) (drill 1.15) (layers *.Cu *.Mask)
       (net 93 "unconnected-(TR1-Pad5)") (pinfunction "NC") (pintype "no_connect") (tstamp 8a449947-379e-4fcf-8769-cf5101cc7335))
+    (model "${KIPRJMOD}/3d/PLT133_T10.step"
+      (offset (xyz 0 -8.5 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz -90 0 180))
+    )
   )
 
   (footprint "Connector_PinHeader_2.54mm:PinHeader_2x32_P2.54mm_Vertical" (layer "F.Cu")
@@ -4552,7 +4592,7 @@
       (net 6 "+3V3") (pinfunction "VDDIO") (pintype "power_in") (tstamp 1062598f-d187-4e29-8c69-48dba0acacdc))
     (pad "33" smd rect locked (at 0 0) (size 3.3 3.3) (layers "F.Cu" "F.Mask")
       (net 1 "GND") (pinfunction "GND") (pintype "power_in") (tstamp 4fb1b77b-d15e-4513-a015-a0be5202c87e))
-    (model "${KISYS3DMOD}/Package_DFN_QFN.3dshapes/QFN-32-1EP_5x5mm_P0.5mm_EP3.3x3.3mm.wrl"
+    (model "${KIPRJMOD}/3d/QFN-32-1EP_5x5mm_P0.5mm_EP3.3x3.3mm.wrl"
       (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -4722,10 +4762,10 @@
       (net 86 "Net-(J5-PadS1)") (pinfunction "SHIELD") (pintype "passive") (tstamp bd6b4927-b869-4c79-95ff-48adf4baf0d0))
     (pad "S1" thru_hole oval locked (at -4.32 -3.105 90) (size 1 2.1) (drill oval 0.6 1.7) (layers *.Cu *.Mask)
       (net 86 "Net-(J5-PadS1)") (pinfunction "SHIELD") (pintype "passive") (tstamp ed9ccb88-af5c-4840-b263-8ab45c2a2e2e))
-    (model "${KISYS3DMOD}/Connector_USB.3dshapes/USB_C_Receptacle_XKB_U262-16XN-4BVC11.wrl"
-      (offset (xyz 0 0 0))
+    (model "${KIPRJMOD}/3d/HRO TYPE-C-31-M-12.step"
+      (offset (xyz -4.5 -3.8 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
+      (rotate (xyz 90 180 180))
     )
   )
 
@@ -4842,7 +4882,7 @@
       (net 6 "+3V3") (pinfunction "VDDIO") (pintype "power_in") (tstamp 8ab5a35c-adeb-420a-bd6a-7607b1722c43))
     (pad "33" smd rect locked (at 0 0) (size 3.3 3.3) (layers "F.Cu" "F.Mask")
       (net 1 "GND") (pinfunction "GND") (pintype "power_in") (tstamp 0e903b1b-75ab-421c-bcd9-3cf621baddca))
-    (model "${KISYS3DMOD}/Package_DFN_QFN.3dshapes/QFN-32-1EP_5x5mm_P0.5mm_EP3.3x3.3mm.wrl"
+    (model "${KIPRJMOD}/3d/QFN-32-1EP_5x5mm_P0.5mm_EP3.3x3.3mm.wrl"
       (offset (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
