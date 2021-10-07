@@ -399,7 +399,7 @@ class USB2AudioInterface(Elaboratable):
 
         m.submodules.adat1_transmitter = adat1_transmitter = ADATTransmitter(fifo_depth=4)
         m.submodules.adat1_receiver    = adat1_receiver    = DomainRenamer("fast")(ADATReceiver(int(100e6)))
-        adat = platform.request("toslink", 1)
+        adat1_pads = platform.request("toslink", 1)
 
         m.submodules.dac1_transmitter = dac1 = DomainRenamer("usb")(I2STransmitter(sample_width=24))
         m.submodules.dac2_transmitter = dac2 = DomainRenamer("usb")(I2STransmitter(sample_width=24))
@@ -430,10 +430,10 @@ class USB2AudioInterface(Elaboratable):
             adat1_transmitter.user_data_in .eq(0),
 
             # ADAT output
-            adat.tx.eq(adat1_transmitter.adat_out),
+            adat1_pads.tx.eq(adat1_transmitter.adat_out),
 
             # ADAT input
-            adat1_receiver.adat_in.eq(adat.rx),
+            adat1_receiver.adat_in.eq(adat1_pads.rx),
 
             # wire up receive FIFO to ADAT receiver
             adat_to_usb1_fifo.w_data[0:24]  .eq(adat1_receiver.sample_out),
