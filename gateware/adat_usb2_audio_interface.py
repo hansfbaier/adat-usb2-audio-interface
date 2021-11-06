@@ -49,22 +49,19 @@ class USB2AudioInterface(Elaboratable):
         self.number_of_channels = platform.number_of_channels
         self.bitwidth           = platform.bitwidth
 
-        # Generate our domain clocks/resets.
         m.submodules.car = platform.clock_domain_generator()
 
-        # Create our USB-to-serial converter.
         ulpi1 = platform.request("ulpi", 1)
         m.submodules.usb1 = usb1 = USBDevice(bus=ulpi1)
 
-        # Add our standard control endpoint to the device.
         descriptors = USBDescriptors(max_packet_size=self.MAX_PACKET_SIZE, number_of_channels=self.number_of_channels, use_ila=self.USE_ILA).create_descriptors()
+
         control_ep = usb1.add_control_endpoint()
         control_ep.add_standard_request_handlers(descriptors, blacklist=[
             lambda setup:   (setup.type    == USBRequestType.STANDARD)
                           & (setup.request == USBStandardRequests.SET_INTERFACE)
         ])
 
-        # Attach our class request handlers.
         class_request_handler = UAC2RequestHandlers()
         control_ep.add_request_handler(class_request_handler)
 
