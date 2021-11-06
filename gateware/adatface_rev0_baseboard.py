@@ -14,8 +14,8 @@ class ADATFaceRev0Baseboard:
             Subsignal("sync4",      Pins ("J_3:54", dir="o")),
             Subsignal("active1",    Pins ("J_3:51", dir="o")),
             Subsignal("active2",    Pins ("J_3:49", dir="o")),
-            Subsignal("suspended1", PinsN("J_3:52", dir="o")),
-            Subsignal("suspended2", PinsN("J_3:50", dir="o")),
+            Subsignal("suspended1", Pins ("J_3:52", dir="o")),
+            Subsignal("suspended2", Pins ("J_3:50", dir="o")),
             Attrs(io_standard="3.3-V LVCMOS")),
 
 
@@ -81,4 +81,7 @@ class ADATFaceRev0Baseboard:
             Subsignal("tx", Pins("J_2:7", dir="o")),
             Subsignal("rx", Pins("J_2:9", dir="i")),
             Attrs(io_standard="3.3-V LVCMOS")),
+
+        # Debug
+        SPIResource(0, clk="J_2:12", copi="J_2:8", cipo=None, cs_n="J_2:10", attrs=Attrs(io_standard="3.3-V LVCMOS")),
     ]

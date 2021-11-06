@@ -8,8 +8,9 @@ from nmigen              import *
 from nmigen.lib.fifo     import AsyncFIFO
 from nmigen.lib.cdc      import FFSynchronizer
 
-from nmigen_library.stream  import connect_stream_to_fifo
-from nmigen_library.io.i2s  import I2STransmitter
+from nmigen_library.stream       import connect_stream_to_fifo
+from nmigen_library.io.i2s       import I2STransmitter
+from nmigen_library.io.max7219   import SerialLEDArray, NumberToSevenSegmentHex
 
 from luna                import top_level_cli
 from luna.usb2           import USBDevice, USBIsochronousInMemoryEndpoint, USBIsochronousOutStreamEndpoint, USBIsochronousInStreamEndpoint
@@ -469,11 +470,6 @@ class USB2AudioInterface(Elaboratable):
             ]
 
             signals = [
-                #usb.sof_detected,
-                #usb_to_channel_stream.usb_stream_in.last,
-                #in_payload,
-                #channels_to_usb_stream.channel_stream_in.valid,
-                #channels_to_usb_stream.channel_stream_in.ready,
                 channels_to_usb1_stream.channel_stream_in.channel_nr,
                 channels_to_usb1_stream.level,
                 channels_to_usb1_stream.out_channel,
@@ -486,21 +482,6 @@ class USB2AudioInterface(Elaboratable):
                 channels_to_usb1_stream.channel_mismatch,
                 usb_valid,
                 usb_ready,
-                #usb_to_channel_stream.channel_stream_out.payload,
-                #usb_to_channel_stream.channel_stream_out.first,
-                #usb_to_channel_stream.channel_stream_out.last,
-                #usb_to_channel_stream.channel_stream_out.ready,
-                #usb_to_adat_fifo.r_level,
-                #usb_to_adat_fifo.r_rdy,
-                #adat_transmitter.valid_in,
-                #adat_transmitter.ready_out,
-                #adat_transmitter.addr_in,
-                #adat_transmitter.last_in,
-                #adat_transmitter.sample_in,
-                #adat_transmitter.fifo_level_out,
-                #adat_transmitter.frame_out,
-                #adat_transmitter.underflow_out,
-                #adat_transmitter.adat_out,
             ]
 
             signals_bits = sum([s.width for s in signals])
@@ -536,6 +517,24 @@ class USB2AudioInterface(Elaboratable):
             leds.suspended2.eq(0),
             leds.usb1.eq(usb_aux1.vbus),
             leds.usb2.eq(usb_aux2.vbus),
+        ]
+
+        # DEBUG display
+
+        adat1_underflow_count = Signal(16)
+
+        with m.If(~usb1.suspended & adat1_transmitter.underflow_out):
+            m.d.sync += adat1_underflow_count.eq(adat1_underflow_count + 1)
+
+        spi = platform.request("spi")
+        m.submodules.sevensegment = sevensegment = DomainRenamer("usb")(NumberToSevenSegmentHex(width=32))
+        m.submodules.led_display  = led_display  = DomainRenamer("usb")(SerialLEDArray(divisor=10, init_delay=24e6))
+        m.d.comb += [
+            sevensegment.number_in[0:16].eq(adat1_underflow_count),
+            sevensegment.dots_in.eq(leds),
+            *led_display.connect_to_resource(spi),
+            Cat(led_display.digits_in).eq(sevensegment.seven_segment_out),
+            led_display.valid_in.eq(1),
         ]
 
         return m
