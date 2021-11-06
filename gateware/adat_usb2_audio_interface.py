@@ -303,12 +303,12 @@ class USB2AudioInterface(Elaboratable):
 
         adat1_underflow_count = Signal(16)
 
-        with m.If(~usb1.suspended & adat1_transmitter.underflow_out):
+        with m.If(adat1_transmitter.underflow_out):
             m.d.sync += adat1_underflow_count.eq(adat1_underflow_count + 1)
 
         spi = platform.request("spi")
-        m.submodules.sevensegment = sevensegment = DomainRenamer("usb")(NumberToSevenSegmentHex(width=32))
-        m.submodules.led_display  = led_display  = DomainRenamer("usb")(SerialLEDArray(divisor=10, init_delay=24e6))
+        m.submodules.sevensegment = sevensegment = NumberToSevenSegmentHex(width=32)
+        m.submodules.led_display  = led_display  = SerialLEDArray(divisor=6, init_delay=24e6)
         m.d.comb += [
             sevensegment.number_in[0:16].eq(adat1_underflow_count),
             sevensegment.dots_in.eq(leds),
