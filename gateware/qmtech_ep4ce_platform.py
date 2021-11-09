@@ -60,7 +60,6 @@ class ADATFaceClockDomainGenerator(Elaboratable):
             o_locked = sys_locked,
         )
 
-        adat_locked = Signal()
         m.submodules.soundpll = Instance("ALTPLL",
             p_BANDWIDTH_TYPE         = "AUTO",
 
