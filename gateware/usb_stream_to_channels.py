@@ -9,9 +9,10 @@ class USBStreamToChannels(Elaboratable):
         self._channel_bits    = Shape.cast(range(max_no_channels)).width
 
         # ports
-        self.no_channels_in      = Signal(self._channel_bits + 1)
-        self.usb_stream_in       = StreamInterface()
-        self.channel_stream_out  = StreamInterface(24, extra_fields=[("channel_nr", self._channel_bits)])
+        self.no_channels_in          = Signal(self._channel_bits + 1)
+        self.usb_stream_in           = StreamInterface()
+        self.channel_stream_out      = StreamInterface(payload_width=24, extra_fields=[("channel_nr", self._channel_bits)])
+        self.garbage_seen_out        = Signal()
 
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
@@ -52,6 +53,7 @@ class USBStreamToChannels(Elaboratable):
                 with m.State("B1"):
                     with m.If(usb_first):
                         m.d.sync += out_channel_nr.eq(0)
+                        m.d.comb += self.garbage_seen_out.eq(1)
                         m.next = "B1"
                     with m.Else():
                         m.d.sync += out_sample[:8].eq(usb_payload)
@@ -60,6 +62,7 @@ class USBStreamToChannels(Elaboratable):
                 with m.State("B2"):
                     with m.If(usb_first):
                         m.d.sync += out_channel_nr.eq(0)
+                        m.d.comb += self.garbage_seen_out.eq(1)
                         m.next = "B1"
                     with m.Else():
                         m.d.sync += out_sample[8:16].eq(usb_payload)
@@ -68,6 +71,7 @@ class USBStreamToChannels(Elaboratable):
                 with m.State("B3"):
                     with m.If(usb_first):
                         m.d.sync += out_channel_nr.eq(0)
+                        m.d.comb += self.garbage_seen_out.eq(1)
                         m.next = "B1"
                     with m.Else():
                         m.d.sync += [
