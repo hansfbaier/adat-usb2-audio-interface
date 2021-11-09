@@ -116,7 +116,10 @@ class ADATFacePlatform(QMTechEP4CEPlatform, LUNAPlatform):
         """
         templates["{{name}}.sdc"] += r"""
             derive_pll_clocks
-            """
+            derive_clock_uncertainty
+            set_max_delay -from [get_clocks {car|soundpll|auto_generated|pll1|clk[0]}]  -to  [get_clocks {car|mainpll|auto_generated|pll1|clk[2]}] 20
+            set_max_delay -from [get_clocks {car|mainpll|auto_generated|pll1|clk[2]}]  -to  [get_clocks {car|soundpll|auto_generated|pll1|clk[0]}] 20
+        """
         return templates
 
     def __init__(self):
