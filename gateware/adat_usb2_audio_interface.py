@@ -37,8 +37,6 @@ from usb_descriptors import USBDescriptors
 
 class USB2AudioInterface(Elaboratable):
     """ USB Audio Class v2 interface """
-    number_of_channels = 8
-    bitwidth           = 24
     MAX_PACKET_SIZE    = 256
     USE_ILA = False
     ILA_MAX_PACKET_SIZE = 512
@@ -47,14 +45,16 @@ class USB2AudioInterface(Elaboratable):
         m = Module()
 
         self.number_of_channels = platform.number_of_channels
-        self.bitwidth           = platform.bitwidth
 
         m.submodules.car = platform.clock_domain_generator()
 
         ulpi1 = platform.request("ulpi", 1)
         m.submodules.usb1 = usb1 = USBDevice(bus=ulpi1)
 
-        descriptors = USBDescriptors(max_packet_size=self.MAX_PACKET_SIZE, number_of_channels=self.number_of_channels, use_ila=self.USE_ILA).create_descriptors()
+        descriptors = USBDescriptors(max_packet_size=self.MAX_PACKET_SIZE, \
+                                     number_of_channels=self.number_of_channels, \
+                                     ila_max_packet_size=self.ILA_MAX_PACKET_SIZE, \
+                                     use_ila=self.USE_ILA).create_descriptors()
 
         control_ep = usb1.add_control_endpoint()
         control_ep.add_standard_request_handlers(descriptors, blacklist=[

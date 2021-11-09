@@ -102,7 +102,6 @@ class ADATFaceClockDomainGenerator(Elaboratable):
 class ADATFacePlatform(QMTechEP4CEPlatform, LUNAPlatform):
     clock_domain_generator = ADATFaceClockDomainGenerator
     number_of_channels     = 8
-    bitwidth               = 24
 
     @property
     def file_templates(self):
