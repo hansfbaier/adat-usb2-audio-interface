@@ -13,7 +13,7 @@
 [treeopen] top.
 [treeopen] top.out_fifo.
 [sst_width] 447
-[signals_width] 360
+[signals_width] 390
 [sst_expanded] 1
 [sst_vpaned_height] 658
 @28
@@ -23,8 +23,8 @@ top.channel_payload[23:0]
 @28
 top.channel_ready
 top.channel_valid
-@24
-top.channel_nr[2:0]
+top.data_requested_in
+top.frame_finished_in
 @200
 -Channels To USB
 @28
@@ -42,20 +42,15 @@ top.out_fifo.w_en
 @22
 [color] 3
 top.w_data[10:0]
-@23
 [color] 3
 top.r_data[10:0]
-@24
-[color] 3
-top.out_fifo.level[9:0]
 @28
+top.out_fifo.r_rdy
 [color] 3
 top.r_en
 @200
 -USB Stream
 @28
-[color] 2
-top.packet_start_in
 [color] 2
 top.fifo_postprocess_state
 @24
@@ -63,14 +58,11 @@ top.fifo_postprocess_state
 top.out_channel[2:0]
 @22
 [color] 2
-top.payload[7:0]
+top.usb_stream__payload[7:0]
 @28
 [color] 2
-top.valid
+top.usb_stream__ready
 [color] 2
-+{out_ready} top.ready$1
-@24
-[color] 2
-top.done[8:0]
+top.usb_stream__valid
 [pattern_trace] 1
 [pattern_trace] 0
