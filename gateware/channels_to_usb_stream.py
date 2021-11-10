@@ -1,10 +1,11 @@
 from nmigen                 import *
 from nmigen.build           import Platform
 from nmigen.lib.fifo        import SyncFIFO
-from nmigen_library.stream  import StreamInterface, connect_fifo_to_stream
+from nmigen_library.stream  import StreamInterface
+from nmigen_library.test    import GatewareTestCase, sync_test_case
 
 class ChannelsToUSBStream(Elaboratable):
-    def __init__(self, max_nr_channels=2, sample_width=24, max_packet_size=512):
+    def __init__(self, max_nr_channels=2, sample_width=24, max_packet_size=256):
         assert sample_width in [16, 24, 32]
 
         # parameters
@@ -15,7 +16,7 @@ class ChannelsToUSBStream(Elaboratable):
 
         # ports
         self.usb_stream_out      = StreamInterface()
-        self.channel_stream_in   = StreamInterface(self._sample_width, extra_fields=[("channel_nr", self._channel_bits)])
+        self.channel_stream_in   = StreamInterface(name="channels_to_usb", payload_width=self._sample_width, extra_fields=[("channel_nr", self._channel_bits)])
         self.frame_finished_in   = Signal()
         self.data_requested_in   = Signal()
 
@@ -201,3 +202,65 @@ class ChannelsToUSBStream(Elaboratable):
                     m.next = "NORMAL"
 
         return m
+
+
+class ChannelsToUSBStreamTest(GatewareTestCase):
+    FRAGMENT_UNDER_TEST = ChannelsToUSBStream
+    FRAGMENT_ARGUMENTS = dict(max_nr_channels=8)
+
+    def send_one_frame(self, sample: int, channel: int, wait=True):
+        yield self.dut.channel_stream_in.channel_nr.eq(channel)
+        yield self.dut.channel_stream_in.payload.eq(sample)
+        yield self.dut.channel_stream_in.valid.eq(1)
+        yield
+        if wait:
+            yield
+            yield
+            yield
+
+    @sync_test_case
+    def test_smoke(self):
+        dut = self.dut
+        yield dut.usb_stream_out.ready.eq(0)
+        yield dut.frame_finished_in.eq(1)
+        yield
+        yield dut.frame_finished_in.eq(0)
+        yield
+        yield
+        yield
+        yield
+        yield
+        yield
+        yield dut.usb_stream_out.ready.eq(1)
+        yield from self.send_one_frame(0x030201, 0, wait=False)
+        yield from self.send_one_frame(0x131211, 1)
+        yield from self.send_one_frame(0x232221, 2)
+        yield from self.send_one_frame(0x333231, 3)
+        # source stream stalls, see if we wait
+        yield dut.channel_stream_in.valid.eq(0)
+        for _ in range(7): yield
+        yield from self.send_one_frame(0x434241, 4)
+        yield from self.send_one_frame(0x535251, 5)
+        yield from self.send_one_frame(0x636261, 6)
+        yield from self.send_one_frame(0x737271, 7, wait=False)
+        # out stream quits early, see if it
+        # consumes extraneous bytes
+        yield dut.usb_stream_out.ready.eq(0)
+        yield
+        for _ in range(15): yield
+        yield dut.frame_finished_in.eq(1)
+        yield
+        yield dut.frame_finished_in.eq(0)
+        for _ in range(35): yield
+        yield from self.send_one_frame(0x030201, 0)
+        yield from self.send_one_frame(0x131211, 1)
+        yield dut.usb_stream_out.ready.eq(1)
+        yield from self.send_one_frame(0x232221, 2)
+        yield from self.send_one_frame(0x333231, 3)
+        yield from self.send_one_frame(0x434241, 4)
+        yield from self.send_one_frame(0x535251, 5)
+        yield from self.send_one_frame(0x636261, 6)
+        yield from self.send_one_frame(0x737271, 7)
+        yield dut.channel_stream_in.valid.eq(0)
+        yield
+        for _ in range(45): yield

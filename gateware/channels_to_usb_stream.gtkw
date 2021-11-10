@@ -2,10 +2,10 @@
 [*] GTKWave Analyzer v3.3.109 (w)1999-2020 BSI
 [*] Fri Sep  3 06:34:16 2021
 [*]
-[dumpfile] "channels_to_usb_stream.vcd"
+[dumpfile] "test_ChannelsToUSBStreamTest_test_smoke.vcd"
 [dumpfile_mtime] "Fri Sep  3 06:33:25 2021"
 [dumpfile_size] 58650
-[savefile] "gateware/channels_to_usb_stream-bench.gtkw"
+[savefile] "channels_to_usb_stream.gtkw"
 [timestart] 0
 [size] 3828 2090
 [pos] -1 -1
