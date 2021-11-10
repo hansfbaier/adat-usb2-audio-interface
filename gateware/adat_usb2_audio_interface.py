@@ -15,12 +15,8 @@ from nmigen_library.io.max7219   import SerialLEDArray, NumberToSevenSegmentHex
 from luna                import top_level_cli
 from luna.usb2           import USBDevice, USBIsochronousInMemoryEndpoint, USBIsochronousOutStreamEndpoint, USBIsochronousInStreamEndpoint
 
-from usb_protocol.types                       import USBRequestType, USBRequestRecipient, USBTransferType, USBSynchronizationType, USBUsageType, USBDirection, USBStandardRequests
-from usb_protocol.types.descriptors.uac2      import AudioClassSpecificRequestCodes
-from usb_protocol.emitters                    import DeviceDescriptorCollection
-from usb_protocol.emitters.descriptors        import uac2, standard
+from usb_protocol.types                       import USBRequestType, USBStandardRequests
 
-from luna.gateware.platform                   import NullPin
 from luna.gateware.usb.usb2.device            import USBDevice
 from luna.gateware.usb.usb2.endpoints.stream  import USBMultibyteStreamInEndpoint
 from luna.gateware.usb.usb2.request           import USBRequestHandler, StallOnlyRequestHandler
