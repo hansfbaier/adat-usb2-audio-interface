@@ -88,20 +88,24 @@ class USB2AudioInterface(Elaboratable):
         usb1.add_endpoint(usb1_ep2_in)
 
         # calculate bytes in frame for audio in
-        audio_in_frame_bytes = Signal(range(self.MAX_PACKET_SIZE), reset=24 * self.number_of_channels)
+        audio_in_frame_byte_counter = Signal(range(self.MAX_PACKET_SIZE), reset=24 * self.number_of_channels)
         audio_in_frame_bytes_counting = Signal()
 
         with m.If(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready):
             with m.If(audio_in_frame_bytes_counting):
-                m.d.usb += audio_in_frame_bytes.eq(audio_in_frame_bytes + 1)
+                m.d.usb += audio_in_frame_byte_counter.eq(audio_in_frame_byte_counter + 1)
 
             with m.If(usb1_ep1_out.stream.first):
                 m.d.usb += [
-                    audio_in_frame_bytes.eq(1),
+                    audio_in_frame_byte_counter.eq(1),
                     audio_in_frame_bytes_counting.eq(1),
                 ]
             with m.Elif(usb1_ep1_out.stream.last):
                 m.d.usb += audio_in_frame_bytes_counting.eq(0)
+
+        audio_in_frame_bytes = Signal.like(audio_in_frame_byte_counter)
+        with m.If(usb1_ep1_out.stream.last):
+            m.d.usb += audio_in_frame_bytes.eq(audio_in_frame_byte_counter + 1)
 
         # Connect our device as a high speed device
         m.d.comb += [
@@ -312,6 +316,7 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.led_display  = led_display  = SerialLEDArray(divisor=6, init_delay=24e6)
         m.d.comb += [
             sevensegment.number_in[0:16].eq(adat1_underflow_count),
+            sevensegment.number_in[16:24].eq(audio_in_frame_bytes),
             sevensegment.dots_in.eq(leds),
             *led_display.connect_to_resource(spi),
             Cat(led_display.digits_in).eq(sevensegment.seven_segment_out),
