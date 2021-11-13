@@ -291,6 +291,7 @@ class USB2AudioInterface(Elaboratable):
         usb_aux1 = platform.request("usb_aux", 1)
         usb_aux2 = platform.request("usb_aux", 2)
         leds = platform.request("leds")
+
         m.d.comb += [
             leds.active1.eq(usb1.tx_activity_led | usb1.rx_activity_led),
             leds.suspended1.eq(usb1.suspended),
