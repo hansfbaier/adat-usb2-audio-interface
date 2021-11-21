@@ -1,7 +1,7 @@
 from nmigen                 import *
 from nmigen.build           import Platform
 from nmigen.lib.fifo        import SyncFIFO
-from nmigen_library.stream  import StreamInterface
+from nmigen_library.stream  import StreamInterface, connect_fifo_to_stream
 from nmigen_library.test    import GatewareTestCase, sync_test_case
 
 class ChannelsToUSBStream(Elaboratable):
@@ -15,10 +15,11 @@ class ChannelsToUSBStream(Elaboratable):
         self._max_packet_size = max_packet_size
 
         # ports
-        self.usb_stream_out      = StreamInterface(name="usb_stream")
+        self.no_channels_in      = Signal(4)
         self.channel_stream_in   = StreamInterface(name="channel_stream", payload_width=self._sample_width, extra_fields=[("channel_nr", self._channel_bits)])
-        self.frame_finished_in   = Signal()
+        self.usb_stream_out      = StreamInterface(name="usb_stream")
         self.data_requested_in   = Signal()
+        self.frame_finished_in   = Signal()
 
         # debug signals
         self.state               = Signal(2)
@@ -27,8 +28,6 @@ class ChannelsToUSBStream(Elaboratable):
         self.out_channel         = Signal(self._channel_bits)
         self.skipping            = Signal()
         self.filling             = Signal()
-
-        self.channel_mismatch = Signal()
 
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
@@ -40,7 +39,7 @@ class ChannelsToUSBStream(Elaboratable):
         channel_ready   = Signal()
 
         out_valid = Signal()
-        out_ready = Signal()
+        out_stream_ready = Signal()
 
         # latch packet start and end
         first_packet_seen   = Signal()
@@ -56,14 +55,11 @@ class ChannelsToUSBStream(Elaboratable):
                 first_packet_seen.eq(0),
             ]
 
-        with m.If(self.data_requested_in & (self.out_channel > 0)):
-            m.d.comb += self.channel_mismatch.eq(1)
-
         m.d.comb += [
             self.usb_stream_out.payload.eq(out_fifo.r_data[:8]),
             self.out_channel.eq(out_fifo.r_data[8:]),
             self.usb_stream_out.valid.eq(out_valid),
-            out_ready.eq(self.usb_stream_out.ready),
+            out_stream_ready.eq(self.usb_stream_out.ready),
             channel_payload.eq(channel_stream.payload),
             channel_valid.eq(channel_stream.valid),
             channel_stream.ready.eq(channel_ready),
@@ -77,80 +73,51 @@ class ChannelsToUSBStream(Elaboratable):
 
         current_sample       = Signal(32 if self._sample_width > 16 else 16)
         current_channel      = Signal(self._channel_bits)
-        current_channel_next = Signal.like(current_channel)
         current_byte         = Signal(2 if self._sample_width > 16 else 1)
 
-        last_channel    = self._max_nr_channels - 1
-        num_bytes = 4
-        last_byte = num_bytes - 1
+        bytes_per_sample = 4
+        last_byte_of_sample = bytes_per_sample - 1
 
+        # USB audio still sends 32 bit samples,
+        # even if the descriptor says 24
         shift = 8 if self._sample_width == 24 else 0
 
-        with m.If(out_fifo.w_rdy):
-            # this FSM handles writing into the FIFO
-            with m.FSM(name="fifo_feeder") as fsm:
+        out_fifo_can_write_sample = Signal()
+        m.d.comb += out_fifo_can_write_sample.eq(
+            out_fifo.w_level < (out_fifo.depth - bytes_per_sample))
+
+        # this FSM handles writing into the FIFO
+        with m.FSM(name="fifo_feeder") as fsm:
+            m.d.comb += self.state.eq(fsm.state)
+
+            with m.State("WAIT"):
+                m.d.comb += channel_ready.eq(1)
+                # discard all channels above no_channels_in
+                # important for stereo operation
+                with m.If(out_fifo.w_rdy
+                          & out_fifo_can_write_sample
+                          & channel_valid
+                          & (channel_stream.channel_nr < self.no_channels_in)):
+                    m.d.sync += [
+                        current_sample.eq(channel_payload << shift),
+                        current_channel.eq(channel_stream.channel_nr),
+                    ]
+                    m.next = "SEND"
+
+            with m.State("SEND"):
                 m.d.comb += [
-                    self.state.eq(fsm.state),
-                    current_channel_next.eq((current_channel + 1)[:self._channel_bits])
+                    out_fifo.w_data[:8].eq(current_sample[0:8]),
+                    out_fifo.w_data[8:].eq(current_channel),
+                    out_fifo.w_en.eq(1),
+                ]
+                m.d.sync += [
+                    current_byte.eq(current_byte + 1),
+                    current_sample.eq(current_sample >> 8),
                 ]
 
-                with m.State("WAIT-FIRST"):
-                    # we have to accept data until we find a first channel sample
-                    m.d.comb += channel_ready.eq(1)
-                    with m.If(first_packet_seen & channel_valid & (channel_stream.channel_nr == 0)):
-                        m.d.sync += [
-                            current_sample.eq(channel_payload << shift),
-                            current_channel.eq(0),
-                        ]
-                        m.next = "SEND"
-
-                with m.State("SEND"):
-                    m.d.comb += [
-                        out_fifo.w_data[:8].eq(current_sample[0:8]),
-                        out_fifo.w_data[8:].eq(current_channel),
-                        out_fifo.w_en.eq(1),
-                    ]
-                    m.d.sync += [
-                        current_byte.eq(current_byte + 1),
-                        current_sample.eq(current_sample >> 8),
-                    ]
-
-                    with m.If(current_byte == last_byte):
-                        with m.If(channel_valid):
-                            m.d.comb += channel_ready.eq(1)
-
-                            m.d.sync += current_channel.eq(current_channel_next)
-
-                            with m.If(current_channel_next == channel_stream.channel_nr):
-                                m.d.sync += current_sample.eq(channel_payload << shift)
-                                m.next = "SEND"
-                            with m.Else():
-                                m.next = "FILL-ZEROS"
-
-                        with m.Else():
-                            m.next = "WAIT"
-
-                with m.State("WAIT"):
-                    with m.If(channel_valid):
-                        m.d.comb += channel_ready.eq(1)
-                        m.d.sync += [
-                            current_sample.eq(channel_payload << shift),
-                            current_channel.eq(current_channel_next),
-                        ]
-                        m.next = "SEND"
-
-                with m.State("FILL-ZEROS"):
-                    m.d.comb += [
-                        out_fifo.w_data[:8].eq(0),
-                        out_fifo.w_data[8:].eq(current_channel),
-                        out_fifo.w_en.eq(1),
-                    ]
-                    m.d.sync += current_byte.eq(current_byte + 1)
-
-                    with m.If(current_byte == last_byte):
-                        m.d.sync += current_channel.eq(current_channel_next)
-                        with m.If(current_channel == last_channel):
-                            m.next = "WAIT-FIRST"
+                with m.If(current_byte == last_byte_of_sample):
+                    m.d.sync += current_byte.eq(0)
+                    m.next = "WAIT"
 
         # this FSM handles reading fron the FIFO
         # this FSM provides robustness against
@@ -163,6 +130,7 @@ class ChannelsToUSBStream(Elaboratable):
                     out_fifo.r_en.eq(self.usb_stream_out.ready),
                     out_valid.eq(out_fifo.r_rdy)
                 ]
+
                 # discard extraneous samples after finished frame
                 with m.If(frame_finished_seen & out_fifo.r_rdy & (self.out_channel != 0)):
                     m.d.comb += [
@@ -172,7 +140,10 @@ class ChannelsToUSBStream(Elaboratable):
                     m.d.sync += frame_finished_seen.eq(0)
                     m.next = "DISCARD"
 
-                with m.If(out_ready & (self.level == 0)):
+                # start filling if there are not enough enough samples buffered
+                # for one channel set of audio samples
+                with m.If(  (self.out_channel == (self._max_nr_channels - 1))
+                          & (out_fifo.level   <  (self._max_nr_channels))):
                     m.d.comb += [
                         self.usb_stream_out.payload.eq(0),
                         out_valid.eq(1),
@@ -192,14 +163,14 @@ class ChannelsToUSBStream(Elaboratable):
                         m.next = "NORMAL"
 
             with m.State("FILL"):
-                with m.If(out_ready & (self.level == 0)):
+                with m.If(self.frame_finished_in):
+                    m.next = "NORMAL"
+                with m.Else():
                     m.d.comb += [
                         self.usb_stream_out.payload.eq(0),
                         out_valid.eq(1),
                         self.filling.eq(1),
                     ]
-                with m.Else():
-                    m.next = "NORMAL"
 
         return m
 
