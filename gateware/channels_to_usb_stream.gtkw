@@ -1,11 +1,11 @@
 [*]
-[*] GTKWave Analyzer v3.3.109 (w)1999-2020 BSI
-[*] Fri Sep  3 06:34:16 2021
+[*] GTKWave Analyzer v3.3.111 (w)1999-2020 BSI
+[*] Wed Nov 10 23:04:08 2021
 [*]
-[dumpfile] "test_ChannelsToUSBStreamTest_test_smoke.vcd"
-[dumpfile_mtime] "Fri Sep  3 06:33:25 2021"
-[dumpfile_size] 58650
-[savefile] "channels_to_usb_stream.gtkw"
+[dumpfile] "/devel/HDL/src/adat-usb2-audio-interface/gateware/test_ChannelsToUSBStreamTest_test_smoke.vcd"
+[dumpfile_mtime] "Wed Nov 10 23:01:43 2021"
+[dumpfile_size] 25866
+[savefile] "/devel/HDL/src/adat-usb2-audio-interface/gateware/channels_to_usb_stream.gtkw"
 [timestart] 0
 [size] 3828 2090
 [pos] -1 -1

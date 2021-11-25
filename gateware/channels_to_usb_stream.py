@@ -22,12 +22,15 @@ class ChannelsToUSBStream(Elaboratable):
         self.frame_finished_in   = Signal()
 
         # debug signals
-        self.state               = Signal(2)
-        self.level               = Signal(range(2 * self._max_packet_size + 1))
-        self.done                = Signal.like(self.level)
-        self.out_channel         = Signal(self._channel_bits)
-        self.skipping            = Signal()
-        self.filling             = Signal()
+        self.state                   = Signal(2)
+        self.level                   = Signal(range(2 * self._max_packet_size + 1))
+        self.fifo_level_insufficient = Signal()
+        self.done                    = Signal.like(self.level)
+        self.out_channel             = Signal(self._channel_bits)
+        self.usb_channel             = Signal.like(self.out_channel)
+        self.usb_byte_pos            = Signal.like(2)
+        self.skipping                = Signal()
+        self.filling                 = Signal()
 
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
@@ -38,17 +41,19 @@ class ChannelsToUSBStream(Elaboratable):
         channel_valid   = Signal()
         channel_ready   = Signal()
 
-        out_valid = Signal()
+        out_valid        = Signal()
         out_stream_ready = Signal()
 
         # latch packet start and end
         first_packet_seen   = Signal()
         frame_finished_seen = Signal()
+
         with m.If(self.data_requested_in):
             m.d.sync += [
                 first_packet_seen.eq(1),
                 frame_finished_seen.eq(0),
             ]
+
         with m.If(self.frame_finished_in):
             m.d.sync += [
                 frame_finished_seen.eq(1),
@@ -68,6 +73,7 @@ class ChannelsToUSBStream(Elaboratable):
 
         with m.If(self.usb_stream_out.valid & self.usb_stream_out.ready):
             m.d.sync += self.done.eq(self.done + 1)
+
         with m.If(self.data_requested_in):
             m.d.sync += self.done.eq(0)
 
@@ -119,6 +125,31 @@ class ChannelsToUSBStream(Elaboratable):
                     m.d.sync += current_byte.eq(0)
                     m.next = "WAIT"
 
+
+        channel_counter = Signal(3)
+        byte_pos        = Signal(2)
+        first_byte      = byte_pos == 0
+        last_byte       = byte_pos == 3
+
+        with m.If(out_valid & out_stream_ready):
+            m.d.sync += byte_pos.eq(byte_pos + 1)
+
+            with m.If(last_byte):
+                m.d.sync += channel_counter.eq(channel_counter + 1)
+                with m.If(channel_counter == (self.no_channels_in - 1)):
+                    m.d.sync += channel_counter.eq(0)
+
+        with m.If(self.data_requested_in):
+            m.d.sync += channel_counter.eq(0)
+
+        fifo_level_sufficient = Signal()
+        m.d.comb += [
+            self.usb_channel.eq(channel_counter),
+            self.usb_byte_pos.eq(byte_pos),
+            fifo_level_sufficient.eq(out_fifo.level >= (self.no_channels_in << 2)),
+            self.fifo_level_insufficient.eq(~fifo_level_sufficient),
+        ]
+
         # this FSM handles reading fron the FIFO
         # this FSM provides robustness against
         # short reads. On next frame all bytes
@@ -131,25 +162,35 @@ class ChannelsToUSBStream(Elaboratable):
                     out_valid.eq(out_fifo.r_rdy)
                 ]
 
-                # discard extraneous samples after finished frame
-                with m.If(frame_finished_seen & out_fifo.r_rdy & (self.out_channel != 0)):
-                    m.d.comb += [
-                        out_fifo.r_en.eq(1),
-                        out_valid.eq(0),
-                    ]
-                    m.d.sync += frame_finished_seen.eq(0)
-                    m.next = "DISCARD"
+                # frame ongoing
+                with m.If(~frame_finished_seen):
+                    # start filling if there are not enough enough samples buffered
+                    # for one channel set of audio samples
+                    last_channel = self.out_channel == (self._max_nr_channels - 1)
 
-                # start filling if there are not enough enough samples buffered
-                # for one channel set of audio samples
-                with m.If(  (self.out_channel == (self._max_nr_channels - 1))
-                          & (out_fifo.level   <  (self._max_nr_channels))):
-                    m.d.comb += [
-                        self.usb_stream_out.payload.eq(0),
-                        out_valid.eq(1),
-                        self.filling.eq(1),
-                    ]
-                    m.next = "FILL"
+                    with m.If(last_byte & last_channel & ~fifo_level_sufficient):
+                        m.next = "FILL"
+
+                    with m.If((self.out_channel != channel_counter)):
+                        m.d.comb += [
+                            out_fifo.r_en.eq(0),
+                            self.usb_stream_out.payload.eq(0),
+                            out_valid.eq(1),
+                            self.filling.eq(1),
+                        ]
+
+                # frame finished: discard extraneous samples
+                with m.Else():
+                    with m.If(out_fifo.r_rdy & (self.out_channel != 0)):
+                        m.d.comb += [
+                            out_fifo.r_en.eq(1),
+                            out_valid.eq(0),
+                        ]
+                        m.d.sync += [
+                            frame_finished_seen.eq(0),
+                            byte_pos.eq(0),
+                        ]
+                        m.next = "DISCARD"
 
             with m.State("DISCARD"):
                 with m.If(out_fifo.r_rdy):
@@ -163,10 +204,12 @@ class ChannelsToUSBStream(Elaboratable):
                         m.next = "NORMAL"
 
             with m.State("FILL"):
-                with m.If(self.frame_finished_in):
+                channel_is_ok = fifo_level_sufficient & (self.out_channel == channel_counter)
+                with m.If(self.frame_finished_in | channel_is_ok):
                     m.next = "NORMAL"
                 with m.Else():
                     m.d.comb += [
+                        out_fifo.r_en.eq(0),
                         self.usb_stream_out.payload.eq(0),
                         out_valid.eq(1),
                         self.filling.eq(1),
