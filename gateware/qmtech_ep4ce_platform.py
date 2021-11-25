@@ -35,9 +35,9 @@ class ADATFaceClockDomainGenerator(Elaboratable):
         m.submodules.mainpll = Instance("ALTPLL",
             p_BANDWIDTH_TYPE         = "AUTO",
             # 100MHz
-            p_CLK0_DIVIDE_BY         = 1,
+            p_CLK0_DIVIDE_BY         = 5,
             p_CLK0_DUTY_CYCLE        = 50,
-            p_CLK0_MULTIPLY_BY       = 2,
+            p_CLK0_MULTIPLY_BY       = 10,
             p_CLK0_PHASE_SHIFT       = 0,
             # 60MHz
             p_CLK1_DIVIDE_BY         = 5,
@@ -117,8 +117,8 @@ class ADATFacePlatform(QMTechEP4CEPlatform, LUNAPlatform):
         templates["{{name}}.sdc"] += r"""
             derive_pll_clocks
             derive_clock_uncertainty
-            set_max_delay -from [get_clocks {car|soundpll|auto_generated|pll1|clk[0]}]  -to  [get_clocks {car|mainpll|auto_generated|pll1|clk[2]}] 20
-            set_max_delay -from [get_clocks {car|mainpll|auto_generated|pll1|clk[2]}]  -to  [get_clocks {car|soundpll|auto_generated|pll1|clk[0]}] 20
+            set_max_delay -from [get_clocks {car|soundpll|auto_generated|pll1|clk[0]}]  -to  [get_clocks {car|mainpll|auto_generated|pll1|clk[2]}] 5
+            set_max_delay -from [get_clocks {car|mainpll|auto_generated|pll1|clk[2]}]  -to  [get_clocks {car|soundpll|auto_generated|pll1|clk[0]}] 5
         """
         return templates
 
