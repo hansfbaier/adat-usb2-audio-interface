@@ -1,2 +1,4 @@
 fill_waveform 1
 lz_removal 1
+accel "/Edit/Data Format/Translate Filter Process/Enable and Select" <Ctrl><Alt>F
+accel "/File/Read Tcl Script File" <Ctrl><Alt>S
