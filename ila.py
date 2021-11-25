@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import usb
-from luna.gateware.usb.devices.ila import USBIntegratedLogicAnalyzerFrontend
-from luna.gateware.debug.ila       import ILACoreParameters
+from luna.gateware.usb.devices.ila  import USBIntegratedLogicAnalyzerFrontend
+from nmigen_library.debug.ila       import ILACoreParameters
 
 
 dev=usb.core.find(idVendor=0x1209, idProduct=0x4711)
