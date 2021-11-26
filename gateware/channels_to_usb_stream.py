@@ -150,6 +150,9 @@ class ChannelsToUSBStream(Elaboratable):
             self.fifo_level_insufficient.eq(~fifo_level_sufficient),
         ]
 
+        with m.If(self.frame_finished_in):
+            m.d.sync += byte_pos.eq(0)
+
         # this FSM handles reading fron the FIFO
         # this FSM provides robustness against
         # short reads. On next frame all bytes
