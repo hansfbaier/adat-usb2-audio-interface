@@ -1110,7 +1110,7 @@
 
   (footprint "MountingHole:MountingHole_3.2mm_M3_Pad_Via" (layer "F.Cu")
     (tedit 56DDBCCA) (tstamp 2b573514-363b-40f6-95e8-9937b800b74b)
-    (at 122.936 116.205)
+    (at 121.793 112.649)
     (descr "Mounting Hole 3.2mm, M3")
     (tags "mounting hole 3.2mm m3")
     (property "Sheetfile" "adatface_baseboard.kicad_sch")
