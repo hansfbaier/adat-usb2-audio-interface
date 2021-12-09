@@ -90,18 +90,19 @@ class ChannelsToUSBStream(Elaboratable):
 
         out_fifo_can_write_sample = Signal()
         m.d.comb += out_fifo_can_write_sample.eq(
-            out_fifo.w_level < (out_fifo.depth - bytes_per_sample))
+              out_fifo.w_rdy
+            & (out_fifo.w_level < (out_fifo.depth - bytes_per_sample)))
 
         # this FSM handles writing into the FIFO
         with m.FSM(name="fifo_feeder") as fsm:
             m.d.comb += self.state.eq(fsm.state)
 
             with m.State("WAIT"):
-                m.d.comb += channel_ready.eq(1)
+                m.d.comb += channel_ready.eq(out_fifo_can_write_sample)
+
                 # discard all channels above no_channels_in
                 # important for stereo operation
-                with m.If(out_fifo.w_rdy
-                          & out_fifo_can_write_sample
+                with m.If(out_fifo_can_write_sample
                           & channel_valid
                           & (channel_stream.channel_nr < self.no_channels_in)):
                     m.d.sync += [
