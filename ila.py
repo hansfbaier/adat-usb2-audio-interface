@@ -4,8 +4,8 @@ from luna.gateware.usb.devices.ila  import USBIntegratedLogicAnalyzerFrontend
 from nmigen_library.debug.ila       import ILACoreParameters
 
 
-dev=usb.core.find(idVendor=0x1209, idProduct=0x4711)
+dev=usb.core.find(idVendor=0x1209, idProduct=0xADA1)
 print(dev)
 
-frontend = USBIntegratedLogicAnalyzerFrontend(ila=ILACoreParameters.unpickle(), idVendor=0x1209, idProduct=0x4711, endpoint_no=3)
+frontend = USBIntegratedLogicAnalyzerFrontend(ila=ILACoreParameters.unpickle(), idVendor=0x1209, idProduct=0xADA1, endpoint_no=3)
 frontend.interactive_display()
