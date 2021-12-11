@@ -300,6 +300,7 @@ class USB2AudioInterface(Elaboratable):
             ]
 
             channels_to_usb_input_frame = [
+                adat_to_usb1_fifo.r_level,
                 channels_to_usb1_stream.channel_stream_in.first,
                 channels_to_usb1_stream.channel_stream_in.last,
                 channels_to_usb1_stream.channel_stream_in.channel_nr,
@@ -325,10 +326,12 @@ class USB2AudioInterface(Elaboratable):
             usb_outputting   = Signal()
             m.d.comb += usb_outputting.eq(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready)
 
+            usb_out_level_maxed = Signal()
+            m.d.comb += usb_out_level_maxed.eq(usb1_to_adat_fifo_level >= (usb1_to_adat_fifo_depth - 1))
+
             m.d.comb += weird_frame_size.eq((audio_in_frame_bytes & 0b11) != 0)
 
             channels_to_usb_debug = [
-                weird_frame_size,
                 audio_in_frame_bytes,
                 channels_to_usb1_stream.level,
                 channels_to_usb1_stream.fifo_level_insufficient,
@@ -340,6 +343,24 @@ class USB2AudioInterface(Elaboratable):
                 channels_to_usb1_stream.filling,
             ]
 
+            usb_out_debug = [
+                usb1_to_channel_stream.channel_stream_out.payload,
+                usb1_to_channel_stream.channel_stream_out.channel_nr,
+                usb1_to_channel_stream.channel_stream_out.first,
+                usb1_to_channel_stream.channel_stream_out.last,
+                usb1_to_adat_fifo_level,
+                usb_out_level_maxed
+            ]
+
+            usb_channel_outputting = Signal()
+            m.d.comb += usb_channel_outputting.eq(
+                usb_out_level_maxed |
+                usb1_to_channel_stream.channel_stream_out.first |
+                usb1_to_channel_stream.channel_stream_out.last  |
+                    ( usb1_to_channel_stream.channel_stream_out.ready &
+                      usb1_to_channel_stream.channel_stream_out.valid)
+                )
+
             ep1_out_fifo_debug = [
                 audio_in_frame_bytes,
                 min_fifo_level,
@@ -350,19 +371,37 @@ class USB2AudioInterface(Elaboratable):
                 usb1.sof_detected,
             ]
 
-            trigger = Signal()
-            m.d.comb += trigger.eq((adat1_receiver.addr_out >= 2) & (adat1_receiver.sample_out != 0))
+            receiver_debug = [
+                adat1_receiver.sample_out,
+                adat1_receiver.addr_out,
+                adat1_receiver.output_enable,
+            ]
 
-            signals = channels_to_usb_debug + channels_to_usb_output_frame + channels_to_usb_output_stream  # channels_to_usb_input_frame + channels_to_usb_input_stream  + [ strange_input ] # 
+            adat1_first = Signal()
+            m.d.comb += adat1_first.eq(adat1_receiver.output_enable & (adat1_receiver.addr_out == 0))
+            adat_clock = Signal()
+            m.d.comb += adat_clock.eq(ClockSignal("adat"))
+
+            adat_debug = [
+                adat_clock,
+                adat1_transmitter.adat_out,
+                adat1_receiver.recovered_clock_out,
+                adat1_receiver.adat_in,
+                adat1_first,
+                adat1_receiver.output_enable,
+            ]
+
+            signals = adat_debug # channels_to_usb_input_frame #+ channels_to_usb_debug + channels_to_usb_output_frame #  + [ strange_input ] #
 
             signals_bits = sum([s.width for s in signals])
             m.submodules.ila = ila = \
                 StreamILA(
-                    domain="usb", o_domain="usb",
+                    domain="fast", o_domain="usb",
+                    sample_rate=48e3 * 256 * 8,
                     signals=signals,
                     sample_depth       = int(30 * 8 * 1024 / signals_bits),
-                    samples_pretrigger = int(25 * 8 * 1024 / signals_bits),
-                    with_enable=True)
+                    samples_pretrigger = int(1 * 8 * 1024 / signals_bits),
+                    with_enable=False)
 
             stream_ep = USBMultibyteStreamInEndpoint(
                 endpoint_number=3, # EP 3 IN
@@ -376,9 +415,12 @@ class USB2AudioInterface(Elaboratable):
             m.d.comb += [
                 stream_ep.stream.stream_eq(ila.stream),
                 garbage.eq(channels_to_usb1_stream.skipping | channels_to_usb1_stream.filling),
-                ila.enable.eq(input_or_output_active | garbage | usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
                 #ila.enable.eq(usb_outputting | weird_frame_size | usb1_ep1_out.stream.first | usb1_ep1_out.stream.last),
-                ila.trigger.eq(garbage),
+                #ila.enable.eq(usb_channel_outputting),
+                #ila.enable.eq(input_or_output_active | garbage | usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
+                #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
+                ila.trigger.eq(adat1_first),
+                #ila.enable.eq(input_active),
             ]
 
             ILACoreParameters(ila).pickle()
