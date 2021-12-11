@@ -26,7 +26,7 @@ class ADATFaceClockDomainGenerator(Elaboratable):
         clk = platform.request(platform.default_clk)
 
         sys_clocks   = Signal(3)
-        sound_clocks = Signal(2)
+        sound_clocks = Signal(3)
 
         sys_locked   = Signal()
         sound_locked = Signal()
@@ -75,6 +75,12 @@ class ADATFaceClockDomainGenerator(Elaboratable):
             p_CLK1_MULTIPLY_BY       = 17,
             p_CLK1_PHASE_SHIFT       = 0,
 
+            # ADAT sampling clock = 48 kHz * 256 * 8 times oversampling
+            p_CLK2_DIVIDE_BY         = 83,
+            p_CLK2_DUTY_CYCLE        = 50,
+            p_CLK2_MULTIPLY_BY       = 17 * 8,
+            p_CLK2_PHASE_SHIFT       = 0,
+
             p_INCLK0_INPUT_FREQUENCY = 16667,
             p_OPERATION_MODE         = "NORMAL",
 
@@ -85,7 +91,7 @@ class ADATFaceClockDomainGenerator(Elaboratable):
 
         m.d.comb += [
             reset.eq(~(sys_locked & sound_locked)),
-            ClockSignal("fast").eq(sys_clocks[0]),
+            ClockSignal("fast").eq(sound_clocks[2]),
             ClockSignal("usb") .eq(sys_clocks[1]),
             ClockSignal("sync").eq(sys_clocks[2]),
             ClockSignal("dac").eq(sound_clocks[1]),
