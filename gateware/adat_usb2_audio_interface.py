@@ -136,7 +136,7 @@ class USB2AudioInterface(Elaboratable):
         usb1_to_adat_fifo_depth = self.MAX_PACKET_SIZE // 2
         usb1_to_adat_fifo_level = Signal(range(usb1_to_adat_fifo_depth + 1))
         fifo_level_feedback     = Signal.like(usb1_to_adat_fifo_level)
-        m.d.comb += fifo_level_feedback.eq(usb1_to_adat_fifo_level >> (usb1_to_adat_fifo_level.width - 6))
+        m.d.comb += fifo_level_feedback.eq(1 - (usb1_to_adat_fifo_level >> (usb1_to_adat_fifo_level.width - 6)))
 
         adat_clock_usb = Signal()
         m.submodules.adat_clock_usb_sync = FFSynchronizer(ClockSignal("adat"), adat_clock_usb, o_domain="usb")
@@ -163,7 +163,7 @@ class USB2AudioInterface(Elaboratable):
                 # provide negative feedback proportional to the fill level
                 # of the FIFO
                 m.d.usb += [
-                    feedbackValue.eq(adat_clock_counter + 1 - fifo_level_feedback),
+                    feedbackValue.eq(adat_clock_counter + fifo_level_feedback),
                     adat_clock_counter.eq(0),
                 ]
 
