@@ -268,7 +268,7 @@ class USB2AudioInterface(Elaboratable):
         ]
 
         #
-        # FIFO level debug display
+        # FIFO level debug signals
         #
         min_fifo_level = Signal.like(usb1_to_output_fifo_level, reset=usb1_to_output_fifo_depth)
         max_fifo_level = Signal.like(usb1_to_output_fifo_level)
@@ -279,13 +279,15 @@ class USB2AudioInterface(Elaboratable):
         with m.If(usb1_to_output_fifo_level < min_fifo_level):
             m.d.sync += min_fifo_level.eq(usb1_to_output_fifo_level)
 
-
         # I2S DACs
         m.submodules.dac1_transmitter = dac1 = DomainRenamer("usb")(I2STransmitter(sample_width=24))
         m.submodules.dac2_transmitter = dac2 = DomainRenamer("usb")(I2STransmitter(sample_width=24))
         dac1_pads = platform.request("i2s", 1)
         dac2_pads = platform.request("i2s", 2)
 
+        #
+        # Internal Logic Analyzer (ILA)
+        #
         if self.USE_ILA:
             adat_clock = Signal()
             m.d.comb += adat_clock.eq(ClockSignal("adat"))
