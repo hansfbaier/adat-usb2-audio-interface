@@ -44,6 +44,9 @@ class USB2AudioInterface(Elaboratable):
 
         m.submodules.car = platform.clock_domain_generator()
 
+        #
+        # USB
+        #
         ulpi1 = platform.request("ulpi", 1)
         m.submodules.usb1 = usb1 = USBDevice(bus=ulpi1)
 
@@ -83,8 +86,12 @@ class USB2AudioInterface(Elaboratable):
             max_packet_size=self.MAX_PACKET_SIZE)
         usb1.add_endpoint(usb1_ep2_in)
 
+        #
+        # USB input frame size calculation
+        #
+
         # calculate bytes in frame for audio in
-        audio_in_frame_byte_counter = Signal(range(self.MAX_PACKET_SIZE), reset=24 * self.number_of_channels)
+        audio_in_frame_byte_counter   = Signal(range(self.MAX_PACKET_SIZE), reset=24 * self.number_of_channels)
         audio_in_frame_bytes_counting = Signal()
 
         with m.If(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready):
@@ -103,13 +110,17 @@ class USB2AudioInterface(Elaboratable):
         with m.If(usb1_ep1_out.stream.last):
             m.d.usb += audio_in_frame_bytes.eq(audio_in_frame_byte_counter + 1)
 
-        # Connect our device as a high speed device
         m.d.comb += [
             usb1_ep1_in.bytes_in_frame.eq(4),
             usb1_ep2_in.bytes_in_frame.eq(audio_in_frame_bytes),
             usb1.connect          .eq(1),
+            # Connect our device as a high speed device
             usb1.full_speed_only  .eq(0),
         ]
+
+        #
+        # USB rate feedback
+        #
 
         # feedback endpoint
         feedbackValue      = Signal(32, reset=0x60000)
@@ -172,6 +183,9 @@ class USB2AudioInterface(Elaboratable):
             usb1_ep1_in.value.eq(0xff & (feedbackValue >> bitPos)),
         ]
 
+        #
+        # USB <-> Channel Stream conversion
+        #
         m.submodules.usb1_to_channel_stream = usb1_to_channel_stream = \
             DomainRenamer("usb")(USBStreamToChannels(self.number_of_channels))
 
@@ -200,11 +214,6 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.adat1_transmitter = adat1_transmitter = ADATTransmitter(fifo_depth=4)
         m.submodules.adat1_receiver    = adat1_receiver    = DomainRenamer("fast")(ADATReceiver(int(100e6)))
         adat1_pads = platform.request("toslink", 1)
-
-        m.submodules.dac1_transmitter = dac1 = DomainRenamer("usb")(I2STransmitter(sample_width=24))
-        m.submodules.dac2_transmitter = dac2 = DomainRenamer("usb")(I2STransmitter(sample_width=24))
-        dac1_pads = platform.request("i2s", 1)
-        dac2_pads = platform.request("i2s", 2)
 
         m.d.comb += [
             # convert USB stream to audio stream
@@ -256,6 +265,9 @@ class USB2AudioInterface(Elaboratable):
             usb1_ep2_in.stream.stream_eq(channels_to_usb1_stream.usb_stream_out),
         ]
 
+        #
+        # FIFO level debug display
+        #
         min_fifo_level = Signal.like(usb1_to_adat_fifo_level, reset=usb1_to_adat_fifo_depth)
         max_fifo_level = Signal.like(usb1_to_adat_fifo_level)
 
@@ -264,6 +276,13 @@ class USB2AudioInterface(Elaboratable):
 
         with m.If(usb1_to_adat_fifo_level < min_fifo_level):
             m.d.sync += min_fifo_level.eq(usb1_to_adat_fifo_level)
+
+
+        # I2S DACs
+        m.submodules.dac1_transmitter = dac1 = DomainRenamer("usb")(I2STransmitter(sample_width=24))
+        m.submodules.dac2_transmitter = dac2 = DomainRenamer("usb")(I2STransmitter(sample_width=24))
+        dac1_pads = platform.request("i2s", 1)
+        dac2_pads = platform.request("i2s", 2)
 
         if self.USE_ILA:
             adat_clock = Signal()
