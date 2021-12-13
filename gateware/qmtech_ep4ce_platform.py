@@ -25,31 +25,24 @@ class ADATFaceClockDomainGenerator(Elaboratable):
 
         clk = platform.request(platform.default_clk)
 
-        sys_clocks   = Signal(3)
-        sound_clocks = Signal(3)
+        sys_clocks   = Signal(1)
+        audio_clocks = Signal(4)
 
         sys_locked   = Signal()
-        sound_locked = Signal()
+        audio_locked = Signal()
         reset        = Signal()
 
         m.submodules.mainpll = Instance("ALTPLL",
             p_BANDWIDTH_TYPE         = "AUTO",
-            # 100MHz
+
+            # USB clock: 60MHz
             p_CLK0_DIVIDE_BY         = 5,
             p_CLK0_DUTY_CYCLE        = 50,
-            p_CLK0_MULTIPLY_BY       = 10,
+            p_CLK0_MULTIPLY_BY       = 6,
             p_CLK0_PHASE_SHIFT       = 0,
-            # 60MHz
-            p_CLK1_DIVIDE_BY         = 5,
-            p_CLK1_DUTY_CYCLE        = 50,
-            p_CLK1_MULTIPLY_BY       = 6,
-            p_CLK1_PHASE_SHIFT       = 0,
-            # 30MHz
-            p_CLK2_DIVIDE_BY         = 10,
-            p_CLK2_DUTY_CYCLE        = 50,
-            p_CLK2_MULTIPLY_BY       = 6,
             p_CLK2_PHASE_SHIFT       = 0,
 
+            # 50MHz = 20000 picoseconds
             p_INCLK0_INPUT_FREQUENCY = 20000,
             p_OPERATION_MODE         = "NORMAL",
 
@@ -60,7 +53,7 @@ class ADATFaceClockDomainGenerator(Elaboratable):
             o_locked = sys_locked,
         )
 
-        m.submodules.soundpll = Instance("ALTPLL",
+        m.submodules.audiopll = Instance("ALTPLL",
             p_BANDWIDTH_TYPE         = "AUTO",
 
             # ADAT clock = 12.288 MHz = 48 kHz * 256
@@ -81,21 +74,27 @@ class ADATFaceClockDomainGenerator(Elaboratable):
             p_CLK2_MULTIPLY_BY       = 17 * 8,
             p_CLK2_PHASE_SHIFT       = 0,
 
+            # ADAT transmit domain clock = 48 kHz * 256 * 4 output terminals
+            p_CLK3_DIVIDE_BY         = 83,
+            p_CLK3_DUTY_CYCLE        = 50,
+            p_CLK3_MULTIPLY_BY       = 17 * 4,
+            p_CLK3_PHASE_SHIFT       = 0,
+
             p_INCLK0_INPUT_FREQUENCY = 16667,
             p_OPERATION_MODE         = "NORMAL",
 
-            i_inclk  = sys_clocks[1],
-            o_clk    = sound_clocks,
-            o_locked = sound_locked,
+            i_inclk  = sys_clocks[0],
+            o_clk    = audio_clocks,
+            o_locked = audio_locked,
         )
 
         m.d.comb += [
-            reset.eq(~(sys_locked & sound_locked)),
-            ClockSignal("fast").eq(sound_clocks[2]),
-            ClockSignal("usb") .eq(sys_clocks[1]),
-            ClockSignal("sync").eq(sys_clocks[2]),
-            ClockSignal("dac").eq(sound_clocks[1]),
-            ClockSignal("adat").eq(sound_clocks[0]),
+            reset.eq(~(sys_locked & audio_locked)),
+            ClockSignal("fast").eq(audio_clocks[2]),
+            ClockSignal("usb") .eq(sys_clocks[0]),
+            ClockSignal("sync").eq(audio_clocks[3]),
+            ClockSignal("dac").eq(audio_clocks[1]),
+            ClockSignal("adat").eq(audio_clocks[0]),
             ResetSignal("fast").eq(reset),
             ResetSignal("usb") .eq(reset),
             ResetSignal("sync").eq(reset),
@@ -123,8 +122,11 @@ class ADATFacePlatform(QMTechEP4CEPlatform, LUNAPlatform):
         templates["{{name}}.sdc"] += r"""
             derive_pll_clocks
             derive_clock_uncertainty
-            set_max_delay -from [get_clocks {car|soundpll|auto_generated|pll1|clk[0]}]  -to  [get_clocks {car|mainpll|auto_generated|pll1|clk[2]}] 5
-            set_max_delay -from [get_clocks {car|mainpll|auto_generated|pll1|clk[2]}]  -to  [get_clocks {car|soundpll|auto_generated|pll1|clk[0]}] 5
+            # sync clock domain crossing to ADAT clock domain crossing
+            set_max_delay -from [get_clocks {car|audiopll|auto_generated|pll1|clk[3]}]  -to  [get_clocks {car|audiopll|auto_generated|pll1|clk[0]}] 5
+
+            # USB to fast clock domain crossing
+            set_max_delay -from [get_clocks {car|mainpll|auto_generated|pll1|clk[0]}]  -to  [get_clocks {car|audiopll|auto_generated|pll1|clk[2]}] 5
         """
         return templates
 
