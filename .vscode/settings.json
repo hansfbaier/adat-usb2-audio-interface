@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "gateware/venv/bin/python3"
+    "python.pythonPath": "gateware/venv/bin/python3",
+    "zenMode.hideLineNumbers": false,
 }
