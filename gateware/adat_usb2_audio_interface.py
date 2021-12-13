@@ -144,10 +144,10 @@ class USB2AudioInterface(Elaboratable):
 
         # since samples are constantly consumed from the FIFO
         # half the maximum USB packet size should be more than enough
-        usb1_to_adat_fifo_depth = self.MAX_PACKET_SIZE // 2
-        usb1_to_adat_fifo_level = Signal(range(usb1_to_adat_fifo_depth + 1))
-        fifo_level_feedback     = Signal.like(usb1_to_adat_fifo_level)
-        m.d.comb += fifo_level_feedback.eq(1 - (usb1_to_adat_fifo_level >> (usb1_to_adat_fifo_level.width - 6)))
+        usb1_to_output_fifo_depth = self.MAX_PACKET_SIZE // 2
+        usb1_to_output_fifo_level = Signal(range(usb1_to_output_fifo_depth + 1))
+        fifo_level_feedback     = Signal.like(usb1_to_output_fifo_level)
+        m.d.comb += fifo_level_feedback.eq(1 - (usb1_to_output_fifo_level >> (usb1_to_output_fifo_level.width - 6)))
 
         adat_clock_usb = Signal()
         m.submodules.adat_clock_usb_sync = FFSynchronizer(ClockSignal("adat"), adat_clock_usb, o_domain="usb")
@@ -205,8 +205,10 @@ class USB2AudioInterface(Elaboratable):
                 m.d.usb += no_channels.eq(2)
 
         nr_channel_bits = Shape.cast(range(self.number_of_channels)).width
-        m.submodules.usb1_to_adat_fifo = usb1_to_adat_fifo = \
-            AsyncFIFOBuffered(width=24 + nr_channel_bits + 2, depth=usb1_to_adat_fifo_depth, w_domain="usb", r_domain="sync")
+
+
+        m.submodules.usb1_to_output_fifo = usb1_to_output_fifo = \
+            AsyncFIFOBuffered(width=24 + nr_channel_bits + 2, depth=usb1_to_output_fifo_depth, w_domain="usb", r_domain="sync")
 
         m.submodules.adat_to_usb1_fifo = adat_to_usb1_fifo = \
             AsyncFIFOBuffered(width=24 + nr_channel_bits + 2, depth=16, w_domain="fast", r_domain="usb")
@@ -218,26 +220,26 @@ class USB2AudioInterface(Elaboratable):
         m.d.comb += [
             # convert USB stream to audio stream
             usb1_to_channel_stream.usb_stream_in.stream_eq(usb1_ep1_out.stream),
-            *connect_stream_to_fifo(usb1_to_channel_stream.channel_stream_out, usb1_to_adat_fifo),
+            *connect_stream_to_fifo(usb1_to_channel_stream.channel_stream_out, usb1_to_output_fifo),
 
-            usb1_to_adat_fifo.w_data[24:(24 + nr_channel_bits)]
+            usb1_to_output_fifo.w_data[24:(24 + nr_channel_bits)]
                 .eq(usb1_to_channel_stream.channel_stream_out.channel_nr),
 
-            usb1_to_adat_fifo.w_data[(24 + nr_channel_bits)]
+            usb1_to_output_fifo.w_data[(24 + nr_channel_bits)]
                 .eq(usb1_to_channel_stream.channel_stream_out.first),
 
-            usb1_to_adat_fifo.w_data[(24 + nr_channel_bits + 1)]
+            usb1_to_output_fifo.w_data[(24 + nr_channel_bits + 1)]
                 .eq(usb1_to_channel_stream.channel_stream_out.last),
 
-            usb1_to_adat_fifo.r_en.eq(adat1_transmitter.ready_out),
+            usb1_to_output_fifo.r_en.eq(adat1_transmitter.ready_out),
 
-            usb1_to_adat_fifo_level.eq(usb1_to_adat_fifo.w_level),
+            usb1_to_output_fifo_level.eq(usb1_to_output_fifo.w_level),
 
             # wire transmit FIFO to ADAT transmitter
-            adat1_transmitter.sample_in    .eq(usb1_to_adat_fifo.r_data[0:24]),
-            adat1_transmitter.addr_in      .eq(usb1_to_adat_fifo.r_data[24:(24 + nr_channel_bits)]),
-            adat1_transmitter.last_in      .eq(usb1_to_adat_fifo.r_data[-1]),
-            adat1_transmitter.valid_in     .eq(usb1_to_adat_fifo.r_rdy & usb1_to_adat_fifo.r_en),
+            adat1_transmitter.sample_in    .eq(usb1_to_output_fifo.r_data[0:24]),
+            adat1_transmitter.addr_in      .eq(usb1_to_output_fifo.r_data[24:(24 + nr_channel_bits)]),
+            adat1_transmitter.last_in      .eq(usb1_to_output_fifo.r_data[-1]),
+            adat1_transmitter.valid_in     .eq(usb1_to_output_fifo.r_rdy & usb1_to_output_fifo.r_en),
             adat1_transmitter.user_data_in .eq(0),
 
             # ADAT output
@@ -268,14 +270,14 @@ class USB2AudioInterface(Elaboratable):
         #
         # FIFO level debug display
         #
-        min_fifo_level = Signal.like(usb1_to_adat_fifo_level, reset=usb1_to_adat_fifo_depth)
-        max_fifo_level = Signal.like(usb1_to_adat_fifo_level)
+        min_fifo_level = Signal.like(usb1_to_output_fifo_level, reset=usb1_to_output_fifo_depth)
+        max_fifo_level = Signal.like(usb1_to_output_fifo_level)
 
-        with m.If(usb1_to_adat_fifo_level > max_fifo_level):
-            m.d.sync += max_fifo_level.eq(usb1_to_adat_fifo_level)
+        with m.If(usb1_to_output_fifo_level > max_fifo_level):
+            m.d.sync += max_fifo_level.eq(usb1_to_output_fifo_level)
 
-        with m.If(usb1_to_adat_fifo_level < min_fifo_level):
-            m.d.sync += min_fifo_level.eq(usb1_to_adat_fifo_level)
+        with m.If(usb1_to_output_fifo_level < min_fifo_level):
+            m.d.sync += min_fifo_level.eq(usb1_to_output_fifo_level)
 
 
         # I2S DACs
@@ -346,7 +348,7 @@ class USB2AudioInterface(Elaboratable):
             m.d.comb += usb_outputting.eq(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready)
 
             usb_out_level_maxed = Signal()
-            m.d.comb += usb_out_level_maxed.eq(usb1_to_adat_fifo_level >= (usb1_to_adat_fifo_depth - 1))
+            m.d.comb += usb_out_level_maxed.eq(usb1_to_output_fifo_level >= (usb1_to_output_fifo_depth - 1))
 
             m.d.comb += weird_frame_size.eq((audio_in_frame_bytes & 0b11) != 0)
 
@@ -367,7 +369,7 @@ class USB2AudioInterface(Elaboratable):
                 usb1_to_channel_stream.channel_stream_out.channel_nr,
                 usb1_to_channel_stream.channel_stream_out.first,
                 usb1_to_channel_stream.channel_stream_out.last,
-                usb1_to_adat_fifo_level,
+                usb1_to_output_fifo_level,
                 usb_out_level_maxed
             ]
 
@@ -383,7 +385,7 @@ class USB2AudioInterface(Elaboratable):
             ep1_out_fifo_debug = [
                 audio_in_frame_bytes,
                 min_fifo_level,
-                usb1_to_adat_fifo_level,
+                usb1_to_output_fifo_level,
                 max_fifo_level,
                 fifo_level_feedback,
                 feedbackValue,
@@ -473,7 +475,7 @@ class USB2AudioInterface(Elaboratable):
         m.d.comb += [
             sevensegment.number_in[0:8].eq(adat1_underflow_count),
             sevensegment.number_in[8:16].eq(min_fifo_level),
-            sevensegment.number_in[16:24].eq(usb1_to_adat_fifo_level),
+            sevensegment.number_in[16:24].eq(usb1_to_output_fifo_level),
             sevensegment.number_in[24:32].eq(max_fifo_level),
             sevensegment.dots_in.eq(leds),
             *led_display.connect_to_resource(spi),
