@@ -1,0 +1,56 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Mon Dec 13 23:39:41 2021
+[*]
+[dumpfile] "test_BundleDemultiplexerTest_test_smoke.vcd"
+[dumpfile_mtime] "Mon Dec 13 23:35:48 2021"
+[dumpfile_size] 8023
+[savefile] "gateware/bundle_demultiplexer-bench.gtkw"
+[timestart] 0
+[size] 3828 2090
+[pos] -1 -1
+*-15.000000 384000 384000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] top.
+[sst_width] 65
+[signals_width] 510
+[sst_expanded] 0
+[sst_vpaned_height] 658
+@28
+top.clk
+top.channel_stream__ready
+top.channel_stream__valid
+@22
+top.channel_stream__channel_nr[4:0]
+top.channel_stream__payload[23:0]
+@200
+-Multiplexer
+@22
+top.bundle_nr[1:0]
+top.channel_nr[2:0]
+@200
+-Output
+@28
+top.ready
+@22
+top.output_bundle_0__valid
+top.output_bundle_0__channel_nr[2:0]
+top.output_bundle_0__payload[23:0]
+top.output_bundle_0__first
+top.output_bundle_0__last
+top.output_bundle_1__valid
+top.output_bundle_1__channel_nr[2:0]
+top.output_bundle_1__payload[23:0]
+top.output_bundle_1__first
+top.output_bundle_1__last
+top.output_bundle_2__valid
+top.output_bundle_2__channel_nr[2:0]
+top.output_bundle_2__payload[23:0]
+top.output_bundle_2__first
+top.output_bundle_2__last
+top.output_bundle_3__valid
+top.output_bundle_3__channel_nr[2:0]
+top.output_bundle_3__payload[23:0]
+top.output_bundle_3__first
+top.output_bundle_3__last
+[pattern_trace] 1
+[pattern_trace] 0
