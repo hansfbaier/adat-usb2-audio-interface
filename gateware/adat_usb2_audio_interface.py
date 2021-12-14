@@ -214,7 +214,12 @@ class USB2AudioInterface(Elaboratable):
             AsyncFIFOBuffered(width=24 + nr_channel_bits + 2, depth=16, w_domain="fast", r_domain="usb")
 
         m.submodules.adat1_transmitter = adat1_transmitter = ADATTransmitter(fifo_depth=4)
-        m.submodules.adat1_receiver    = adat1_receiver    = DomainRenamer("fast")(ADATReceiver(platform.fast_domain_clock_freq))
+        # TODO: I don't know why it just works with the ADATReceiver thinking it runs at 100MHz
+        # while the actual fast domain frequency is 8 times the ADAT clock = 98.304 MHz.
+        # When I set the the correct clock frequency here, all channels work fine, except
+        # the first channel spitting out garbage. I probably should find out why,
+        # but I already have spent weeks to get this working and I want to get on with the project
+        m.submodules.adat1_receiver    = adat1_receiver    = DomainRenamer("fast")(ADATReceiver(int(100e6)))
         adat1_pads = platform.request("toslink", 1)
 
         m.d.comb += [
