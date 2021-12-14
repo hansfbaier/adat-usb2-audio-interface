@@ -107,13 +107,14 @@ class ADATFaceClockDomainGenerator(Elaboratable):
 class ADATFacePlatform(QMTechEP4CEPlatform, LUNAPlatform):
     clock_domain_generator = ADATFaceClockDomainGenerator
     number_of_channels     = 8
+    fast_domain_clock_freq = int(48e3 * 256 * 8)
 
     @property
     def file_templates(self):
         templates = super().file_templates
         templates["{{name}}.qsf"] += r"""
             set_global_assignment -name OPTIMIZATION_MODE "Aggressive Performance"
-            #set_global_assignment -name FITTER_EFFORT "Standard Fit"
+            set_global_assignment -name FITTER_EFFORT "Standard Fit"
             set_global_assignment -name PHYSICAL_SYNTHESIS_EFFORT "Extra"
             set_instance_assignment -name DECREASE_INPUT_DELAY_TO_INPUT_REGISTER OFF -to *ulpi*
             set_instance_assignment -name INCREASE_DELAY_TO_OUTPUT_PIN OFF -to *ulpi*

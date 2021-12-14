@@ -214,7 +214,7 @@ class USB2AudioInterface(Elaboratable):
             AsyncFIFOBuffered(width=24 + nr_channel_bits + 2, depth=16, w_domain="fast", r_domain="usb")
 
         m.submodules.adat1_transmitter = adat1_transmitter = ADATTransmitter(fifo_depth=4)
-        m.submodules.adat1_receiver    = adat1_receiver    = DomainRenamer("fast")(ADATReceiver(int(100e6)))
+        m.submodules.adat1_receiver    = adat1_receiver    = DomainRenamer("fast")(ADATReceiver(platform.fast_domain_clock_freq))
         adat1_pads = platform.request("toslink", 1)
 
         m.d.comb += [
