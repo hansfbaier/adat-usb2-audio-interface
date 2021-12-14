@@ -1,0 +1,76 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Tue Dec 14 22:59:41 2021
+[*]
+[dumpfile] "test_BundleMultiplexerTest_test_smoke.vcd"
+[dumpfile_mtime] "Tue Dec 14 22:35:59 2021"
+[dumpfile_size] 17202
+[savefile] "gateware/bundle_multiplexer-bench.gtkw"
+[timestart] 0
+[size] 3828 2090
+[pos] -1921 27
+*-15.418433 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] top.
+[sst_width] 562
+[signals_width] 606
+[sst_expanded] 1
+[sst_vpaned_height] 658
+@28
+top.clk
+@200
+-Inputs
+@22
+top.input_bundle_0__channel_nr[2:0]
+top.input_bundle_0__last
+top.input_bundle_0__payload[23:0]
+top.input_bundle_0__valid
+top.input_bundle_1__channel_nr[2:0]
+top.input_bundle_1__last
+top.input_bundle_1__payload[23:0]
+top.input_bundle_1__valid
+top.input_bundle_2__channel_nr[2:0]
+top.input_bundle_2__last
+top.input_bundle_2__payload[23:0]
+top.input_bundle_2__valid
+top.input_bundle_3__channel_nr[2:0]
+top.input_bundle_3__last
+top.input_bundle_3__payload[23:0]
+top.input_bundle_3__valid
+@200
+-Module
+@22
+top.current_bundle[1:0]
+top.bundle0_channel[2:0]
+top.bundle0_last
+top.bundle0_read_en
+top.bundle0_ready
+top.bundle0_sample[23:0]
+top.bundle1_channel[2:0]
+top.bundle1_last
+top.bundle1_read_en
+top.bundle1_ready
+top.bundle1_sample[23:0]
+top.bundle2_channel[2:0]
+top.bundle2_last
+top.bundle2_read_en
+top.bundle2_ready
+top.bundle2_sample[23:0]
+top.bundle3_channel[2:0]
+top.bundle3_last
+top.bundle3_read_en
+top.bundle3_ready
+top.bundle3_sample[23:0]
+@200
+-Output
+@28
+top.channel_stream__first
+top.channel_stream__last
+@23
+top.channel_stream__channel_nr[4:0]
+@22
+top.channel_stream__payload[23:0]
+@28
+top.channel_stream__ready
+top.channel_stream__valid
+[pattern_trace] 1
+[pattern_trace] 0
