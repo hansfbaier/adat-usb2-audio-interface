@@ -1,14 +1,14 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Tue Dec 14 22:59:41 2021
+[*] Wed Dec 15 03:34:32 2021
 [*]
-[dumpfile] "test_BundleMultiplexerTest_test_smoke.vcd"
-[dumpfile_mtime] "Tue Dec 14 22:35:59 2021"
-[dumpfile_size] 17202
-[savefile] "gateware/bundle_multiplexer-bench.gtkw"
+[dumpfile] "/devel/HDL/src/adat-usb2-audio-interface/test_BundleMultiplexerTest_test_smoke.vcd"
+[dumpfile_mtime] "Wed Dec 15 03:34:24 2021"
+[dumpfile_size] 17713
+[savefile] "/devel/HDL/src/adat-usb2-audio-interface/gateware/bundle_multiplexer-bench.gtkw"
 [timestart] 0
 [size] 3828 2090
-[pos] -1921 27
+[pos] -1 -1
 *-15.418433 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] top.
 [sst_width] 562
@@ -20,6 +20,10 @@ top.clk
 @200
 -Inputs
 @22
+top.no_channels0[3:0]
+top.no_channels1[3:0]
+top.no_channels2[3:0]
+top.no_channels3[3:0]
 top.input_bundle_0__channel_nr[2:0]
 top.input_bundle_0__last
 top.input_bundle_0__payload[23:0]
@@ -40,6 +44,14 @@ top.input_bundle_3__valid
 -Module
 @22
 top.current_bundle[1:0]
+top.current_channel[4:0]
+@29
+top.bundle0_active
+top.bundle1_active
+top.bundle2_active
+top.bundle3_active
+@22
+top.first_bundle_channel[4:0]
 top.bundle0_channel[2:0]
 top.bundle0_last
 top.bundle0_read_en
@@ -65,9 +77,8 @@ top.bundle3_sample[23:0]
 @28
 top.channel_stream__first
 top.channel_stream__last
-@23
-top.channel_stream__channel_nr[4:0]
 @22
+top.channel_stream__channel_nr[4:0]
 top.channel_stream__payload[23:0]
 @28
 top.channel_stream__ready
