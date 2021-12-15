@@ -106,7 +106,7 @@ class ADATFaceClockDomainGenerator(Elaboratable):
 
 class ADATFacePlatform(QMTechEP4CEPlatform, LUNAPlatform):
     clock_domain_generator = ADATFaceClockDomainGenerator
-    number_of_channels     = 8
+    number_of_channels     = 32
     fast_domain_clock_freq = int(48e3 * 256 * 8)
 
     @property
