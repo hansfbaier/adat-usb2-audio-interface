@@ -12,10 +12,13 @@ from usb_protocol.emitters.descriptors        import uac2, standard
 
 class USBDescriptors():
     def __init__(self, *, max_packet_size, number_of_channels, ila_max_packet_size, use_ila=False) -> None:
-        self.MAX_PACKET_SIZE = max_packet_size
-        self.number_of_channels = number_of_channels
+        # audio interface layout
+        self.MAX_PACKET_SIZE     = max_packet_size
+        self.number_of_channels  = number_of_channels
+
+        # ILA
+        self.USE_ILA             = use_ila
         self.ILA_MAX_PACKET_SIZE = ila_max_packet_size
-        self.USE_ILA = use_ila
 
     def create_descriptors(self):
         """ Creates the descriptors that describe our audio topology. """

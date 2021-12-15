@@ -40,7 +40,8 @@ class USB2AudioInterface(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        self.number_of_channels = platform.number_of_channels
+        number_of_channels      = platform.number_of_channels
+        number_of_channels_bits = Shape.cast(range(number_of_channels)).width
 
         m.submodules.car = platform.clock_domain_generator()
 
@@ -51,7 +52,7 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.usb1 = usb1 = USBDevice(bus=ulpi1)
 
         descriptors = USBDescriptors(max_packet_size=self.MAX_PACKET_SIZE, \
-                                     number_of_channels=self.number_of_channels, \
+                                     number_of_channels=number_of_channels, \
                                      ila_max_packet_size=self.ILA_MAX_PACKET_SIZE, \
                                      use_ila=self.USE_ILA).create_descriptors()
 
@@ -86,113 +87,28 @@ class USB2AudioInterface(Elaboratable):
             max_packet_size=self.MAX_PACKET_SIZE)
         usb1.add_endpoint(usb1_ep2_in)
 
-        #
-        # USB input frame size calculation
-        #
-
-        # calculate bytes in frame for audio in
-        audio_in_frame_byte_counter   = Signal(range(self.MAX_PACKET_SIZE), reset=24 * self.number_of_channels)
-        audio_in_frame_bytes_counting = Signal()
-
-        with m.If(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready):
-            with m.If(audio_in_frame_bytes_counting):
-                m.d.usb += audio_in_frame_byte_counter.eq(audio_in_frame_byte_counter + 1)
-
-            with m.If(usb1_ep1_out.stream.first):
-                m.d.usb += [
-                    audio_in_frame_byte_counter.eq(1),
-                    audio_in_frame_bytes_counting.eq(1),
-                ]
-            with m.Elif(usb1_ep1_out.stream.last):
-                m.d.usb += audio_in_frame_bytes_counting.eq(0)
-
-        audio_in_frame_bytes = Signal.like(audio_in_frame_byte_counter)
-        with m.If(usb1_ep1_out.stream.last):
-            m.d.usb += audio_in_frame_bytes.eq(audio_in_frame_byte_counter + 1)
-
         m.d.comb += [
-            usb1_ep1_in.bytes_in_frame.eq(4),
-            usb1_ep2_in.bytes_in_frame.eq(audio_in_frame_bytes),
             usb1.connect          .eq(1),
             # Connect our device as a high speed device
             usb1.full_speed_only  .eq(0),
         ]
 
-        #
-        # USB rate feedback
-        #
+        audio_in_frame_bytes = \
+            self.calculate_usb_input_frame_size(m, usb1_ep1_out, usb1_ep2_in, number_of_channels)
 
-        # feedback endpoint
-        feedbackValue      = Signal(32, reset=0x60000)
-        bitPos             = Signal(5)
-
-        # this tracks the number of ADAT frames in N microframes
-        # with 12.288MHz / 8kHz = 1536 samples per microframe
-        # we have N = 256, so we need
-        # math.ceil(math.log2(1536 * 256)) = 19 bits
-        adat_clock_counter      = Signal(19)
-
-        # according to USB2 standard chapter 5.12.4.2
-        # we need at least 2**13 / 2**8 = 2**5 = 32 SOF-frames of
-        # sample master frequency counter to get the minimal
-        # precision for the sample frequency estimate
-        # / 2**8 because the ADAT-clock = 256 times = 2**8
-        # the sample frequency
-        # we average over 256 microframes, because that gives
-        # us the maximum precision needed by the feedback endpoint
-        sof_counter             = Signal(8)
-
-        # since samples are constantly consumed from the FIFO
-        # half the maximum USB packet size should be more than enough
-        usb1_to_output_fifo_depth = self.MAX_PACKET_SIZE // 2
-        usb1_to_output_fifo_level = Signal(range(usb1_to_output_fifo_depth + 1))
-        fifo_level_feedback     = Signal.like(usb1_to_output_fifo_level)
-        m.d.comb += fifo_level_feedback.eq(1 - (usb1_to_output_fifo_level >> (usb1_to_output_fifo_level.width - 6)))
-
-        adat_clock_usb = Signal()
-        m.submodules.adat_clock_usb_sync = FFSynchronizer(ClockSignal("adat"), adat_clock_usb, o_domain="usb")
-        m.submodules.adat_clock_usb_pulse = adat_clock_usb_pulse = DomainRenamer("usb")(EdgeToPulse())
-        adat_clock_tick = Signal()
-        m.d.usb += [
-            adat_clock_usb_pulse.edge_in.eq(adat_clock_usb),
-            adat_clock_tick.eq(adat_clock_usb_pulse.pulse_out),
-        ]
-
-        with m.If(adat_clock_tick):
-            m.d.usb += adat_clock_counter.eq(adat_clock_counter + 1)
-
-        with m.If(usb1.sof_detected):
-            m.d.usb += sof_counter.eq(sof_counter + 1)
-
-            with m.If(sof_counter == 0):
-                # when feedbackValue == adat_clock_counter the
-                # FIFO underflows slowly, but also when
-                # feedbackValue == adat_clock_counter + 1
-                # the FIFO slowly but surely fills to overflow.
-                # since both of those feedback values are only one apart,
-                # we need to start with the slowly overflowing value and
-                # provide negative feedback proportional to the fill level
-                # of the FIFO
-                m.d.usb += [
-                    feedbackValue.eq(adat_clock_counter + fifo_level_feedback),
-                    adat_clock_counter.eq(0),
-                ]
-
-        m.d.comb += [
-            bitPos.eq(usb1_ep1_in.address << 3),
-            usb1_ep1_in.value.eq(0xff & (feedbackValue >> bitPos)),
-        ]
+        sof_counter, usb1_to_output_fifo_level, usb1_to_output_fifo_depth = \
+            self.create_sample_rate_feedback_circuit(m, usb1, usb1_ep1_in)
 
         #
         # USB <-> Channel Stream conversion
         #
         m.submodules.usb1_to_channel_stream = usb1_to_channel_stream = \
-            DomainRenamer("usb")(USBStreamToChannels(self.number_of_channels))
+            DomainRenamer("usb")(USBStreamToChannels(number_of_channels))
 
         m.submodules.channels_to_usb1_stream = channels_to_usb1_stream = \
-            DomainRenamer("usb")(ChannelsToUSBStream(self.number_of_channels, max_packet_size=self.MAX_PACKET_SIZE))
+            DomainRenamer("usb")(ChannelsToUSBStream(number_of_channels, max_packet_size=self.MAX_PACKET_SIZE))
 
-        no_channels = Signal(range(self.number_of_channels * 2), reset=2)
+        no_channels = Signal(range(number_of_channels * 2), reset=2)
         m.d.comb += [
             usb1_to_channel_stream.no_channels_in.eq(no_channels),
             channels_to_usb1_stream.no_channels_in.eq(no_channels),
@@ -204,14 +120,11 @@ class USB2AudioInterface(Elaboratable):
             with m.Default():
                 m.d.usb += no_channels.eq(2)
 
-        nr_channel_bits = Shape.cast(range(self.number_of_channels)).width
-
-
         m.submodules.usb1_to_output_fifo = usb1_to_output_fifo = \
-            AsyncFIFOBuffered(width=24 + nr_channel_bits + 2, depth=usb1_to_output_fifo_depth, w_domain="usb", r_domain="sync")
+            AsyncFIFOBuffered(width=24 + number_of_channels_bits + 2, depth=usb1_to_output_fifo_depth, w_domain="usb", r_domain="sync")
 
         m.submodules.adat_to_usb1_fifo = adat_to_usb1_fifo = \
-            AsyncFIFOBuffered(width=24 + nr_channel_bits + 2, depth=16, w_domain="fast", r_domain="usb")
+            AsyncFIFOBuffered(width=24 + number_of_channels_bits + 2, depth=16, w_domain="fast", r_domain="usb")
 
         m.submodules.adat1_transmitter = adat1_transmitter = ADATTransmitter(fifo_depth=4)
         m.submodules.adat1_receiver    = adat1_receiver    = DomainRenamer("fast")(ADATReceiver(platform.fast_domain_clock_freq))
@@ -222,13 +135,13 @@ class USB2AudioInterface(Elaboratable):
             usb1_to_channel_stream.usb_stream_in.stream_eq(usb1_ep1_out.stream),
             *connect_stream_to_fifo(usb1_to_channel_stream.channel_stream_out, usb1_to_output_fifo),
 
-            usb1_to_output_fifo.w_data[24:(24 + nr_channel_bits)]
+            usb1_to_output_fifo.w_data[24:(24 + number_of_channels_bits)]
                 .eq(usb1_to_channel_stream.channel_stream_out.channel_nr),
 
-            usb1_to_output_fifo.w_data[(24 + nr_channel_bits)]
+            usb1_to_output_fifo.w_data[(24 + number_of_channels_bits)]
                 .eq(usb1_to_channel_stream.channel_stream_out.first),
 
-            usb1_to_output_fifo.w_data[(24 + nr_channel_bits + 1)]
+            usb1_to_output_fifo.w_data[(24 + number_of_channels_bits + 1)]
                 .eq(usb1_to_channel_stream.channel_stream_out.last),
 
             usb1_to_output_fifo.r_en.eq(adat1_transmitter.ready_out),
@@ -237,7 +150,7 @@ class USB2AudioInterface(Elaboratable):
 
             # wire transmit FIFO to ADAT transmitter
             adat1_transmitter.sample_in    .eq(usb1_to_output_fifo.r_data[0:24]),
-            adat1_transmitter.addr_in      .eq(usb1_to_output_fifo.r_data[24:(24 + nr_channel_bits)]),
+            adat1_transmitter.addr_in      .eq(usb1_to_output_fifo.r_data[24:(24 + number_of_channels_bits)]),
             adat1_transmitter.last_in      .eq(usb1_to_output_fifo.r_data[-1]),
             adat1_transmitter.valid_in     .eq(usb1_to_output_fifo.r_rdy & usb1_to_output_fifo.r_en),
             adat1_transmitter.user_data_in .eq(0),
@@ -389,8 +302,6 @@ class USB2AudioInterface(Elaboratable):
                 min_fifo_level,
                 usb1_to_output_fifo_level,
                 max_fifo_level,
-                fifo_level_feedback,
-                feedbackValue,
                 usb1.sof_detected,
             ]
 
@@ -486,6 +397,102 @@ class USB2AudioInterface(Elaboratable):
         ]
 
         return m
+
+    def calculate_usb_input_frame_size(self, m: Module, usb1_ep1_out, usb1_ep2_in, number_of_channels):
+        """calculate the number of bytes one packet of audio input contains"""
+
+        audio_in_frame_byte_counter   = Signal(range(self.MAX_PACKET_SIZE), reset=24 * number_of_channels)
+        audio_in_frame_bytes_counting = Signal()
+
+        with m.If(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready):
+            with m.If(audio_in_frame_bytes_counting):
+                m.d.usb += audio_in_frame_byte_counter.eq(audio_in_frame_byte_counter + 1)
+
+            with m.If(usb1_ep1_out.stream.first):
+                m.d.usb += [
+                    audio_in_frame_byte_counter.eq(1),
+                    audio_in_frame_bytes_counting.eq(1),
+                ]
+            with m.Elif(usb1_ep1_out.stream.last):
+                m.d.usb += audio_in_frame_bytes_counting.eq(0)
+
+        audio_in_frame_bytes = Signal.like(audio_in_frame_byte_counter)
+        with m.If(usb1_ep1_out.stream.last):
+            m.d.usb += audio_in_frame_bytes.eq(audio_in_frame_byte_counter + 1)
+
+        m.d.comb += usb1_ep2_in.bytes_in_frame.eq(audio_in_frame_bytes),
+
+        return audio_in_frame_bytes
+
+    def create_sample_rate_feedback_circuit(self, m: Module, usb1, usb1_ep1_in):
+        #
+        # USB rate feedback
+        #
+
+        # feedback endpoint
+        feedbackValue      = Signal(32, reset=0x60000)
+        bitPos             = Signal(5)
+
+        # this tracks the number of ADAT frames in N microframes
+        # with 12.288MHz / 8kHz = 1536 samples per microframe
+        # we have N = 256, so we need
+        # math.ceil(math.log2(1536 * 256)) = 19 bits
+        adat_clock_counter      = Signal(19)
+
+        # according to USB2 standard chapter 5.12.4.2
+        # we need at least 2**13 / 2**8 = 2**5 = 32 SOF-frames of
+        # sample master frequency counter to get the minimal
+        # precision for the sample frequency estimate
+        # / 2**8 because the ADAT-clock = 256 times = 2**8
+        # the sample frequency
+        # we average over 256 microframes, because that gives
+        # us the maximum precision needed by the feedback endpoint
+        sof_counter             = Signal(8)
+
+        # since samples are constantly consumed from the FIFO
+        # half the maximum USB packet size should be more than enough
+        usb1_to_output_fifo_depth = self.MAX_PACKET_SIZE // 2
+        usb1_to_output_fifo_level = Signal(range(usb1_to_output_fifo_depth + 1))
+        fifo_level_feedback       = Signal.like(usb1_to_output_fifo_level)
+        m.d.comb += fifo_level_feedback.eq(1 - (usb1_to_output_fifo_level >> (usb1_to_output_fifo_level.width - 6)))
+
+        adat_clock_usb = Signal()
+        m.submodules.adat_clock_usb_sync = FFSynchronizer(ClockSignal("adat"), adat_clock_usb, o_domain="usb")
+        m.submodules.adat_clock_usb_pulse = adat_clock_usb_pulse = DomainRenamer("usb")(EdgeToPulse())
+        adat_clock_tick = Signal()
+        m.d.usb += [
+            adat_clock_usb_pulse.edge_in.eq(adat_clock_usb),
+            adat_clock_tick.eq(adat_clock_usb_pulse.pulse_out),
+        ]
+
+        with m.If(adat_clock_tick):
+            m.d.usb += adat_clock_counter.eq(adat_clock_counter + 1)
+
+        with m.If(usb1.sof_detected):
+            m.d.usb += sof_counter.eq(sof_counter + 1)
+
+            with m.If(sof_counter == 0):
+                # when feedbackValue == adat_clock_counter the
+                # FIFO underflows slowly, but also when
+                # feedbackValue == adat_clock_counter + 1
+                # the FIFO slowly but surely fills to overflow.
+                # since both of those feedback values are only one apart,
+                # we need to start with the slowly overflowing value and
+                # provide negative feedback proportional to the fill level
+                # of the FIFO
+                m.d.usb += [
+                    feedbackValue.eq(adat_clock_counter + fifo_level_feedback),
+                    adat_clock_counter.eq(0),
+                ]
+
+        m.d.comb += [
+            usb1_ep1_in.bytes_in_frame.eq(4),
+            bitPos.eq(usb1_ep1_in.address << 3),
+            usb1_ep1_in.value.eq(0xff & (feedbackValue >> bitPos)),
+        ]
+
+        return (sof_counter, usb1_to_output_fifo_level, usb1_to_output_fifo_depth)
+
 
 if __name__ == "__main__":
     os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce_platform:ADATFacePlatform"
