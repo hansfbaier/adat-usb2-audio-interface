@@ -155,7 +155,9 @@ class BundleMultiplexerTest(GatewareTestCase):
                 yield dut.bundle_active_in[bundle].eq(1)
         yield
         for bundle in range(4):
-            if (bundle != 2):
+            if bundle != 2:
                 yield from self.send_bundle_frame(bundle, bundle)
+            if bundle == 0:
+                yield from self.advance_cycles(8)
 
         yield from self.advance_cycles(16)
