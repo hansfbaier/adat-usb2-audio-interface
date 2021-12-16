@@ -178,10 +178,11 @@ class USB2AudioInterface(Elaboratable):
         for i in range(4):
             m.d.comb += [
                 # transmitters
-                adat_transmitters[i].sample_in    .eq(bundle_demultiplexer.bundles_out[i].payload),
-                adat_transmitters[i].addr_in      .eq(bundle_demultiplexer.bundles_out[i].channel_nr),
-                adat_transmitters[i].last_in      .eq(bundle_demultiplexer.bundles_out[i].last),
-                adat_transmitters[i].valid_in     .eq(bundle_demultiplexer.bundles_out[i].valid),
+                adat_transmitters[i].sample_in           .eq(bundle_demultiplexer.bundles_out[i].payload),
+                adat_transmitters[i].addr_in             .eq(bundle_demultiplexer.bundles_out[i].channel_nr),
+                adat_transmitters[i].last_in             .eq(bundle_demultiplexer.bundles_out[i].last),
+                adat_transmitters[i].valid_in            .eq(bundle_demultiplexer.bundles_out[i].valid),
+                bundle_demultiplexer.bundles_out[i].ready.eq(adat_transmitters[i].ready_out),
                 adat_transmitters[i].user_data_in .eq(0),
 
                 adat_pads[i].tx.eq(adat_transmitters[i].adat_out),
