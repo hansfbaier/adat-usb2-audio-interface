@@ -20,9 +20,9 @@ from usb_protocol.types                       import USBRequestType, USBStandard
 
 from luna.gateware.usb.usb2.device            import USBDevice
 from luna.gateware.usb.usb2.endpoints.stream  import USBMultibyteStreamInEndpoint
-from luna.gateware.usb.usb2.request           import USBRequestHandler, StallOnlyRequestHandler
+from luna.gateware.usb.usb2.request           import StallOnlyRequestHandler
 
-from adat import ADATTransmitter, ADATReceiver, receiver
+from adat import ADATTransmitter, ADATReceiver
 from adat import EdgeToPulse
 
 from usb_stream_to_channels import USBStreamToChannels
@@ -265,21 +265,9 @@ class USB2AudioInterface(Elaboratable):
                 usb_packet_counter[0:2] != Const(0b11, 2)
             ))
 
-            channels_to_usb_output_stream = [
-                #channels_to_usb1_stream.usb_stream_out.valid,
-                #channels_to_usb1_stream.usb_stream_out.ready,
-                channels_to_usb1_stream.usb_stream_out.payload,
-            ]
-
             channels_to_usb_output_frame = [
                 usb1_ep2_in.data_requested,
                 usb1_ep2_in.frame_finished,
-            ]
-
-            channels_to_usb_input_stream = [
-                #channels_to_usb1_stream.channel_stream_in.ready,
-                #channels_to_usb1_stream.channel_stream_in.valid,
-                channels_to_usb1_stream.channel_stream_in.payload,
             ]
 
             channels_to_usb_input_frame = [
@@ -373,7 +361,7 @@ class USB2AudioInterface(Elaboratable):
                 adat_receivers[adat_nr].output_enable,
             ]
 
-            signals = adat_debug # channels_to_usb_input_frame #+ channels_to_usb_debug + channels_to_usb_output_frame #  + [ strange_input ] #
+            signals = usb_out_debug # channels_to_usb_input_frame #+ channels_to_usb_debug + channels_to_usb_output_frame #  + [ strange_input ] #
 
             signals_bits = sum([s.width for s in signals])
             m.submodules.ila = ila = \
@@ -383,7 +371,7 @@ class USB2AudioInterface(Elaboratable):
                     signals=signals,
                     sample_depth       = int(30 * 8 * 1024 / signals_bits),
                     samples_pretrigger = int(1 * 8 * 1024 / signals_bits),
-                    with_enable=False)
+                    with_enable=True)
 
             stream_ep = USBMultibyteStreamInEndpoint(
                 endpoint_number=3, # EP 3 IN
@@ -401,8 +389,8 @@ class USB2AudioInterface(Elaboratable):
                 #ila.enable.eq(usb_channel_outputting),
                 #ila.enable.eq(input_or_output_active | garbage | usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
                 #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
-                ila.trigger.eq(adat1_first),
-                #ila.enable.eq(input_active),
+                ila.trigger.eq(usb_channel_outputting),
+                ila.enable.eq(usb_channel_outputting),
             ]
 
             ILACoreParameters(ila).pickle()

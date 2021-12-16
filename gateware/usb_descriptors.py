@@ -79,7 +79,6 @@ class USBDescriptors():
         clockSource.bmControls   = uac2.ClockFrequencyControl.HOST_READ_ONLY
         audioControlInterface.add_subordinate_descriptor(clockSource)
 
-
         # streaming input port from the host to the USB interface
         inputTerminal               = uac2.InputTerminalDescriptorEmitter()
         inputTerminal.bTerminalID   = 2

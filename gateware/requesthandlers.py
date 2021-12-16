@@ -2,7 +2,7 @@ from nmigen import *
 from luna.gateware.usb.usb2.request   import USBRequestHandler
 from luna.gateware.stream.generator   import StreamSerializer
 
-from usb_protocol.types                       import USBRequestType, USBRequestRecipient, USBTransferType, USBSynchronizationType, USBUsageType, USBDirection, USBStandardRequests
+from usb_protocol.types                       import USBRequestType, USBRequestRecipient, USBStandardRequests
 from usb_protocol.types.descriptors.uac2      import AudioClassSpecificRequestCodes
 from luna.gateware.usb.stream                 import USBInStreamInterface
 
