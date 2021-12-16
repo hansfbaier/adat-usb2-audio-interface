@@ -420,16 +420,18 @@ class USB2AudioInterface(Elaboratable):
             m.d.sync += max_fifo_level.eq(0)
 
         spi = platform.request("spi")
-        m.submodules.sevensegment = sevensegment = NumberToSevenSegmentHex(width=32)
-        m.submodules.led_display  = led_display  = SerialLEDArray(divisor=6, init_delay=24e6)
-        m.d.comb += [
+        m.submodules.sevensegment = sevensegment = (NumberToSevenSegmentHex(width=32))
+        m.submodules.led_display  = led_display  = (SerialLEDArray(divisor=10, init_delay=24e6))
+        m.d.sync += [
             sevensegment.number_in[0:8].eq(adat1_underflow_count),
             sevensegment.number_in[8:16].eq(min_fifo_level),
             sevensegment.number_in[16:24].eq(usb1_to_output_fifo_level),
             sevensegment.number_in[24:32].eq(max_fifo_level),
             sevensegment.dots_in.eq(leds),
-            *led_display.connect_to_resource(spi),
             Cat(led_display.digits_in).eq(sevensegment.seven_segment_out),
+        ]
+        m.d.comb += [
+            *led_display.connect_to_resource(spi),
             led_display.valid_in.eq(1),
         ]
 
