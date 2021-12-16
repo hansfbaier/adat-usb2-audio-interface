@@ -41,7 +41,7 @@ class BundleDemultiplexer(Elaboratable):
         last_channel = channel_mask = (self.NO_CHANNELS_ADAT - 1)
 
         m.d.comb += [
-            ready.eq(reduce(operator.or_, [bundle.ready for bundle in self.bundles_out])),
+            ready.eq(self.bundles_out[bundle_nr].ready),
             channel_stream.ready.eq(ready),
             bundle_nr.eq(channel_stream.channel_nr >> channel_nr.width),
             channel_nr.eq(channel_stream.channel_nr & channel_mask)
