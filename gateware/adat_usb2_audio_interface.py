@@ -123,7 +123,7 @@ class USB2AudioInterface(Elaboratable):
 
         with m.Switch(class_request_handler.output_interface_altsetting_nr):
             with m.Case(2):
-                m.d.usb += no_channels.eq(no_channels)
+                m.d.usb += no_channels.eq(number_of_channels)
             with m.Default():
                 m.d.usb += no_channels.eq(2)
 
