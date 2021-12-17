@@ -195,6 +195,7 @@ class USB2AudioInterface(Elaboratable):
                 bundle_multiplexer.bundles_in[i].payload    .eq(adat_receivers[i].sample_out),
                 bundle_multiplexer.bundles_in[i].channel_nr .eq(adat_receivers[i].addr_out),
                 bundle_multiplexer.bundles_in[i].valid      .eq(adat_receivers[i].output_enable),
+                bundle_multiplexer.bundles_in[i].last       .eq(adat_receivers[i].addr_out == 7),
                 bundle_multiplexer.bundle_active_in[i]      .eq(adat_receivers[i].synced_out),
             ]
 
@@ -362,7 +363,38 @@ class USB2AudioInterface(Elaboratable):
                 adat_receivers[adat_nr].output_enable,
             ]
 
-            signals = usb_out_debug # channels_to_usb_input_frame #+ channels_to_usb_debug + channels_to_usb_output_frame #  + [ strange_input ] #
+            multiplexer_debug = [
+                bundle_multiplexer.current_bundle,
+                bundle_multiplexer.last_bundle,
+                bundle_multiplexer.bundles_in[0].valid,
+                bundle_multiplexer.bundles_in[0].ready,
+                bundle_multiplexer.bundles_in[0].payload,
+                bundle_multiplexer.bundles_in[0].channel_nr,
+                bundle_multiplexer.bundles_in[0].last,
+                bundle_multiplexer.bundles_in[3].valid,
+                bundle_multiplexer.bundles_in[3].ready,
+                bundle_multiplexer.bundles_in[3].payload,
+                bundle_multiplexer.bundles_in[3].channel_nr,
+                bundle_multiplexer.bundles_in[3].last,
+                bundle_multiplexer.channel_stream_out.payload,
+                bundle_multiplexer.channel_stream_out.channel_nr,
+                bundle_multiplexer.channel_stream_out.valid,
+                bundle_multiplexer.channel_stream_out.ready,
+                bundle_multiplexer.channel_stream_out.last,
+                #*bundle_multiplexer.bundle_active_in,
+            ]
+
+            multiplexer_enable = Signal()
+            m.d.comb += multiplexer_enable.eq(
+                (bundle_multiplexer.bundles_in[0].valid &
+                bundle_multiplexer.bundles_in[0].ready) |
+                (bundle_multiplexer.bundles_in[3].valid &
+                bundle_multiplexer.bundles_in[3].ready) |
+                (bundle_multiplexer.channel_stream_out.valid &
+                bundle_multiplexer.channel_stream_out.ready)
+            )
+
+            signals = multiplexer_debug
 
             signals_bits = sum([s.width for s in signals])
             m.submodules.ila = ila = \
@@ -385,13 +417,13 @@ class USB2AudioInterface(Elaboratable):
 
             m.d.comb += [
                 stream_ep.stream.stream_eq(ila.stream),
-                garbage.eq(channels_to_usb1_stream.skipping | channels_to_usb1_stream.filling),
+                garbage.eq(channels_to_usb_stream.skipping | channels_to_usb_stream.filling),
                 #ila.enable.eq(usb_outputting | weird_frame_size | usb1_ep1_out.stream.first | usb1_ep1_out.stream.last),
                 #ila.enable.eq(usb_channel_outputting),
                 #ila.enable.eq(input_or_output_active | garbage | usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
                 #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
-                ila.trigger.eq(usb_channel_outputting),
-                ila.enable.eq(usb_channel_outputting),
+                ila.trigger.eq(1),
+                ila.enable.eq(multiplexer_enable),
             ]
 
             ILACoreParameters(ila).pickle()

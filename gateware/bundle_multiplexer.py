@@ -28,6 +28,10 @@ class BundleMultiplexer(Elaboratable):
 
         self.no_channels_in      = Array(Signal(self._bundle_channel_bits + 1, name=f"no_channels{i}") for i in range(no_bundles))
 
+        # debug ports
+        self.current_bundle = Signal(range(no_bundles))
+        self.last_bundle = Signal()
+
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
         sample_width = self.SAMPLE_WIDTH
@@ -62,6 +66,10 @@ class BundleMultiplexer(Elaboratable):
         last_bundle          = Signal(self._bundle_channel_bits)
 
         m.d.comb += last_bundle.eq(current_bundle == (self._no_bundles - 1))
+        m.d.comb += [
+            self.current_bundle.eq(current_bundle),
+            self.last_bundle.eq(last_bundle),
+        ]
 
         def handle_last_channel():
             with m.If(last_bundle):
