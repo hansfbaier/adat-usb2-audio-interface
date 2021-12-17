@@ -19,7 +19,7 @@ class BundleMultiplexer(Elaboratable):
                                                    payload_width=self.SAMPLE_WIDTH,
                                                    extra_fields=[("channel_nr", self._channel_bits)])
 
-        self.bundles_in          = Array(StreamInterface(name=f"input_bundle_{i}",
+        self.bundles_in          = Array(StreamInterface(name=f"input_bundle{i}",
                                                          payload_width=self.SAMPLE_WIDTH,
                                                          extra_fields=[("channel_nr", self._bundle_channel_bits)])
                                          for i in range(no_bundles))
