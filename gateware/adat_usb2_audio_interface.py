@@ -430,8 +430,8 @@ class USB2AudioInterface(Elaboratable):
 
         usb_aux1 = platform.request("usb_aux", 1)
         usb_aux2 = platform.request("usb_aux", 2)
-        leds = platform.request("leds")
 
+        leds = platform.request("leds")
         m.d.comb += [
             leds.active1.eq(usb1.tx_activity_led | usb1.rx_activity_led),
             leds.suspended1.eq(usb1.suspended),
@@ -440,6 +440,7 @@ class USB2AudioInterface(Elaboratable):
             leds.usb1.eq(usb_aux1.vbus),
             leds.usb2.eq(usb_aux2.vbus),
         ]
+        m.d.comb += [getattr(leds, f"sync{i + 1}").eq(adat_receivers[i].synced_out) for i in range(4)]
 
         # DEBUG display
         adat1_underflow_count = Signal(16)
