@@ -15,7 +15,7 @@ class ChannelsToUSBStream(Elaboratable):
         self._max_packet_size = max_packet_size
 
         # ports
-        self.no_channels_in      = Signal(4)
+        self.no_channels_in      = Signal(self._channel_bits + 1)
         self.channel_stream_in   = StreamInterface(name="channel_stream", payload_width=self._sample_width, extra_fields=[("channel_nr", self._channel_bits)])
         self.usb_stream_out      = StreamInterface(name="usb_stream")
         self.data_requested_in   = Signal()
@@ -127,7 +127,7 @@ class ChannelsToUSBStream(Elaboratable):
                     m.next = "WAIT"
 
 
-        channel_counter = Signal(3)
+        channel_counter = Signal.like(self.no_channels_in)
         byte_pos        = Signal(2)
         first_byte      = byte_pos == 0
         last_byte       = byte_pos == 3
