@@ -137,7 +137,7 @@ class USB2AudioInterface(Elaboratable):
         adat_receivers    = []
         adat_pads         = []
         for i in range(1, 5):
-            transmitter = ADATTransmitter(fifo_depth=4)
+            transmitter = ADATTransmitter(fifo_depth=8)
             setattr(m.submodules, f"adat{i}_transmitter", transmitter)
             adat_transmitters.append(transmitter)
 
