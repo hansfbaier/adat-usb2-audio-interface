@@ -74,10 +74,10 @@ class ADATFaceClockDomainGenerator(Elaboratable):
             p_CLK2_MULTIPLY_BY       = 17 * 8,
             p_CLK2_PHASE_SHIFT       = 0,
 
-            # ADAT transmit domain clock = 48 kHz * 256 * 4 output terminals
+            # ADAT transmit domain clock = 48 kHz * 256 * 5 output terminals
             p_CLK3_DIVIDE_BY         = 83,
             p_CLK3_DUTY_CYCLE        = 50,
-            p_CLK3_MULTIPLY_BY       = 17 * 4,
+            p_CLK3_MULTIPLY_BY       = 17 * 5,
             p_CLK3_PHASE_SHIFT       = 0,
 
             p_INCLK0_INPUT_FREQUENCY = 16667,
