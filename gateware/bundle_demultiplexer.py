@@ -1,10 +1,10 @@
 import operator
 from functools import reduce
 
-from nmigen                 import *
-from nmigen.build           import Platform
-from nmigen_library.stream  import StreamInterface
-from nmigen_library.test    import GatewareTestCase, sync_test_case
+from amaranth                 import *
+from amaranth.build           import Platform
+from amaranth_library.stream  import StreamInterface
+from amaranth_library.test    import GatewareTestCase, sync_test_case
 
 class BundleDemultiplexer(Elaboratable):
     NO_CHANNELS_ADAT = 8

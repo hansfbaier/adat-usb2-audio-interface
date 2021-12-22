@@ -1,8 +1,8 @@
-from nmigen import *
-from nmigen.build import *
+from amaranth import *
+from amaranth.build import *
 
-from nmigen_boards.resources import *
-from nmigen_boards.qmtech_10cl006 import QMTech10CL006Platform
+from amaranth_boards.resources import *
+from amaranth_boards.qmtech_10cl006 import QMTech10CL006Platform
 
 from luna.gateware.platform.core import LUNAPlatform
 

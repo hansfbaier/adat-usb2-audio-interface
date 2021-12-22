@@ -1,5 +1,5 @@
-from nmigen.build import *
-from nmigen_boards.resources import *
+from amaranth.build import *
+from amaranth_boards.resources import *
 
 class ADATFaceRev0Baseboard:
     resources = [

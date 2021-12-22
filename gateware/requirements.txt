@@ -1,6 +1,6 @@
-git+https://github.com/nmigen/nmigen.git
-git+https://github.com/hansfbaier/nmigen-boards.git@qmtech-boards
-git+https://github.com/hansfbaier/nmigen-library.git
+git+https://github.com/amaranth-lang/amaranth.git
+git+https://github.com/hansfbaier/amaranth-boards.git
+git+https://github.com/hansfbaier/amaranth-library.git
 git+https://github.com/hansfbaier/usb2-highspeed-core.git
 git+https://github.com/hansfbaier/adat-core.git
-nmigen-yosys
+amaranth-yosys

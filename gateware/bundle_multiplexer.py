@@ -1,8 +1,8 @@
-from nmigen                 import *
-from nmigen.build           import Platform
-from nmigen.lib.fifo        import SyncFIFO
-from nmigen_library.stream  import StreamInterface, connect_stream_to_fifo
-from nmigen_library.test    import GatewareTestCase, sync_test_case
+from amaranth                 import *
+from amaranth.build           import Platform
+from amaranth.lib.fifo        import SyncFIFO
+from amaranth_library.stream  import StreamInterface, connect_stream_to_fifo
+from amaranth_library.test    import GatewareTestCase, sync_test_case
 
 class BundleMultiplexer(Elaboratable):
     NO_CHANNELS_ADAT = 8

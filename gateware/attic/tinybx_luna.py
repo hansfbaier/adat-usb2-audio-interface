@@ -12,9 +12,9 @@ import os
 import logging
 import subprocess
 
-from nmigen import *
-from nmigen.build import *
-from nmigen_boards.resources import *
+from amaranth import *
+from amaranth.build import *
+from amaranth_boards.resources import *
 
 from luna.gateware.platform.tinyfpga import TinyFPGABxPlatform, TinyFPGABxDomainGenerator
 

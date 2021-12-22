@@ -1,4 +1,4 @@
-from nmigen import *
+from amaranth import *
 from luna.gateware.usb.usb2.request   import USBRequestHandler
 from luna.gateware.stream.generator   import StreamSerializer
 
