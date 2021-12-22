@@ -48,7 +48,7 @@ class USB2AudioInterface(Elaboratable):
 
         number_of_channels      = platform.number_of_channels
         number_of_channels_bits = Shape.cast(range(number_of_channels)).width
-        adat_bits               = 24
+        audio_bits              = 24
 
         m.submodules.car = platform.clock_domain_generator()
 
@@ -128,7 +128,7 @@ class USB2AudioInterface(Elaboratable):
                 m.d.usb += no_channels.eq(2)
 
         m.submodules.usb_to_output_fifo = usb_to_output_fifo = \
-            AsyncFIFOBuffered(width=adat_bits + number_of_channels_bits + 2, depth=usb_to_output_fifo_depth, w_domain="usb", r_domain="sync")
+            AsyncFIFO(width=audio_bits + number_of_channels_bits + 2, depth=usb_to_output_fifo_depth, w_domain="usb", r_domain="sync")
 
         m.submodules.bundle_demultiplexer = bundle_demultiplexer = BundleDemultiplexer()
         m.submodules.bundle_multiplexer   = bundle_multiplexer   = DomainRenamer("fast")(BundleMultiplexer())
@@ -150,26 +150,32 @@ class USB2AudioInterface(Elaboratable):
         #
         # signal path: USB ===> ADAT transmitters
         #
+        audio_bits_end     = audio_bits
+        channel_bits_start = audio_bits
+        channel_bits_end   = channel_bits_start + number_of_channels_bits
+        first_bit_pos      = channel_bits_end
+        last_bit_pos       = first_bit_pos + 1
+
         m.d.comb += [
             # convert USB stream to audio stream
             usb_to_channel_stream.usb_stream_in.stream_eq(usb1_ep1_out.stream),
             *connect_stream_to_fifo(usb_to_channel_stream.channel_stream_out, usb_to_output_fifo),
 
-            usb_to_output_fifo.w_data[adat_bits:(adat_bits + number_of_channels_bits)]
+            usb_to_output_fifo.w_data[channel_bits_start:channel_bits_end]
                 .eq(usb_to_channel_stream.channel_stream_out.channel_nr),
 
-            usb_to_output_fifo.w_data[(adat_bits + number_of_channels_bits)]
+            usb_to_output_fifo.w_data[first_bit_pos]
                 .eq(usb_to_channel_stream.channel_stream_out.first),
 
-            usb_to_output_fifo.w_data[(adat_bits + number_of_channels_bits + 1)]
+            usb_to_output_fifo.w_data[last_bit_pos]
                 .eq(usb_to_channel_stream.channel_stream_out.last),
 
             usb_to_output_fifo.r_en  .eq(bundle_demultiplexer.channel_stream_in.ready),
             usb_to_output_fifo_level .eq(usb_to_output_fifo.w_level),
 
             # demultiplex channel stream to the different transmitters
-            bundle_demultiplexer.channel_stream_in.payload.eq(usb_to_output_fifo.r_data[0:adat_bits]),
-            bundle_demultiplexer.channel_stream_in.channel_nr.eq(usb_to_output_fifo.r_data[adat_bits:(adat_bits + number_of_channels_bits)]),
+            bundle_demultiplexer.channel_stream_in.payload.eq(usb_to_output_fifo.r_data[0:audio_bits_end]),
+            bundle_demultiplexer.channel_stream_in.channel_nr.eq(usb_to_output_fifo.r_data[channel_bits_start:channel_bits_end]),
             bundle_demultiplexer.channel_stream_in.last.eq(usb_to_output_fifo.r_data[-1]),
             bundle_demultiplexer.channel_stream_in.valid.eq(usb_to_output_fifo.r_rdy & usb_to_output_fifo.r_en),
         ]
@@ -203,9 +209,9 @@ class USB2AudioInterface(Elaboratable):
         # signal path: ADAT receivers ===> USB
         #
         m.submodules.adat_to_usb_fifo = adat_to_usb_fifo = \
-            AsyncFIFOBuffered(width=adat_bits + number_of_channels_bits + 2, depth=16, w_domain="fast", r_domain="usb")
+            AsyncFIFOBuffered(width=audio_bits + number_of_channels_bits + 2, depth=16, w_domain="fast", r_domain="usb")
 
-        chnr_start = adat_bits
+        chnr_start = audio_bits
         chnr_end   = chnr_start + number_of_channels_bits
         channel_nr = adat_to_usb_fifo.r_data[chnr_start:chnr_end]
         m.d.comb += [
@@ -242,8 +248,8 @@ class USB2AudioInterface(Elaboratable):
             m.d.sync += min_fifo_level.eq(usb_to_output_fifo_level)
 
         # I2S DACs
-        m.submodules.dac1_transmitter = dac1 = DomainRenamer("usb")(I2STransmitter(sample_width=adat_bits))
-        m.submodules.dac2_transmitter = dac2 = DomainRenamer("usb")(I2STransmitter(sample_width=adat_bits))
+        m.submodules.dac1_transmitter = dac1 = DomainRenamer("usb")(I2STransmitter(sample_width=audio_bits))
+        m.submodules.dac2_transmitter = dac2 = DomainRenamer("usb")(I2STransmitter(sample_width=audio_bits))
         dac1_pads = platform.request("i2s", 1)
         dac2_pads = platform.request("i2s", 2)
 
