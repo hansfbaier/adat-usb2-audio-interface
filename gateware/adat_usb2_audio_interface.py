@@ -218,7 +218,7 @@ class USB2AudioInterface(Elaboratable):
             # wire up receive FIFO to bundle multiplexer
             adat_to_usb_fifo.w_data[0:chnr_start]        .eq(bundle_multiplexer.channel_stream_out.payload),
             adat_to_usb_fifo.w_data[chnr_start:chnr_end] .eq(bundle_multiplexer.channel_stream_out.channel_nr),
-            adat_to_usb_fifo.w_en                        .eq(bundle_multiplexer.channel_stream_out.valid),
+            adat_to_usb_fifo.w_en                        .eq(bundle_multiplexer.channel_stream_out.valid & adat_to_usb_fifo.w_rdy),
             bundle_multiplexer.channel_stream_out.ready.eq(adat_to_usb_fifo.w_rdy),
 
             # convert audio stream to USB stream
