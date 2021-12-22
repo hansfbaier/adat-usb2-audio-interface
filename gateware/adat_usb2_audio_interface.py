@@ -421,10 +421,10 @@ class USB2AudioInterface(Elaboratable):
                 StreamILA(
                     domain="sync", o_domain="usb",
                     #sample_rate=60e6,
-                    sample_rate=48e3 * 256 * 4,
+                    sample_rate=48e3 * 256 * 5,
                     signals=signals,
-                    sample_depth       = int(30 * 8 * 1024 / signals_bits),
-                    samples_pretrigger = int(1 * 8 * 1024 / signals_bits),
+                    sample_depth       = int(50 * 8 * 1024 / signals_bits),
+                    samples_pretrigger = 2, #int(0 * 8 * 1024 / signals_bits),
                     with_enable=False)
 
             stream_ep = USBMultibyteStreamInEndpoint(
