@@ -262,222 +262,9 @@ class USB2AudioInterface(Elaboratable):
         dac1_pads = platform.request("i2s", 1)
         dac2_pads = platform.request("i2s", 2)
 
-        #
-        # Internal Logic Analyzer (ILA)
-        #
+        # Internal Logic Analyzer
         if self.USE_ILA:
-            adat_clock = Signal()
-            m.d.comb += adat_clock.eq(ClockSignal("adat"))
-            sof_wrap = Signal()
-            m.d.comb += sof_wrap.eq(sof_counter == 0)
-
-            usb_packet_counter = Signal(10)
-            with m.If(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready):
-                m.d.usb += usb_packet_counter.eq(usb_packet_counter + 1)
-                with m.If(usb1_ep1_out.stream.last):
-                    m.d.usb += usb_packet_counter.eq(0)
-
-            weird_packet = Signal()
-            m.d.comb += weird_packet.eq(usb1_ep1_out.stream.last & (
-                usb_packet_counter[0:2] != Const(0b11, 2)
-            ))
-
-            strange_input = Signal()
-            input_active  = Signal()
-            output_active = Signal()
-            input_or_output_active = Signal()
-
-            m.d.comb += [
-                input_active.eq (  channels_to_usb_stream.channel_stream_in.ready
-                                 & channels_to_usb_stream.channel_stream_in.valid),
-                output_active.eq(  channels_to_usb_stream.usb_stream_out.ready
-                                 & channels_to_usb_stream.usb_stream_out.valid),
-                input_or_output_active.eq(input_active | output_active),
-
-                strange_input.eq(  (channels_to_usb_stream.channel_stream_in.payload != 0)
-                                 & (channels_to_usb_stream.channel_stream_in.channel_nr > 1)),
-            ]
-
-            channels_to_usb_input_frame = [
-                usb1.sof_detected,
-                audio_in_active,
-                input_to_usb_fifo.r_level,
-                input_active,
-                channels_to_usb_stream.channel_stream_in.first,
-                channels_to_usb_stream.channel_stream_in.last,
-                channels_to_usb_stream.channel_stream_in.channel_nr,
-                #channels_to_usb_stream.channel_stream_in.payload,
-            ]
-
-            weird_frame_size = Signal()
-            usb_outputting   = Signal()
-            m.d.comb += usb_outputting.eq(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready)
-
-            usb_out_level_maxed = Signal()
-            m.d.comb += usb_out_level_maxed.eq(usb_to_output_fifo_level >= (usb_to_output_fifo_depth - 1))
-
-            m.d.comb += weird_frame_size.eq((audio_in_frame_bytes & 0b11) != 0)
-
-            channels_to_usb_debug = [
-                audio_in_frame_bytes,
-                channels_to_usb_stream.current_channel,
-                channels_to_usb_stream.feeder_state,
-                channels_to_usb_stream.level,
-                channels_to_usb_stream.fifo_full,
-                channels_to_usb_stream.fifo_level_insufficient,
-                channels_to_usb_stream.out_channel,
-                channels_to_usb_stream.fifo_read,
-                channels_to_usb_stream.usb_channel,
-                channels_to_usb_stream.done,
-                channels_to_usb_stream.usb_byte_pos,
-                channels_to_usb_stream.skipping,
-                channels_to_usb_stream.filling,
-                usb1_ep2_in.data_requested,
-                usb1_ep2_in.frame_finished,
-            ]
-
-            usb_out_debug = [
-                usb_to_channel_stream.channel_stream_out.payload,
-                usb_to_channel_stream.channel_stream_out.channel_nr,
-                usb_to_channel_stream.channel_stream_out.first,
-                usb_to_channel_stream.channel_stream_out.last,
-                usb_to_output_fifo_level,
-                usb_out_level_maxed
-            ]
-
-            usb_channel_outputting = Signal()
-            m.d.comb += usb_channel_outputting.eq(
-                usb_out_level_maxed |
-                usb_to_channel_stream.channel_stream_out.first |
-                usb_to_channel_stream.channel_stream_out.last  |
-                    ( usb_to_channel_stream.channel_stream_out.ready &
-                      usb_to_channel_stream.channel_stream_out.valid)
-                )
-
-            ep1_out_fifo_debug = [
-                audio_in_frame_bytes,
-                min_fifo_level,
-                usb_to_output_fifo_level,
-                max_fifo_level,
-                usb1.sof_detected,
-            ]
-
-            adat_nr = 0
-            receiver_debug = [
-                adat_receivers[adat_nr].sample_out,
-                adat_receivers[adat_nr].addr_out,
-                adat_receivers[adat_nr].output_enable,
-            ]
-
-            adat_first = Signal()
-            m.d.comb += adat_first.eq(adat_receivers[adat_nr].output_enable & (adat_receivers[adat_nr].addr_out == 0))
-            adat_clock = Signal()
-            m.d.comb += adat_clock.eq(ClockSignal("adat"))
-
-            adat_debug = [
-                adat_clock,
-                adat_transmitters[adat_nr].adat_out,
-                adat_receivers[adat_nr].recovered_clock_out,
-                adat_receivers[adat_nr].adat_in,
-                adat_first,
-                adat_receivers[adat_nr].output_enable,
-            ]
-
-            multiplexer_debug = [
-                bundle_multiplexer.current_bundle,
-                bundle_multiplexer.last_bundle,
-                bundle_multiplexer.bundles_in[0].valid,
-                bundle_multiplexer.bundles_in[0].ready,
-                bundle_multiplexer.bundles_in[0].payload,
-                bundle_multiplexer.bundles_in[0].channel_nr,
-                bundle_multiplexer.bundles_in[0].last,
-                bundle_multiplexer.bundles_in[3].valid,
-                bundle_multiplexer.bundles_in[3].ready,
-                bundle_multiplexer.bundles_in[3].payload,
-                bundle_multiplexer.bundles_in[3].channel_nr,
-                bundle_multiplexer.bundles_in[3].last,
-                bundle_multiplexer.channel_stream_out.payload,
-                bundle_multiplexer.channel_stream_out.channel_nr,
-                bundle_multiplexer.channel_stream_out.valid,
-                bundle_multiplexer.channel_stream_out.ready,
-                bundle_multiplexer.channel_stream_out.last,
-                input_to_usb_fifo.w_level,
-                input_to_usb_fifo.r_level,
-            ]
-
-            multiplexer_enable = Signal()
-            m.d.comb += multiplexer_enable.eq(
-                (bundle_multiplexer.bundles_in[0].valid &
-                bundle_multiplexer.bundles_in[0].ready) |
-                (bundle_multiplexer.bundles_in[3].valid &
-                bundle_multiplexer.bundles_in[3].ready) |
-                (bundle_multiplexer.channel_stream_out.valid &
-                bundle_multiplexer.channel_stream_out.ready)
-            )
-
-
-            demultiplexer_debug = [
-                bundle_demultiplexer.channel_stream_in.ready,
-                bundle_demultiplexer.channel_stream_in.valid,
-                bundle_demultiplexer.channel_stream_in.channel_nr,
-                #bundle_demultiplexer.channel_stream_in.payload,
-                *[bundle_demultiplexer.bundles_out[i].ready for i in range(4)],
-                *[bundle_demultiplexer.bundles_out[i].valid for i in range(4)],
-                *[bundle_demultiplexer.bundles_out[i].channel_nr for i in range(4)],
-            ]
-
-            demultiplexer_enable = Signal()
-            m.d.comb += demultiplexer_enable.eq(
-                (bundle_demultiplexer.bundles_out[0].valid &
-                 bundle_demultiplexer.bundles_out[0].ready) |
-                (bundle_demultiplexer.bundles_out[3].valid &
-                 bundle_demultiplexer.bundles_out[3].ready) |
-                (bundle_demultiplexer.channel_stream_in.valid &
-                 bundle_demultiplexer.channel_stream_in.ready)
-            )
-
-            levels = [
-                input_to_usb_fifo.r_level,
-                channels_to_usb_stream.level,
-            ]
-
-            #signals = multiplexer_debug
-            signals = channels_to_usb_input_frame + channels_to_usb_debug  #+ [channels_to_usb_stream.usb_stream_out.valid, channels_to_usb_stream.usb_stream_out.ready]
-
-            signals_bits = sum([s.width for s in signals])
-            m.submodules.ila = ila = \
-                StreamILA(
-                    domain="usb", o_domain="usb",
-                    sample_rate=60e6, # usb domain
-                    #sample_rate=48e3 * 256 * 5,   # sync domain
-                    #sample_rate=48e3 * 256 * 8, # fast domain
-                    signals=signals,
-                    sample_depth       = int(50 * 8 * 1024 / signals_bits),
-                    samples_pretrigger = 2, #int(0 * 8 * 1024 / signals_bits),
-                    with_enable=False)
-
-            stream_ep = USBMultibyteStreamInEndpoint(
-                endpoint_number=3, # EP 3 IN
-                max_packet_size=self.ILA_MAX_PACKET_SIZE,
-                byte_width=ila.bytes_per_sample
-            )
-            usb1.add_endpoint(stream_ep)
-
-            garbage = Signal()
-
-            m.d.comb += [
-                stream_ep.stream.stream_eq(ila.stream),
-                garbage.eq(channels_to_usb_stream.skipping | channels_to_usb_stream.filling),
-                #ila.enable.eq(usb_outputting | weird_frame_size | usb1_ep1_out.stream.first | usb1_ep1_out.stream.last),
-                #ila.enable.eq(usb_channel_outputting),
-                #ila.enable.eq(input_or_output_active | garbage | usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
-                #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
-                ila.trigger.eq(1),
-                #ila.enable.eq(multiplexer_enable),
-                #ila.trigger.eq(multiplexer_enable),
-            ]
-
-            ILACoreParameters(ila).pickle()
+            self.setup_ila(locals())
 
         usb_aux1 = platform.request("usb_aux", 1)
         usb_aux2 = platform.request("usb_aux", 2)
@@ -493,7 +280,9 @@ class USB2AudioInterface(Elaboratable):
         ]
         m.d.comb += [getattr(leds, f"sync{i + 1}").eq(adat_receivers[i].synced_out) for i in range(4)]
 
+        #
         # DEBUG display
+        #
         adat1_underflow_count = Signal(16)
 
         with m.If(adat_transmitters[0].underflow_out):
@@ -632,6 +421,239 @@ class USB2AudioInterface(Elaboratable):
 
         return (sof_counter, usb_to_output_fifo_level, usb_to_output_fifo_depth)
 
+    def setup_ila(self, v):
+        m                        = v['m']
+        sof_counter              = v['sof_counter']
+        usb1                     = v['usb1']
+        usb1_ep1_out             = v['usb1_ep1_out']
+        usb1_ep2_in              = v['usb1_ep2_in']
+        audio_in_active          = v['audio_in_active']
+        channels_to_usb_stream   = v['channels_to_usb_stream']
+        usb_to_channel_stream    = v['usb_to_channel_stream']
+        input_to_usb_fifo        = v['input_to_usb_fifo']
+        usb_to_output_fifo       = v['usb_to_output_fifo']
+        usb_to_output_fifo_level = v['usb_to_output_fifo_level']
+        usb_to_output_fifo_depth = v['usb_to_output_fifo_depth']
+        audio_in_frame_bytes     = v['audio_in_frame_bytes']
+        min_fifo_level           = v['min_fifo_level']
+        max_fifo_level           = v['max_fifo_level']
+        adat_transmitters        = v['adat_transmitters']
+        adat_receivers           = v['adat_receivers']
+        bundle_demultiplexer     = v['bundle_demultiplexer']
+        bundle_multiplexer       = v['bundle_multiplexer']
+
+        adat_clock = Signal()
+        m.d.comb += adat_clock.eq(ClockSignal("adat"))
+        sof_wrap = Signal()
+        m.d.comb += sof_wrap.eq(sof_counter == 0)
+
+        usb_packet_counter = Signal(10)
+        with m.If(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready):
+            m.d.usb += usb_packet_counter.eq(usb_packet_counter + 1)
+            with m.If(usb1_ep1_out.stream.last):
+                m.d.usb += usb_packet_counter.eq(0)
+
+        weird_packet = Signal()
+        m.d.comb += weird_packet.eq(usb1_ep1_out.stream.last & (
+            usb_packet_counter[0:2] != Const(0b11, 2)
+        ))
+
+        strange_input = Signal()
+        input_active  = Signal()
+        output_active = Signal()
+        input_or_output_active = Signal()
+
+        m.d.comb += [
+            input_active.eq (  channels_to_usb_stream.channel_stream_in.ready
+                                & channels_to_usb_stream.channel_stream_in.valid),
+            output_active.eq(  channels_to_usb_stream.usb_stream_out.ready
+                                & channels_to_usb_stream.usb_stream_out.valid),
+            input_or_output_active.eq(input_active | output_active),
+
+            strange_input.eq(  (channels_to_usb_stream.channel_stream_in.payload != 0)
+                                & (channels_to_usb_stream.channel_stream_in.channel_nr > 1)),
+        ]
+
+        channels_to_usb_input_frame = [
+            usb1.sof_detected,
+            audio_in_active,
+            input_to_usb_fifo.r_level,
+            input_active,
+            channels_to_usb_stream.channel_stream_in.first,
+            channels_to_usb_stream.channel_stream_in.last,
+            channels_to_usb_stream.channel_stream_in.channel_nr,
+            #channels_to_usb_stream.channel_stream_in.payload,
+        ]
+
+        weird_frame_size = Signal()
+        usb_outputting   = Signal()
+        m.d.comb += usb_outputting.eq(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready)
+
+        usb_out_level_maxed = Signal()
+        m.d.comb += usb_out_level_maxed.eq(usb_to_output_fifo_level >= (usb_to_output_fifo_depth - 1))
+
+        m.d.comb += weird_frame_size.eq((audio_in_frame_bytes & 0b11) != 0)
+
+        channels_to_usb_debug = [
+            audio_in_frame_bytes,
+            channels_to_usb_stream.current_channel,
+            channels_to_usb_stream.feeder_state,
+            channels_to_usb_stream.level,
+            channels_to_usb_stream.fifo_full,
+            channels_to_usb_stream.fifo_level_insufficient,
+            channels_to_usb_stream.out_channel,
+            channels_to_usb_stream.fifo_read,
+            channels_to_usb_stream.usb_channel,
+            channels_to_usb_stream.done,
+            channels_to_usb_stream.usb_byte_pos,
+            channels_to_usb_stream.skipping,
+            channels_to_usb_stream.filling,
+            usb1_ep2_in.data_requested,
+            usb1_ep2_in.frame_finished,
+        ]
+
+        usb_out_debug = [
+            usb_to_channel_stream.channel_stream_out.payload,
+            usb_to_channel_stream.channel_stream_out.channel_nr,
+            usb_to_channel_stream.channel_stream_out.first,
+            usb_to_channel_stream.channel_stream_out.last,
+            usb_to_output_fifo_level,
+            usb_out_level_maxed
+        ]
+
+        usb_channel_outputting = Signal()
+        m.d.comb += usb_channel_outputting.eq(
+            usb_out_level_maxed |
+            usb_to_channel_stream.channel_stream_out.first |
+            usb_to_channel_stream.channel_stream_out.last  |
+                ( usb_to_channel_stream.channel_stream_out.ready &
+                    usb_to_channel_stream.channel_stream_out.valid)
+            )
+
+        ep1_out_fifo_debug = [
+            audio_in_frame_bytes,
+            min_fifo_level,
+            usb_to_output_fifo_level,
+            max_fifo_level,
+            usb1.sof_detected,
+        ]
+
+        adat_nr = 0
+        receiver_debug = [
+            adat_receivers[adat_nr].sample_out,
+            adat_receivers[adat_nr].addr_out,
+            adat_receivers[adat_nr].output_enable,
+        ]
+
+        adat_first = Signal()
+        m.d.comb += adat_first.eq(adat_receivers[adat_nr].output_enable & (adat_receivers[adat_nr].addr_out == 0))
+        adat_clock = Signal()
+        m.d.comb += adat_clock.eq(ClockSignal("adat"))
+
+        adat_debug = [
+            adat_clock,
+            adat_transmitters[adat_nr].adat_out,
+            adat_receivers[adat_nr].recovered_clock_out,
+            adat_receivers[adat_nr].adat_in,
+            adat_first,
+            adat_receivers[adat_nr].output_enable,
+        ]
+
+        multiplexer_debug = [
+            bundle_multiplexer.current_bundle,
+            bundle_multiplexer.last_bundle,
+            bundle_multiplexer.bundles_in[0].valid,
+            bundle_multiplexer.bundles_in[0].ready,
+            bundle_multiplexer.bundles_in[0].payload,
+            bundle_multiplexer.bundles_in[0].channel_nr,
+            bundle_multiplexer.bundles_in[0].last,
+            bundle_multiplexer.bundles_in[3].valid,
+            bundle_multiplexer.bundles_in[3].ready,
+            bundle_multiplexer.bundles_in[3].payload,
+            bundle_multiplexer.bundles_in[3].channel_nr,
+            bundle_multiplexer.bundles_in[3].last,
+            bundle_multiplexer.channel_stream_out.payload,
+            bundle_multiplexer.channel_stream_out.channel_nr,
+            bundle_multiplexer.channel_stream_out.valid,
+            bundle_multiplexer.channel_stream_out.ready,
+            bundle_multiplexer.channel_stream_out.last,
+            input_to_usb_fifo.w_level,
+            input_to_usb_fifo.r_level,
+        ]
+
+        multiplexer_enable = Signal()
+        m.d.comb += multiplexer_enable.eq(
+            (bundle_multiplexer.bundles_in[0].valid &
+            bundle_multiplexer.bundles_in[0].ready) |
+            (bundle_multiplexer.bundles_in[3].valid &
+            bundle_multiplexer.bundles_in[3].ready) |
+            (bundle_multiplexer.channel_stream_out.valid &
+            bundle_multiplexer.channel_stream_out.ready)
+        )
+
+
+        demultiplexer_debug = [
+            bundle_demultiplexer.channel_stream_in.ready,
+            bundle_demultiplexer.channel_stream_in.valid,
+            bundle_demultiplexer.channel_stream_in.channel_nr,
+            #bundle_demultiplexer.channel_stream_in.payload,
+            *[bundle_demultiplexer.bundles_out[i].ready for i in range(4)],
+            *[bundle_demultiplexer.bundles_out[i].valid for i in range(4)],
+            *[bundle_demultiplexer.bundles_out[i].channel_nr for i in range(4)],
+        ]
+
+        demultiplexer_enable = Signal()
+        m.d.comb += demultiplexer_enable.eq(
+            (bundle_demultiplexer.bundles_out[0].valid &
+                bundle_demultiplexer.bundles_out[0].ready) |
+            (bundle_demultiplexer.bundles_out[3].valid &
+                bundle_demultiplexer.bundles_out[3].ready) |
+            (bundle_demultiplexer.channel_stream_in.valid &
+                bundle_demultiplexer.channel_stream_in.ready)
+        )
+
+        levels = [
+            input_to_usb_fifo.r_level,
+            channels_to_usb_stream.level,
+        ]
+
+        #signals = multiplexer_debug
+        signals = channels_to_usb_input_frame + channels_to_usb_debug  #+ [channels_to_usb_stream.usb_stream_out.valid, channels_to_usb_stream.usb_stream_out.ready]
+
+        signals_bits = sum([s.width for s in signals])
+        m.submodules.ila = ila = \
+            StreamILA(
+                domain="usb", o_domain="usb",
+                sample_rate=60e6, # usb domain
+                #sample_rate=48e3 * 256 * 5,   # sync domain
+                #sample_rate=48e3 * 256 * 8, # fast domain
+                signals=signals,
+                sample_depth       = int(50 * 8 * 1024 / signals_bits),
+                samples_pretrigger = 2, #int(0 * 8 * 1024 / signals_bits),
+                with_enable=False)
+
+        stream_ep = USBMultibyteStreamInEndpoint(
+            endpoint_number=3, # EP 3 IN
+            max_packet_size=self.ILA_MAX_PACKET_SIZE,
+            byte_width=ila.bytes_per_sample
+        )
+        usb1.add_endpoint(stream_ep)
+
+        garbage = Signal()
+
+        m.d.comb += [
+            stream_ep.stream.stream_eq(ila.stream),
+            garbage.eq(channels_to_usb_stream.skipping | channels_to_usb_stream.filling),
+            #ila.enable.eq(usb_outputting | weird_frame_size | usb1_ep1_out.stream.first | usb1_ep1_out.stream.last),
+            #ila.enable.eq(usb_channel_outputting),
+            #ila.enable.eq(input_or_output_active | garbage | usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
+            #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
+            ila.trigger.eq(1),
+            #ila.enable.eq(multiplexer_enable),
+            #ila.trigger.eq(multiplexer_enable),
+        ]
+
+        ILACoreParameters(ila).pickle()
 
 if __name__ == "__main__":
     os.environ["LUNA_PLATFORM"] = "qmtech_ep4ce_platform:ADATFacePlatform"
