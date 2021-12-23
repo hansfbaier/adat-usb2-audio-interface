@@ -123,9 +123,9 @@ class USB2AudioInterface(Elaboratable):
 
         with m.Switch(class_request_handler.output_interface_altsetting_nr):
             with m.Case(2):
-                m.d.usb += no_channels.eq(number_of_channels)
+                m.d.comb += no_channels.eq(number_of_channels)
             with m.Default():
-                m.d.usb += no_channels.eq(2)
+                m.d.comb += no_channels.eq(2)
 
         m.submodules.usb_to_output_fifo = usb_to_output_fifo = \
             AsyncFIFO(width=audio_bits + number_of_channels_bits + 2, depth=usb_to_output_fifo_depth, w_domain="usb", r_domain="sync")
@@ -178,6 +178,7 @@ class USB2AudioInterface(Elaboratable):
             bundle_demultiplexer.channel_stream_in.channel_nr.eq(usb_to_output_fifo.r_data[channel_bits_start:channel_bits_end]),
             bundle_demultiplexer.channel_stream_in.last.eq(usb_to_output_fifo.r_data[-1]),
             bundle_demultiplexer.channel_stream_in.valid.eq(usb_to_output_fifo.r_rdy & usb_to_output_fifo.r_en),
+            bundle_demultiplexer.no_channels_in.eq(no_channels),
         ]
 
         # wire up transmitters / receivers
@@ -208,31 +209,31 @@ class USB2AudioInterface(Elaboratable):
         #
         # signal path: ADAT receivers ===> USB
         #
-        m.submodules.adat_to_usb_fifo = adat_to_usb_fifo = \
-            AsyncFIFOBuffered(width=audio_bits + number_of_channels_bits + 2, depth=16*8, w_domain="fast", r_domain="usb")
+        m.submodules.input_to_usb_fifo = input_to_usb_fifo = \
+            AsyncFIFOBuffered(width=audio_bits + number_of_channels_bits + 2, depth=16*16, w_domain="fast", r_domain="usb")
 
         chnr_start    = audio_bits
         chnr_end      = chnr_start + number_of_channels_bits
-        channel_nr    = adat_to_usb_fifo.r_data[chnr_start:chnr_end]
+        channel_nr    = input_to_usb_fifo.r_data[chnr_start:chnr_end]
         first_channel = 0
         last_channel  = (number_of_channels - 1)
 
         m.d.comb += [
             # wire up receive FIFO to bundle multiplexer
-            adat_to_usb_fifo.w_data[0:chnr_start]        .eq(bundle_multiplexer.channel_stream_out.payload),
-            adat_to_usb_fifo.w_data[chnr_start:chnr_end] .eq(bundle_multiplexer.channel_stream_out.channel_nr),
-            adat_to_usb_fifo.w_en                        .eq(bundle_multiplexer.channel_stream_out.valid & adat_to_usb_fifo.w_rdy),
-            bundle_multiplexer.channel_stream_out.ready.eq(adat_to_usb_fifo.w_rdy),
+            input_to_usb_fifo.w_data[0:chnr_start]        .eq(bundle_multiplexer.channel_stream_out.payload),
+            input_to_usb_fifo.w_data[chnr_start:chnr_end] .eq(bundle_multiplexer.channel_stream_out.channel_nr),
+            input_to_usb_fifo.w_en                        .eq(bundle_multiplexer.channel_stream_out.valid & input_to_usb_fifo.w_rdy),
+            bundle_multiplexer.channel_stream_out.ready.eq(input_to_usb_fifo.w_rdy),
 
             # convert audio stream to USB stream
-            channels_to_usb_stream.channel_stream_in.payload    .eq(adat_to_usb_fifo.r_data[0:chnr_start]),
+            channels_to_usb_stream.channel_stream_in.payload    .eq(input_to_usb_fifo.r_data[0:chnr_start]),
             channels_to_usb_stream.channel_stream_in.channel_nr .eq(channel_nr),
             channels_to_usb_stream.channel_stream_in.first      .eq(channel_nr == first_channel),
             channels_to_usb_stream.channel_stream_in.last       .eq(channel_nr == last_channel),
-            channels_to_usb_stream.channel_stream_in.valid      .eq(adat_to_usb_fifo.r_rdy),
+            channels_to_usb_stream.channel_stream_in.valid      .eq(input_to_usb_fifo.r_rdy),
             channels_to_usb_stream.data_requested_in.eq(usb1_ep2_in.data_requested),
             channels_to_usb_stream.frame_finished_in.eq(usb1_ep2_in.frame_finished),
-            adat_to_usb_fifo.r_en.eq(channels_to_usb_stream.channel_stream_in.ready),
+            input_to_usb_fifo.r_en.eq(channels_to_usb_stream.channel_stream_in.ready),
 
             # wire up USB audio IN
             usb1_ep2_in.stream.stream_eq(channels_to_usb_stream.usb_stream_out),
@@ -298,7 +299,7 @@ class USB2AudioInterface(Elaboratable):
             ]
 
             channels_to_usb_input_frame = [
-                adat_to_usb_fifo.r_level,
+                input_to_usb_fifo.r_level,
                 input_active,
                 channels_to_usb_stream.channel_stream_in.first,
                 channels_to_usb_stream.channel_stream_in.last,
@@ -394,6 +395,8 @@ class USB2AudioInterface(Elaboratable):
                 bundle_multiplexer.channel_stream_out.valid,
                 bundle_multiplexer.channel_stream_out.ready,
                 bundle_multiplexer.channel_stream_out.last,
+                input_to_usb_fifo.w_level,
+                input_to_usb_fifo.r_level,
             ]
 
             multiplexer_enable = Signal()
@@ -497,8 +500,8 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.led_display  = led_display  = (SerialLEDArray(divisor=10, init_delay=24e6))
         m.d.sync += [
             sevensegment.number_in[0:8].eq(adat1_underflow_count),
-            sevensegment.number_in[8:16].eq(min_fifo_level),
-            sevensegment.number_in[16:24].eq(usb_to_output_fifo_level),
+            sevensegment.number_in[8:16].eq(input_to_usb_fifo.w_level),
+            sevensegment.number_in[16:24].eq(no_channels),
             sevensegment.number_in[24:32].eq(max_fifo_level),
             sevensegment.dots_in.eq(leds),
             Cat(led_display.digits_in).eq(sevensegment.seven_segment_out),

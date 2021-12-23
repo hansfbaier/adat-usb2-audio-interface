@@ -17,6 +17,8 @@ class BundleDemultiplexer(Elaboratable):
         self._bundle_channel_bits = Shape.cast(range(self.NO_CHANNELS_ADAT)).width
 
         # ports
+        self.no_channels_in      = Signal(range(32 + 1))
+
         self.channel_stream_in   = StreamInterface(name="channel_stream",
                                                    payload_width=self.SAMPLE_WIDTH,
                                                    extra_fields=[("channel_nr", self._channel_bits)])
@@ -26,6 +28,9 @@ class BundleDemultiplexer(Elaboratable):
                                                          extra_fields=[("channel_nr", self._bundle_channel_bits)])
                                          for i in range(no_bundles))
 
+        # debug signals
+        self.bundle_nr           = Signal(range(self._no_bundles))
+
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
 
@@ -34,20 +39,22 @@ class BundleDemultiplexer(Elaboratable):
         m.d.sync += keep_sync.eq(1)
 
         channel_stream  = self.channel_stream_in
-        ready           = Signal()
+        bundle_ready    = Signal()
         bundle_nr       = Signal(range(self._no_bundles))
         channel_nr      = Signal(range(self.NO_CHANNELS_ADAT))
 
-        last_channel = channel_mask = (self.NO_CHANNELS_ADAT - 1)
+        last_channel = channel_mask = (self.no_channels_in - 1)
 
         m.d.comb += [
-            ready.eq(self.bundles_out[bundle_nr].ready),
-            channel_stream.ready.eq(ready),
-            bundle_nr.eq(channel_stream.channel_nr >> channel_nr.width),
-            channel_nr.eq(channel_stream.channel_nr & channel_mask)
+            bundle_nr            .eq(channel_stream.channel_nr >> channel_nr.width),
+            self.bundle_nr       .eq(bundle_nr),
+            channel_nr           .eq(channel_stream.channel_nr & channel_mask),
+
+            bundle_ready         .eq(self.bundles_out[bundle_nr].ready),
+            channel_stream.ready .eq(bundle_ready),
         ]
 
-        with m.If(ready & channel_stream.valid):
+        with m.If(bundle_ready & channel_stream.valid):
             m.d.comb += [
                 self.bundles_out[bundle_nr].valid.eq(1),
                 self.bundles_out[bundle_nr].payload.eq(channel_stream.payload),
