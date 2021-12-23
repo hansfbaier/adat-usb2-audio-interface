@@ -44,7 +44,7 @@ class BundleMultiplexer(Elaboratable):
         read_enable    = Array(Signal(              name=f"bundle{i}_read_en") for i in range(self._no_bundles))
 
         for i in range(self._no_bundles):
-            fifo = SyncFIFO(width=sample_width + bundle_bits + 1, depth=self.NO_CHANNELS_ADAT)
+            fifo = SyncFIFO(width=sample_width + bundle_bits + 1, depth=3*self.NO_CHANNELS_ADAT)
             setattr(m.submodules, f"receive_fifo{i}", fifo)
 
             m.d.comb += [
