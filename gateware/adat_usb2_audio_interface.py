@@ -316,6 +316,7 @@ class USB2AudioInterface(Elaboratable):
             channels_to_usb_debug = [
                 audio_in_frame_bytes,
                 channels_to_usb_stream.level,
+                channels_to_usb_stream.fifo_full,
                 channels_to_usb_stream.fifo_level_insufficient,
                 channels_to_usb_stream.out_channel,
                 channels_to_usb_stream.usb_channel,
@@ -392,16 +393,6 @@ class USB2AudioInterface(Elaboratable):
                 bundle_multiplexer.channel_stream_out.last,
             ]
 
-            demultiplexer_debug = [
-                bundle_demultiplexer.channel_stream_in.ready,
-                bundle_demultiplexer.channel_stream_in.valid,
-                bundle_demultiplexer.channel_stream_in.channel_nr,
-                #bundle_demultiplexer.channel_stream_in.payload,
-                *[bundle_demultiplexer.bundles_out[i].ready for i in range(4)],
-                *[bundle_demultiplexer.bundles_out[i].valid for i in range(4)],
-                *[bundle_demultiplexer.bundles_out[i].channel_nr for i in range(4)],
-            ]
-
             multiplexer_enable = Signal()
             m.d.comb += multiplexer_enable.eq(
                 (bundle_multiplexer.bundles_in[0].valid &
@@ -412,9 +403,32 @@ class USB2AudioInterface(Elaboratable):
                 bundle_multiplexer.channel_stream_out.ready)
             )
 
-            signals = demultiplexer_debug
 
-            #multiplexer_debug # channels_to_usb_input_frame + channels_to_usb_debug  + [channels_to_usb_stream.usb_stream_out.valid, channels_to_usb_stream.usb_stream_out.ready] + channels_to_usb_output_frame
+            demultiplexer_debug = [
+                bundle_demultiplexer.channel_stream_in.ready,
+                bundle_demultiplexer.channel_stream_in.valid,
+                bundle_demultiplexer.channel_stream_in.channel_nr,
+                #bundle_demultiplexer.channel_stream_in.payload,
+                *[bundle_demultiplexer.bundles_out[i].ready for i in range(4)],
+                *[bundle_demultiplexer.bundles_out[i].valid for i in range(4)],
+                *[bundle_demultiplexer.bundles_out[i].channel_nr for i in range(4)],
+            ]
+
+            demultiplexer_enable = Signal()
+            m.d.comb += demultiplexer_enable.eq(
+                (bundle_demultiplexer.bundles_out[0].valid &
+                 bundle_demultiplexer.bundles_out[0].ready) |
+                (bundle_demultiplexer.bundles_out[3].valid &
+                 bundle_demultiplexer.bundles_out[3].ready) |
+                (bundle_demultiplexer.channel_stream_in.valid &
+                 bundle_demultiplexer.channel_stream_in.ready)
+            )
+
+
+            signals = demultiplexer_debug
+            #  + channels_to_usb_debug  + [channels_to_usb_stream.usb_stream_out.valid, channels_to_usb_stream.usb_stream_out.ready] + channels_to_usb_output_frame
+            #demultiplexer_debug
+            #multiplexer_debug
 
             signals_bits = sum([s.width for s in signals])
             m.submodules.ila = ila = \
@@ -425,7 +439,7 @@ class USB2AudioInterface(Elaboratable):
                     signals=signals,
                     sample_depth       = int(50 * 8 * 1024 / signals_bits),
                     samples_pretrigger = 2, #int(0 * 8 * 1024 / signals_bits),
-                    with_enable=False)
+                    with_enable=True)
 
             stream_ep = USBMultibyteStreamInEndpoint(
                 endpoint_number=3, # EP 3 IN
@@ -444,7 +458,9 @@ class USB2AudioInterface(Elaboratable):
                 #ila.enable.eq(input_or_output_active | garbage | usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
                 #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
                 #ila.enable.eq(multiplexer_enable),
-                ila.trigger.eq(bundle_demultiplexer.channel_stream_in.valid),
+                ila.enable.eq(input_active | demultiplexer_enable),
+                ila.trigger.eq(1),
+                #ila.trigger.eq(bundle_demultiplexer.channel_stream_in.valid),
             ]
 
             ILACoreParameters(ila).pickle()
