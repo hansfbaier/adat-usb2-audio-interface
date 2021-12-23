@@ -12,7 +12,7 @@ class ChannelsToUSBStream(Elaboratable):
         self._max_nr_channels = max_nr_channels
         self._channel_bits    = Shape.cast(range(max_nr_channels)).width
         self._sample_width    = sample_width
-        self._fifo_depth      = 8 * max_packet_size
+        self._fifo_depth      = 2 * max_packet_size
 
         # ports
         self.no_channels_in      = Signal(self._channel_bits + 1)
@@ -22,8 +22,10 @@ class ChannelsToUSBStream(Elaboratable):
         self.frame_finished_in   = Signal()
 
         # debug signals
-        self.state                   = Signal(2)
+        self.feeder_state            = Signal()
+        self.current_channel         = Signal(self._channel_bits)
         self.level                   = Signal(range(self._fifo_depth + 1))
+        self.fifo_read               = Signal()
         self.fifo_full               = Signal()
         self.fifo_level_insufficient = Signal()
         self.done                    = Signal.like(self.level)
@@ -71,6 +73,7 @@ class ChannelsToUSBStream(Elaboratable):
             channel_stream.ready.eq(channel_ready),
             self.level.eq(out_fifo.r_level),
             self.fifo_full.eq(self.level >= (self._fifo_depth - 4)),
+            self.fifo_read.eq(out_fifo.r_en),
         ]
 
         with m.If(self.usb_stream_out.valid & self.usb_stream_out.ready):
@@ -83,7 +86,9 @@ class ChannelsToUSBStream(Elaboratable):
         current_channel      = Signal(self._channel_bits)
         current_byte         = Signal(2 if self._sample_width > 16 else 1)
 
-        bytes_per_sample = 4
+        m.d.comb += self.current_channel.eq(current_channel),
+
+        bytes_per_sample    = 4
         last_byte_of_sample = bytes_per_sample - 1
 
         # USB audio still sends 32 bit samples,
@@ -97,7 +102,7 @@ class ChannelsToUSBStream(Elaboratable):
 
         # this FSM handles writing into the FIFO
         with m.FSM(name="fifo_feeder") as fsm:
-            m.d.comb += self.state.eq(fsm.state)
+            m.d.comb += self.feeder_state.eq(fsm.state)
 
             with m.State("WAIT"):
                 m.d.comb += channel_ready.eq(out_fifo_can_write_sample)
@@ -161,7 +166,7 @@ class ChannelsToUSBStream(Elaboratable):
         # short reads. On next frame all bytes
         # for nonzero channels will be discarded until
         # we reach channel 0 again.
-        with m.FSM(name="fifo_postprocess"):
+        with m.FSM(name="fifo_postprocess") as fsm:
             with m.State("NORMAL"):
                 m.d.comb += [
                     out_fifo.r_en.eq(self.usb_stream_out.ready),

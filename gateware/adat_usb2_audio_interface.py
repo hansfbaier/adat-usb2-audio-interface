@@ -210,7 +210,7 @@ class USB2AudioInterface(Elaboratable):
         # signal path: ADAT receivers ===> USB
         #
         m.submodules.input_to_usb_fifo = input_to_usb_fifo = \
-            AsyncFIFOBuffered(width=audio_bits + number_of_channels_bits + 2, depth=16*16, w_domain="fast", r_domain="usb")
+            AsyncFIFOBuffered(width=audio_bits + number_of_channels_bits + 2, depth=16*8, w_domain="fast", r_domain="usb")
 
         chnr_start    = audio_bits
         chnr_end      = chnr_start + number_of_channels_bits
@@ -231,8 +231,10 @@ class USB2AudioInterface(Elaboratable):
             channels_to_usb_stream.channel_stream_in.first      .eq(channel_nr == first_channel),
             channels_to_usb_stream.channel_stream_in.last       .eq(channel_nr == last_channel),
             channels_to_usb_stream.channel_stream_in.valid      .eq(input_to_usb_fifo.r_rdy),
-            channels_to_usb_stream.data_requested_in.eq(usb1_ep2_in.data_requested),
-            channels_to_usb_stream.frame_finished_in.eq(usb1_ep2_in.frame_finished),
+
+            channels_to_usb_stream.data_requested_in .eq(usb1_ep2_in.data_requested),
+            channels_to_usb_stream.frame_finished_in .eq(usb1_ep2_in.frame_finished),
+
             input_to_usb_fifo.r_en.eq(channels_to_usb_stream.channel_stream_in.ready),
 
             # wire up USB audio IN
@@ -240,7 +242,7 @@ class USB2AudioInterface(Elaboratable):
         ]
 
         #
-        # FIFO level debug signals
+        # USB => output FIFO level debug signals
         #
         min_fifo_level = Signal.like(usb_to_output_fifo_level, reset=usb_to_output_fifo_depth)
         max_fifo_level = Signal.like(usb_to_output_fifo_level)
@@ -305,7 +307,6 @@ class USB2AudioInterface(Elaboratable):
                 channels_to_usb_stream.channel_stream_in.last,
                 channels_to_usb_stream.channel_stream_in.channel_nr,
                 channels_to_usb_stream.channel_stream_in.payload,
-                channels_to_usb_stream.channel_stream_in.valid,
             ]
 
             weird_frame_size = Signal()
