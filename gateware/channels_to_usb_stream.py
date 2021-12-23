@@ -12,7 +12,7 @@ class ChannelsToUSBStream(Elaboratable):
         self._max_nr_channels = max_nr_channels
         self._channel_bits    = Shape.cast(range(max_nr_channels)).width
         self._sample_width    = sample_width
-        self._max_packet_size = max_packet_size
+        self._fifo_depth      = 8 * max_packet_size
 
         # ports
         self.no_channels_in      = Signal(self._channel_bits + 1)
@@ -23,7 +23,8 @@ class ChannelsToUSBStream(Elaboratable):
 
         # debug signals
         self.state                   = Signal(2)
-        self.level                   = Signal(range(2 * self._max_packet_size + 1))
+        self.level                   = Signal(range(self._fifo_depth + 1))
+        self.fifo_full               = Signal()
         self.fifo_level_insufficient = Signal()
         self.done                    = Signal.like(self.level)
         self.out_channel             = Signal(self._channel_bits)
@@ -34,7 +35,7 @@ class ChannelsToUSBStream(Elaboratable):
 
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
-        m.submodules.out_fifo = out_fifo = SyncFIFO(width=8 + self._channel_bits, depth=self._max_packet_size + 1, fwft=True)
+        m.submodules.out_fifo = out_fifo = SyncFIFO(width=8 + self._channel_bits, depth=self._fifo_depth, fwft=True)
 
         channel_stream  = self.channel_stream_in
         channel_payload = Signal(self._sample_width)
@@ -69,6 +70,7 @@ class ChannelsToUSBStream(Elaboratable):
             channel_valid.eq(channel_stream.valid),
             channel_stream.ready.eq(channel_ready),
             self.level.eq(out_fifo.r_level),
+            self.fifo_full.eq(self.level >= (self._fifo_depth - 4)),
         ]
 
         with m.If(self.usb_stream_out.valid & self.usb_stream_out.ready):
