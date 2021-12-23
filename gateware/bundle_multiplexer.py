@@ -29,8 +29,8 @@ class BundleMultiplexer(Elaboratable):
         self.no_channels_in      = Array(Signal(self._bundle_channel_bits + 1, name=f"no_channels{i}") for i in range(no_bundles))
 
         # debug ports
-        self.current_bundle = Signal(range(no_bundles))
-        self.last_bundle = Signal()
+        self.current_bundle  = Signal(range(no_bundles))
+        self.last_bundle     = Signal()
 
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
