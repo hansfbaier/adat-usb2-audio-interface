@@ -1,3 +1,4 @@
+highlight_wavewindow 1
 fill_waveform 1
 lz_removal 1
 accel "/Edit/Data Format/Translate Filter Process/Enable and Select" <Ctrl><Alt>F
