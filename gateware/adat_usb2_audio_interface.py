@@ -40,7 +40,7 @@ class USB2AudioInterface(Elaboratable):
     # 7 * 8 * 4 = 224
     MAX_PACKET_SIZE = 224 * 4
 
-    USE_ILA = False
+    USE_ILA = True
     ILA_MAX_PACKET_SIZE = 512
 
     def elaborate(self, platform):
@@ -439,15 +439,16 @@ class USB2AudioInterface(Elaboratable):
                 channels_to_usb_stream.level,
             ]
 
-            signals = channels_to_usb_input_frame + [levels[1]] # + channels_to_usb_debug + [channels_to_usb_stream.usb_stream_out.valid, channels_to_usb_stream.usb_stream_out.ready] + channels_to_usb_output_frame
+            signals = multiplexer_debug
+            #channels_to_usb_input_frame + [levels[1]] + channels_to_usb_debug + [channels_to_usb_stream.usb_stream_out.valid, channels_to_usb_stream.usb_stream_out.ready] + channels_to_usb_output_frame
 
             signals_bits = sum([s.width for s in signals])
             m.submodules.ila = ila = \
                 StreamILA(
-                    domain="usb", o_domain="usb",
-                    sample_rate=60e6, # usb domain
+                    domain="fast", o_domain="usb",
+                    #sample_rate=60e6, # usb domain
                     #sample_rate=48e3 * 256 * 5,   # sync domain
-                    #sample_rate=48e3 * 256 * 8, # fast domain
+                    sample_rate=48e3 * 256 * 8, # fast domain
                     signals=signals,
                     sample_depth       = int(50 * 8 * 1024 / signals_bits),
                     samples_pretrigger = 2, #int(0 * 8 * 1024 / signals_bits),
@@ -470,8 +471,8 @@ class USB2AudioInterface(Elaboratable):
                 #ila.enable.eq(input_or_output_active | garbage | usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
                 #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
                 #ila.enable.eq(multiplexer_enable),
-                ila.enable.eq(input_active),
-                ila.trigger.eq(1),
+                ila.enable.eq(multiplexer_enable),
+                ila.trigger.eq(multiplexer_enable),
             ]
 
             ILACoreParameters(ila).pickle()
