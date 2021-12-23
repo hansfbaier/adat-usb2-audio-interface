@@ -320,10 +320,13 @@ class USB2AudioInterface(Elaboratable):
 
             channels_to_usb_debug = [
                 audio_in_frame_bytes,
+                channels_to_usb_stream.current_channel,
+                channels_to_usb_stream.feeder_state,
                 channels_to_usb_stream.level,
                 channels_to_usb_stream.fifo_full,
                 channels_to_usb_stream.fifo_level_insufficient,
                 channels_to_usb_stream.out_channel,
+                channels_to_usb_stream.fifo_read,
                 channels_to_usb_stream.usb_channel,
                 channels_to_usb_stream.done,
                 channels_to_usb_stream.usb_byte_pos,
@@ -431,18 +434,20 @@ class USB2AudioInterface(Elaboratable):
                  bundle_demultiplexer.channel_stream_in.ready)
             )
 
+            levels = [
+                input_to_usb_fifo.r_level,
+                channels_to_usb_stream.level,
+            ]
 
-            signals = demultiplexer_debug
-            #  + channels_to_usb_debug  + [channels_to_usb_stream.usb_stream_out.valid, channels_to_usb_stream.usb_stream_out.ready] + channels_to_usb_output_frame
-            #demultiplexer_debug
-            #multiplexer_debug
+            signals = channels_to_usb_input_frame + [levels[1]] # + channels_to_usb_debug + [channels_to_usb_stream.usb_stream_out.valid, channels_to_usb_stream.usb_stream_out.ready] + channels_to_usb_output_frame
 
             signals_bits = sum([s.width for s in signals])
             m.submodules.ila = ila = \
                 StreamILA(
-                    domain="sync", o_domain="usb",
-                    #sample_rate=60e6,
-                    sample_rate=48e3 * 256 * 5,
+                    domain="usb", o_domain="usb",
+                    sample_rate=60e6, # usb domain
+                    #sample_rate=48e3 * 256 * 5,   # sync domain
+                    #sample_rate=48e3 * 256 * 8, # fast domain
                     signals=signals,
                     sample_depth       = int(50 * 8 * 1024 / signals_bits),
                     samples_pretrigger = 2, #int(0 * 8 * 1024 / signals_bits),
@@ -465,9 +470,8 @@ class USB2AudioInterface(Elaboratable):
                 #ila.enable.eq(input_or_output_active | garbage | usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
                 #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
                 #ila.enable.eq(multiplexer_enable),
-                ila.enable.eq(input_active | demultiplexer_enable),
+                ila.enable.eq(input_active),
                 ila.trigger.eq(1),
-                #ila.trigger.eq(bundle_demultiplexer.channel_stream_in.valid),
             ]
 
             ILACoreParameters(ila).pickle()
