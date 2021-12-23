@@ -18,6 +18,7 @@ class ChannelsToUSBStream(Elaboratable):
         self.no_channels_in      = Signal(self._channel_bits + 1)
         self.channel_stream_in   = StreamInterface(name="channel_stream", payload_width=self._sample_width, extra_fields=[("channel_nr", self._channel_bits)])
         self.usb_stream_out      = StreamInterface(name="usb_stream")
+        self.audio_in_active     = Signal()
         self.data_requested_in   = Signal()
         self.frame_finished_in   = Signal()
 
@@ -173,8 +174,11 @@ class ChannelsToUSBStream(Elaboratable):
                     out_valid.eq(out_fifo.r_rdy)
                 ]
 
+                with m.If(~self.audio_in_active & out_fifo.r_rdy):
+                    m.next = "DISCARD"
+
                 # frame ongoing
-                with m.If(~frame_finished_seen):
+                with m.Elif(~frame_finished_seen):
                     # start filling if there are not enough enough samples buffered
                     # for one channel set of audio samples
                     last_channel = self.out_channel == (self._max_nr_channels - 1)
@@ -210,7 +214,7 @@ class ChannelsToUSBStream(Elaboratable):
                         out_valid.eq(0),
                         self.skipping.eq(1),
                     ]
-                    with m.If(self.out_channel == 0):
+                    with m.If(self.audio_in_active & (self.out_channel == 0)):
                         m.d.comb += out_fifo.r_en.eq(0)
                         m.next = "NORMAL"
 
