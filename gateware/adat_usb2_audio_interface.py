@@ -560,38 +560,39 @@ class USB2AudioInterface(Elaboratable):
             adat_receivers[adat_nr].output_enable,
         ]
 
+        bundle0_active            = Signal()
+        bundle3_active            = Signal()
+        bundle_multiplexer_active = Signal()
+        multiplexer_enable        = Signal()
+
+        m.d.comb += [
+            bundle0_active.eq((bundle_multiplexer.bundles_in[0].valid &
+                               bundle_multiplexer.bundles_in[0].ready)),
+            bundle3_active.eq((bundle_multiplexer.bundles_in[3].valid &
+                               bundle_multiplexer.bundles_in[3].ready)),
+            bundle_multiplexer_active.eq((bundle_multiplexer.channel_stream_out.valid &
+                                          bundle_multiplexer.channel_stream_out.ready)),
+            multiplexer_enable.eq(bundle0_active | bundle3_active | bundle_multiplexer_active),
+        ]
+
         multiplexer_debug = [
             bundle_multiplexer.current_bundle,
             bundle_multiplexer.last_bundle,
-            bundle_multiplexer.bundles_in[0].valid,
-            bundle_multiplexer.bundles_in[0].ready,
-            bundle_multiplexer.bundles_in[0].payload,
+            bundle0_active,
+            #bundle_multiplexer.bundles_in[0].payload,
             bundle_multiplexer.bundles_in[0].channel_nr,
             bundle_multiplexer.bundles_in[0].last,
-            bundle_multiplexer.bundles_in[3].valid,
-            bundle_multiplexer.bundles_in[3].ready,
-            bundle_multiplexer.bundles_in[3].payload,
+            bundle3_active,
+            #bundle_multiplexer.bundles_in[3].payload,
             bundle_multiplexer.bundles_in[3].channel_nr,
             bundle_multiplexer.bundles_in[3].last,
-            bundle_multiplexer.channel_stream_out.payload,
+            #bundle_multiplexer.channel_stream_out.payload,
+            bundle_multiplexer_active,
             bundle_multiplexer.channel_stream_out.channel_nr,
-            bundle_multiplexer.channel_stream_out.valid,
-            bundle_multiplexer.channel_stream_out.ready,
             bundle_multiplexer.channel_stream_out.last,
             input_to_usb_fifo.w_level,
             input_to_usb_fifo.r_level,
         ]
-
-        multiplexer_enable = Signal()
-        m.d.comb += multiplexer_enable.eq(
-            (bundle_multiplexer.bundles_in[0].valid &
-            bundle_multiplexer.bundles_in[0].ready) |
-            (bundle_multiplexer.bundles_in[3].valid &
-            bundle_multiplexer.bundles_in[3].ready) |
-            (bundle_multiplexer.channel_stream_out.valid &
-            bundle_multiplexer.channel_stream_out.ready)
-        )
-
 
         demultiplexer_debug = [
             bundle_demultiplexer.channel_stream_in.ready,
@@ -618,7 +619,7 @@ class USB2AudioInterface(Elaboratable):
             channels_to_usb_stream.level,
         ]
 
-        adat_receive_count   = Signal(range(int(64e6)))
+        adat_receive_count   = Signal(8)
         adat_receive_frames  = Signal.like(adat_receive_count)
         adat_transmit_count  = Signal.like(adat_receive_count)
         adat_transmit_frames = Signal.like(adat_receive_count)
@@ -631,30 +632,30 @@ class USB2AudioInterface(Elaboratable):
                 adat_transmit_count.eq(0),
             ]
 
-        with m.If(usb_to_channel_stream.channel_stream_out.last):
+        with m.If(channels_to_usb_stream.channel_stream_in.last & channels_to_usb_stream.channel_stream_in.valid & channels_to_usb_stream.channel_stream_in.ready):
             m.d.usb += adat_receive_count.eq(adat_receive_count + 1)
 
-        with m.If(channels_to_usb_stream.channel_stream_in.last):
+        with m.If(usb_to_channel_stream.channel_stream_out.last & usb_to_channel_stream.channel_stream_out.valid & usb_to_channel_stream.channel_stream_out.ready):
             m.d.usb += adat_transmit_count.eq(adat_transmit_count + 1)
 
         adat_counts = [
-            adat_transmit_count,
-            adat_receive_count,
+            adat_transmit_frames,
+            adat_receive_frames,
         ]
 
-        signals = adat_counts
+        signals = adat_counts + multiplexer_debug
         #signals = channels_to_usb_input_frame + channels_to_usb_debug  #+ [channels_to_usb_stream.usb_stream_out.valid, channels_to_usb_stream.usb_stream_out.ready]
 
         signals_bits = sum([s.width for s in signals])
         m.submodules.ila = ila = \
             StreamILA(
-                domain="usb", o_domain="usb",
+                domain="fast", o_domain="usb",
                 #sample_rate=60e6, # usb domain
                 #sample_rate=48e3 * 256 * 5, # sync domain
                 sample_rate=48e3 * 256 * 8, # fast domain
                 signals=signals,
                 sample_depth       = int(50 * 8 * 1024 / signals_bits),
-                samples_pretrigger = 2, #int(0 * 8 * 1024 / signals_bits),
+                samples_pretrigger = int(49 * 8 * 1024 / signals_bits),
                 with_enable=True)
 
         stream_ep = USBMultibyteStreamInEndpoint(
@@ -673,9 +674,9 @@ class USB2AudioInterface(Elaboratable):
             #ila.enable.eq(usb_channel_outputting),
             #ila.enable.eq(input_or_output_active | garbage | usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
             #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
-            #ila.trigger.eq(1),
-            ila.enable .eq(usb1.sof_detected),
-            ila.trigger.eq(usb1.sof_detected),
+            ila.enable.eq(bundle_multiplexer_active),
+            #ila.enable .eq(usb1.sof_detected),
+            ila.trigger.eq(adat_receive_frames > 0x7),
         ]
 
         ILACoreParameters(ila).pickle()
