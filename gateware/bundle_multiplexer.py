@@ -86,20 +86,21 @@ class BundleMultiplexer(Elaboratable):
 
         with m.If(self.channel_stream_out.ready):
             # bundle is active (ie. ADAT cable plugged in and synced)
-            with m.If(bundle_ready[current_bundle] & self.bundle_active_in[current_bundle]):
-                m.d.comb += [
-                    self.channel_stream_out.payload.eq(bundle_sample[current_bundle]),
-                    self.channel_stream_out.channel_nr.eq(first_bundle_channel + bundle_channel[current_bundle]),
-                    read_enable[current_bundle].eq(1),
-                    self.channel_stream_out.valid.eq(1),
-                    self.channel_stream_out.first.eq((current_bundle == 0) & (bundle_channel[current_bundle] == 0))
-                ]
+            with m.If(self.bundle_active_in[current_bundle]):
+                with m.If(bundle_ready[current_bundle]):
+                    m.d.comb += [
+                        self.channel_stream_out.payload.eq(bundle_sample[current_bundle]),
+                        self.channel_stream_out.channel_nr.eq(first_bundle_channel + bundle_channel[current_bundle]),
+                        read_enable[current_bundle].eq(1),
+                        self.channel_stream_out.valid.eq(1),
+                        self.channel_stream_out.first.eq((current_bundle == 0) & (bundle_channel[current_bundle] == 0))
+                    ]
 
-                with m.If(last[current_bundle]):
-                    handle_last_channel()
+                    with m.If(last[current_bundle]):
+                        handle_last_channel()
 
             # bundle inactive (eg. no ADAT/SPDIF cable plugged in or not synced) => fill zeros
-            with m.Elif(~self.bundle_active_in[current_bundle]):
+            with m.Else():
                 last_channel = Signal()
                 m.d.comb += [
                     self.channel_stream_out.payload.eq(0),
