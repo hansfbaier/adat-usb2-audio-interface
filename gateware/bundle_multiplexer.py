@@ -159,6 +159,8 @@ class BundleMultiplexerTest(GatewareTestCase):
         yield
         for bundle in range(4):
             yield from self.send_bundle_frame(bundle, bundle)
+            yield
+            yield
 
         yield
         yield
