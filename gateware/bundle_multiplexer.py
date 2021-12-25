@@ -134,7 +134,17 @@ class BundleMultiplexerTest(GatewareTestCase):
             yield
 
     def send_bundle_frame(self, bundle: int, sample: int):
-        for channel in range(self.dut.NO_CHANNELS_ADAT):
+        ch = list(range(self.dut.NO_CHANNELS_ADAT))
+        first = ch[0:4]
+        second = ch[4:]
+        for channel in first:
+            yield from self.send_one_frame(bundle, (sample << 8) + channel, channel)
+
+        yield self.dut.bundles_in[bundle].valid.eq(0)
+        yield
+        yield
+
+        for channel in second:
             yield from self.send_one_frame(bundle, (sample << 8) + channel, channel)
 
 
