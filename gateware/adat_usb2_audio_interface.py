@@ -6,7 +6,7 @@ import os
 
 from amaranth              import *
 from amaranth.lib.fifo     import AsyncFIFOBuffered, AsyncFIFO
-from amaranth.lib.cdc      import FFSynchronizer
+from amaranth.lib.cdc      import FFSynchronizer, PulseSynchronizer
 
 from amaranth_library.stream       import connect_stream_to_fifo
 from amaranth_library.io.i2s       import I2STransmitter
@@ -266,6 +266,10 @@ class USB2AudioInterface(Elaboratable):
         dac1_pads = platform.request("i2s", 1)
         dac2_pads = platform.request("i2s", 2)
 
+        fill_count = Signal(16)
+        with m.If(channels_to_usb_stream.filling):
+            m.d.usb += fill_count.eq(fill_count + 1)
+
         # Internal Logic Analyzer
         if self.USE_ILA:
             self.setup_ila(locals())
@@ -446,6 +450,7 @@ class USB2AudioInterface(Elaboratable):
         adat_receivers           = v['adat_receivers']
         bundle_demultiplexer     = v['bundle_demultiplexer']
         bundle_multiplexer       = v['bundle_multiplexer']
+        fill_count               = v['fill_count']
 
         adat_clock = Signal()
         m.d.comb += adat_clock.eq(ClockSignal("adat"))
@@ -499,10 +504,11 @@ class USB2AudioInterface(Elaboratable):
 
         m.d.comb += weird_frame_size.eq((audio_in_frame_bytes & 0b11) != 0)
 
+
         channels_to_usb_debug = [
             audio_in_frame_bytes,
             channels_to_usb_stream.current_channel,
-            channels_to_usb_stream.feeder_state,
+            channels_to_usb_stream.channel_stream_in.ready,
             channels_to_usb_stream.level,
             channels_to_usb_stream.fifo_full,
             channels_to_usb_stream.fifo_level_insufficient,
@@ -622,34 +628,89 @@ class USB2AudioInterface(Elaboratable):
             channels_to_usb_stream.level,
         ]
 
-        adat_receive_count   = Signal(8)
-        adat_receive_frames  = Signal.like(adat_receive_count)
-        adat_transmit_count  = Signal.like(adat_receive_count)
-        adat_transmit_frames = Signal.like(adat_receive_count)
+        adat_receive_count2   = Signal(8)
+        adat_receive_frames2  = Signal.like(adat_receive_count2)
+        adat_receive_count    = Signal.like(adat_receive_count2)
+        adat_receive_frames   = Signal.like(adat_receive_count2)
+        adat_receiver0_count    = Signal.like(adat_receive_count2)
+        adat_receiver0_frames   = Signal.like(adat_receive_count2)
+        adat_receiver3_count    = Signal.like(adat_receive_count2)
+        adat_receiver3_frames   = Signal.like(adat_receive_count2)
+        adat_transmit_count   = Signal.like(adat_receive_count2)
+        adat_transmit_frames  = Signal.like(adat_receive_count2)
+        usb_receive_frames    = Signal.like(adat_receive_count2)
+
+        m.submodules.adat_receive_pulse_synchronizer = receive_pulse_sync = PulseSynchronizer(i_domain="fast", o_domain="usb")
+        adat_receive_fast = Signal()
+        adat_receive_usb = Signal()
+
+        m.d.comb += [
+            adat_receive_fast.eq(bundle_multiplexer.channel_stream_out.ready & bundle_multiplexer.channel_stream_out.valid & bundle_multiplexer.channel_stream_out.last),
+            receive_pulse_sync.i.eq(adat_receive_fast),
+            adat_receive_usb.eq(receive_pulse_sync.o),
+        ]
+
+        m.submodules.adat_receiver0_pulse_synchronizer = receiver0_pulse_sync = PulseSynchronizer(i_domain="fast", o_domain="usb")
+        adat_receiver0_fast = Signal()
+        adat_receiver0_usb = Signal()
+        m.d.comb += [
+            adat_receiver0_fast.eq((adat_receivers[0].addr_out == 7) & adat_receivers[0].output_enable),
+            receiver0_pulse_sync.i.eq(adat_receiver0_fast),
+            adat_receiver0_usb.eq(receiver0_pulse_sync.o),
+        ]
+
+        m.submodules.adat_receiver3_pulse_synchronizer = receiver3_pulse_sync = PulseSynchronizer(i_domain="fast", o_domain="usb")
+        adat_receiver3_fast = Signal()
+        adat_receiver3_usb = Signal()
+        m.d.comb += [
+            adat_receiver3_fast.eq((adat_receivers[3].addr_out == 7) & adat_receivers[3].output_enable),
+            receiver3_pulse_sync.i.eq(adat_receiver3_fast),
+            adat_receiver3_usb.eq(receiver3_pulse_sync.o),
+        ]
+
+        with m.If(adat_receive_usb):
+            m.d.usb += adat_receive_count.eq(adat_receive_count + 1)
+
+        with m.If(adat_receiver0_usb):
+            m.d.usb += adat_receiver3_count.eq(adat_receiver3_count + 1)
+
+        with m.If(adat_receiver3_usb):
+            m.d.usb += adat_receiver3_count.eq(adat_receiver3_count + 1)
 
         with m.If(channels_to_usb_stream.channel_stream_in.last & channels_to_usb_stream.channel_stream_in.valid & channels_to_usb_stream.channel_stream_in.ready):
-            m.d.usb += adat_receive_count.eq(adat_receive_count + 1)
+            m.d.usb += adat_receive_count2.eq(adat_receive_count2 + 1)
 
         with m.If(usb_to_channel_stream.channel_stream_out.last & usb_to_channel_stream.channel_stream_out.valid & usb_to_channel_stream.channel_stream_out.ready):
             m.d.usb += adat_transmit_count.eq(adat_transmit_count + 1)
 
         with m.If(usb1.sof_detected):
             m.d.usb += [
+                adat_receiver0_frames.eq(adat_receiver3_count),
+                adat_receiver0_count.eq(0),
+                adat_receiver3_frames.eq(adat_receiver3_count),
+                adat_receiver3_count.eq(0),
                 adat_receive_frames.eq(adat_receive_count),
                 adat_receive_count.eq(0),
+                adat_receive_frames2.eq(adat_receive_count2),
+                adat_receive_count2.eq(0),
                 adat_transmit_frames.eq(adat_transmit_count),
                 adat_transmit_count.eq(0),
+                usb_receive_frames.eq(audio_in_frame_bytes >> 7),
             ]
 
-        adat_counts = [
+        frame_counts = [
             #adat_receive_count,
             #adat_transmit_count,
             adat_transmit_frames,
+            adat_receiver0_frames,
+            adat_receiver3_frames,
             adat_receive_frames,
+            adat_receive_frames2,
+            usb_receive_frames,
+            #fill_count,
         ]
 
-        signals = adat_counts + [channels_to_usb_stream.skipping, channels_to_usb_stream.filling, usb1_ep2_in.frame_finished]
-        #signals = channels_to_usb_input_frame + channels_to_usb_debug  #+ [channels_to_usb_stream.usb_stream_out.valid, channels_to_usb_stream.usb_stream_out.ready]
+        signals = frame_counts
 
         signals_bits = sum([s.width for s in signals])
         m.submodules.ila = ila = \
@@ -659,7 +720,7 @@ class USB2AudioInterface(Elaboratable):
                 #sample_rate=48e3 * 256 * 5, # sync domain
                 #sample_rate=48e3 * 256 * 8, # fast domain
                 signals=signals,
-                sample_depth       = int(50 * 8 * 1024 / signals_bits),
+                sample_depth       = int(80 * 8 * 1024 / signals_bits),
                 samples_pretrigger = 2, #int(98 * 8 * 1024 / signals_bits),
                 with_enable=True)
 
@@ -678,10 +739,12 @@ class USB2AudioInterface(Elaboratable):
             #ila.enable.eq(usb_outputting | weird_frame_size | usb1_ep1_out.stream.first | usb1_ep1_out.stream.last),
             #ila.enable.eq(usb_channel_outputting),
             #ila.enable.eq(input_or_output_active | garbage | usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
+            #ila.enable.eq(usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
+            #ila.trigger.eq(1),
             #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
             #ila.enable.eq(bundle_multiplexer_active),
-            ila.enable .eq(usb1.sof_detected | garbage | usb1_ep2_in.frame_finished),
-            ila.trigger.eq(usb1.sof_detected) #adat_receive_frames > 0x7),
+            ila.enable .eq(usb1.sof_detected),
+            ila.trigger.eq(usb1.sof_detected), #adat_receive_frames > 0x7),
         ]
 
         ILACoreParameters(ila).pickle()
