@@ -117,7 +117,11 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.channels_to_usb_stream = channels_to_usb_stream = \
             DomainRenamer("usb")(ChannelsToUSBStream(number_of_channels, max_packet_size=self.MAX_PACKET_SIZE))
 
-        no_channels = Signal(range(number_of_channels * 2), reset=2)
+        no_channels      = Signal(range(number_of_channels * 2), reset=2)
+        no_channels_sync = Signal.like(no_channels)
+
+        m.submodules.no_channels_sync_synchronizer = FFSynchronizer(no_channels, no_channels_sync, o_domain="sync")
+
         m.d.comb += [
             usb_to_channel_stream.no_channels_in.eq(no_channels),
             channels_to_usb_stream.no_channels_in.eq(no_channels),
@@ -126,9 +130,9 @@ class USB2AudioInterface(Elaboratable):
 
         with m.Switch(class_request_handler.output_interface_altsetting_nr):
             with m.Case(2):
-                m.d.comb += no_channels.eq(number_of_channels)
+                m.d.usb += no_channels.eq(number_of_channels)
             with m.Default():
-                m.d.comb += no_channels.eq(2)
+                m.d.usb += no_channels.eq(2)
 
         m.submodules.usb_to_output_fifo = usb_to_output_fifo = \
             AsyncFIFO(width=audio_bits + number_of_channels_bits + 2, depth=usb_to_output_fifo_depth, w_domain="usb", r_domain="sync")
@@ -181,7 +185,7 @@ class USB2AudioInterface(Elaboratable):
             bundle_demultiplexer.channel_stream_in.channel_nr.eq(usb_to_output_fifo.r_data[channel_bits_start:channel_bits_end]),
             bundle_demultiplexer.channel_stream_in.last.eq(usb_to_output_fifo.r_data[-1]),
             bundle_demultiplexer.channel_stream_in.valid.eq(usb_to_output_fifo.r_rdy & usb_to_output_fifo.r_en),
-            bundle_demultiplexer.no_channels_in.eq(no_channels),
+            bundle_demultiplexer.no_channels_in.eq(no_channels_sync),
         ]
 
         # wire up transmitters / receivers
