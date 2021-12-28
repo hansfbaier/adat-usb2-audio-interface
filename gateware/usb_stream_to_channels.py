@@ -1,6 +1,7 @@
-from amaranth                 import *
-from amaranth.build           import Platform
-from amaranth_library.stream  import StreamInterface
+from amaranth         import *
+from amaranth.build   import Platform
+
+from amlib.stream     import StreamInterface
 
 class USBStreamToChannels(Elaboratable):
     def __init__(self, max_no_channels=2):

@@ -4,14 +4,14 @@
 # SPDX-License-Identifier: CERN-OHL-W-2.0
 import os
 
-from amaranth              import *
-from amaranth.lib.fifo     import AsyncFIFOBuffered, AsyncFIFO
-from amaranth.lib.cdc      import FFSynchronizer, PulseSynchronizer
+from amaranth            import *
+from amaranth.lib.fifo   import AsyncFIFOBuffered, AsyncFIFO
+from amaranth.lib.cdc    import FFSynchronizer, PulseSynchronizer
 
-from amaranth_library.stream       import connect_stream_to_fifo
-from amaranth_library.io.i2s       import I2STransmitter
-from amaranth_library.io.max7219   import SerialLEDArray, NumberToSevenSegmentHex
-from amaranth_library.debug.ila    import StreamILA, ILACoreParameters
+from amlib.stream        import connect_stream_to_fifo
+from amlib.io.i2s        import I2STransmitter
+from amlib.io.max7219    import SerialLEDArray, NumberToSevenSegmentHex
+from amlib.debug.ila     import StreamILA, ILACoreParameters
 
 from luna                import top_level_cli
 from luna.usb2           import USBDevice, USBIsochronousInMemoryEndpoint, USBIsochronousOutStreamEndpoint, USBIsochronousInStreamEndpoint

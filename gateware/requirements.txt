@@ -1,6 +1,7 @@
 git+https://github.com/amaranth-lang/amaranth.git
-git+https://github.com/hansfbaier/amaranth-boards.git
-git+https://github.com/hansfbaier/amaranth-library.git
-git+https://github.com/hansfbaier/usb2-highspeed-core.git
-git+https://github.com/hansfbaier/adat-core.git
+git+https://github.com/amaranth-lang/amaranth-soc.git
+git+https://github.com/amaranth-community-unofficial/amaranth-boards.git
+git+https://github.com/amaranth-community-unofficial/amlib.git
+git+https://github.com/amaranth-community-unofficial/usb2-highspeed-core.git
+git+https://github.com/amaranth-community-unofficial/adat-core.git
 amaranth-yosys

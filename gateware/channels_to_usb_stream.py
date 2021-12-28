@@ -1,8 +1,8 @@
-from amaranth                 import *
-from amaranth.build           import Platform
-from amaranth.lib.fifo        import SyncFIFO
-from amaranth_library.stream  import StreamInterface, connect_fifo_to_stream
-from amaranth_library.test    import GatewareTestCase, sync_test_case
+from amaranth            import *
+from amaranth.build      import Platform
+from amaranth.lib.fifo   import SyncFIFO
+from amlib.stream        import StreamInterface, connect_fifo_to_stream
+from amlib.test          import GatewareTestCase, sync_test_case
 
 class ChannelsToUSBStream(Elaboratable):
     def __init__(self, max_nr_channels=2, sample_width=24, max_packet_size=256):
