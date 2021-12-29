@@ -554,6 +554,7 @@ class USB2AudioInterface(Elaboratable):
             adat_receivers[adat_nr].sample_out,
             adat_receivers[adat_nr].addr_out,
             adat_receivers[adat_nr].output_enable,
+            adat_receivers[adat_nr].recovered_clock_out,
         ]
 
         adat_first = Signal()
@@ -628,97 +629,85 @@ class USB2AudioInterface(Elaboratable):
             channels_to_usb_stream.level,
         ]
 
-        adat_receive_count2   = Signal(8)
-        adat_receive_frames2  = Signal.like(adat_receive_count2)
-        adat_receive_count    = Signal.like(adat_receive_count2)
-        adat_receive_frames   = Signal.like(adat_receive_count2)
-        adat_receiver0_count    = Signal.like(adat_receive_count2)
-        adat_receiver0_frames   = Signal.like(adat_receive_count2)
-        adat_receiver3_count    = Signal.like(adat_receive_count2)
-        adat_receiver3_frames   = Signal.like(adat_receive_count2)
-        adat_transmit_count   = Signal.like(adat_receive_count2)
-        adat_transmit_frames  = Signal.like(adat_receive_count2)
-        usb_receive_frames    = Signal.like(adat_receive_count2)
+        adat_transmit_count       = Signal(8)
+        adat_transmit_frames      = Signal.like(adat_transmit_count)
+        adat_receiver0_count      = Signal.like(adat_transmit_count)
+        adat_receiver0_frames     = Signal.like(adat_transmit_count)
+        adat_receiver3_count      = Signal.like(adat_transmit_count)
+        adat_receiver3_frames     = Signal.like(adat_transmit_count)
+        adat_multiplexer_count    = Signal.like(adat_transmit_count)
+        adat_multiplexer_frames   = Signal.like(adat_transmit_count)
+        adat_channels2usb_count   = Signal.like(adat_transmit_count)
+        adat_channels2usb_frames  = Signal.like(adat_transmit_count)
+        usb_receive_frames        = Signal.like(adat_transmit_count)
 
-        m.submodules.adat_receive_pulse_synchronizer = receive_pulse_sync = PulseSynchronizer(i_domain="fast", o_domain="usb")
-        adat_receive_fast = Signal()
-        adat_receive_usb = Signal()
+        m.submodules.sof_synchronizer = sof_synchronizer = PulseSynchronizer("usb", "fast")
+        sof_fast                    = Signal()
+        adat_receiver0_fast         = Signal()
+        adat_receiver3_fast         = Signal()
+        adat_multiplexer_out_fast   = Signal()
 
         m.d.comb += [
-            adat_receive_fast.eq(bundle_multiplexer.channel_stream_out.ready & bundle_multiplexer.channel_stream_out.valid & bundle_multiplexer.channel_stream_out.last),
-            receive_pulse_sync.i.eq(adat_receive_fast),
-            adat_receive_usb.eq(receive_pulse_sync.o),
-        ]
+            sof_synchronizer.i.eq(usb1.sof_detected),
+            sof_fast.eq(sof_synchronizer.o),
 
-        m.submodules.adat_receiver0_pulse_synchronizer = receiver0_pulse_sync = PulseSynchronizer(i_domain="fast", o_domain="usb")
-        adat_receiver0_fast = Signal()
-        adat_receiver0_usb = Signal()
-        m.d.comb += [
             adat_receiver0_fast.eq((adat_receivers[0].addr_out == 7) & adat_receivers[0].output_enable),
-            receiver0_pulse_sync.i.eq(adat_receiver0_fast),
-            adat_receiver0_usb.eq(receiver0_pulse_sync.o),
-        ]
-
-        m.submodules.adat_receiver3_pulse_synchronizer = receiver3_pulse_sync = PulseSynchronizer(i_domain="fast", o_domain="usb")
-        adat_receiver3_fast = Signal()
-        adat_receiver3_usb = Signal()
-        m.d.comb += [
             adat_receiver3_fast.eq((adat_receivers[3].addr_out == 7) & adat_receivers[3].output_enable),
-            receiver3_pulse_sync.i.eq(adat_receiver3_fast),
-            adat_receiver3_usb.eq(receiver3_pulse_sync.o),
+            adat_multiplexer_out_fast.eq(bundle_multiplexer.channel_stream_out.ready & bundle_multiplexer.channel_stream_out.valid & bundle_multiplexer.channel_stream_out.last),
         ]
 
-        with m.If(adat_receive_usb):
-            m.d.usb += adat_receive_count.eq(adat_receive_count + 1)
+        with m.If(sof_fast):
+            m.d.fast += [
+                adat_receiver0_frames.eq(adat_receiver0_count),
+                adat_receiver0_count.eq(0),
+                adat_receiver3_frames.eq(adat_receiver3_count),
+                adat_receiver3_count.eq(0),
+                adat_multiplexer_frames.eq(adat_multiplexer_count),
+                adat_multiplexer_count.eq(0),
+            ]
 
-        with m.If(adat_receiver0_usb):
-            m.d.usb += adat_receiver3_count.eq(adat_receiver3_count + 1)
+        with m.If(adat_receiver0_fast):
+            m.d.fast += adat_receiver0_count.eq(adat_receiver0_count + 1)
 
-        with m.If(adat_receiver3_usb):
-            m.d.usb += adat_receiver3_count.eq(adat_receiver3_count + 1)
+        with m.If(adat_receiver3_fast):
+            m.d.fast += adat_receiver3_count.eq(adat_receiver3_count + 1)
+
+        with m.If(adat_multiplexer_out_fast):
+            m.d.fast += adat_multiplexer_count.eq(adat_multiplexer_count + 1)
+
+        frame_counts = [
+            adat_transmit_frames,
+            adat_receiver0_frames,
+            adat_receiver3_frames,
+            adat_multiplexer_frames,
+            adat_channels2usb_frames,
+            usb_receive_frames,
+        ]
 
         with m.If(channels_to_usb_stream.channel_stream_in.last & channels_to_usb_stream.channel_stream_in.valid & channels_to_usb_stream.channel_stream_in.ready):
-            m.d.usb += adat_receive_count2.eq(adat_receive_count2 + 1)
+            m.d.usb += adat_channels2usb_count.eq(adat_channels2usb_count + 1)
 
         with m.If(usb_to_channel_stream.channel_stream_out.last & usb_to_channel_stream.channel_stream_out.valid & usb_to_channel_stream.channel_stream_out.ready):
             m.d.usb += adat_transmit_count.eq(adat_transmit_count + 1)
 
         with m.If(usb1.sof_detected):
             m.d.usb += [
-                adat_receiver0_frames.eq(adat_receiver3_count),
-                adat_receiver0_count.eq(0),
-                adat_receiver3_frames.eq(adat_receiver3_count),
-                adat_receiver3_count.eq(0),
-                adat_receive_frames.eq(adat_receive_count),
-                adat_receive_count.eq(0),
-                adat_receive_frames2.eq(adat_receive_count2),
-                adat_receive_count2.eq(0),
                 adat_transmit_frames.eq(adat_transmit_count),
                 adat_transmit_count.eq(0),
+                adat_channels2usb_frames.eq(adat_channels2usb_count),
+                adat_channels2usb_count.eq(0),
                 usb_receive_frames.eq(audio_in_frame_bytes >> 7),
             ]
-
-        frame_counts = [
-            #adat_receive_count,
-            #adat_transmit_count,
-            adat_transmit_frames,
-            adat_receiver0_frames,
-            adat_receiver3_frames,
-            adat_receive_frames,
-            adat_receive_frames2,
-            usb_receive_frames,
-            #fill_count,
-        ]
 
         signals = frame_counts
 
         signals_bits = sum([s.width for s in signals])
         m.submodules.ila = ila = \
             StreamILA(
-                domain="usb", o_domain="usb",
-                sample_rate=60e6, # usb domain
+                domain="fast", o_domain="usb",
+                #sample_rate=60e6, # usb domain
                 #sample_rate=48e3 * 256 * 5, # sync domain
-                #sample_rate=48e3 * 256 * 8, # fast domain
+                sample_rate=48e3 * 256 * 8, # fast domain
                 signals=signals,
                 sample_depth       = int(80 * 8 * 1024 / signals_bits),
                 samples_pretrigger = 2, #int(98 * 8 * 1024 / signals_bits),
@@ -743,8 +732,10 @@ class USB2AudioInterface(Elaboratable):
             #ila.trigger.eq(1),
             #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
             #ila.enable.eq(bundle_multiplexer_active),
-            ila.enable .eq(usb1.sof_detected),
-            ila.trigger.eq(usb1.sof_detected), #adat_receive_frames > 0x7),
+            ila.enable .eq(sof_fast),
+            ila.trigger.eq(sof_fast), #adat_receive_frames > 0x7),
+            #ila.enable.eq(multiplexer_enable),
+            #ila.trigger.eq(multiplexer_enable),
         ]
 
         ILACoreParameters(ila).pickle()
