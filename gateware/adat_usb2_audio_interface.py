@@ -10,7 +10,7 @@ from amaranth.lib.cdc    import FFSynchronizer, PulseSynchronizer
 
 from amlib.stream        import connect_stream_to_fifo
 from amlib.io.i2s        import I2STransmitter
-from amlib.io.max7219    import SerialLEDArray, NumberToSevenSegmentHex
+from amlib.io.max7219    import SerialLEDArray, NumberToSevenSegmentHex, NumberToBitBar
 from amlib.debug.ila     import StreamILA, ILACoreParameters
 
 from luna                import top_level_cli
@@ -302,15 +302,29 @@ class USB2AudioInterface(Elaboratable):
             m.d.sync += max_fifo_level.eq(0)
 
         spi = platform.request("spi")
-        m.submodules.sevensegment = sevensegment = (NumberToSevenSegmentHex(width=32))
+        #m.submodules.sevensegment = sevensegment = (NumberToSevenSegmentHex(width=32))
         m.submodules.led_display  = led_display  = (SerialLEDArray(divisor=10, init_delay=24e6))
+        m.submodules.in_bar       = in_bar       = NumberToBitBar(0, 16 * 8, 8)
+        m.submodules.in_fifo_bar  = in_fifo_bar  = NumberToBitBar(0, 2 * self.MAX_PACKET_SIZE, 8)
+        m.submodules.out_fifo_bar = out_fifo_bar = NumberToBitBar(0, self.MAX_PACKET_SIZE // 2, 8)
         m.d.sync += [
-            sevensegment.number_in[0:8].eq(adat1_underflow_count),
-            sevensegment.number_in[8:16].eq(input_to_usb_fifo.w_level),
-            sevensegment.number_in[16:24].eq(no_channels),
-            sevensegment.number_in[24:32].eq(max_fifo_level),
-            sevensegment.dots_in.eq(leds),
-            Cat(led_display.digits_in).eq(sevensegment.seven_segment_out),
+            # seven segment display
+            #sevensegment.number_in[0:8].eq(adat1_underflow_count),
+            #sevensegment.number_in[8:16].eq(channels_to_usb_stream.level >> 3),
+            #sevensegment.number_in[16:32].eq(fill_count),
+            #sevensegment.dots_in.eq(channels_to_usb_stream.fifo_full),
+            #Cat(led_display.digits_in).eq(sevensegment.seven_segment_out),
+
+            # LED bar displays
+            in_bar.value_in.eq(input_to_usb_fifo.r_level),
+            in_fifo_bar.value_in.eq(channels_to_usb_stream.level >> 3),
+            out_fifo_bar.value_in.eq(usb_to_output_fifo_level >> 1),
+
+            led_display.digits_in[0].eq(in_bar.bitbar_out),
+            led_display.digits_in[1].eq(in_fifo_bar.bitbar_out),
+            *[led_display.digits_in[i].eq(0) for i in range(2, 6)],
+            led_display.digits_in[6].eq(out_fifo_bar.bitbar_out),
+            led_display.digits_in[7].eq(adat1_underflow_count),
         ]
         m.d.comb += [
             *led_display.connect_to_resource(spi),
@@ -554,7 +568,7 @@ class USB2AudioInterface(Elaboratable):
             adat_receivers[adat_nr].sample_out,
             adat_receivers[adat_nr].addr_out,
             adat_receivers[adat_nr].output_enable,
-            adat_receivers[adat_nr].recovered_clock_out,
+            #adat_receivers[adat_nr].recovered_clock_out,
         ]
 
         adat_first = Signal()
@@ -699,7 +713,7 @@ class USB2AudioInterface(Elaboratable):
                 usb_receive_frames.eq(audio_in_frame_bytes >> 7),
             ]
 
-        signals = frame_counts
+        signals = [sof_fast, adat_receiver0_frames] + receiver_debug
 
         signals_bits = sum([s.width for s in signals])
         m.submodules.ila = ila = \
@@ -707,11 +721,11 @@ class USB2AudioInterface(Elaboratable):
                 domain="fast", o_domain="usb",
                 #sample_rate=60e6, # usb domain
                 #sample_rate=48e3 * 256 * 5, # sync domain
-                sample_rate=48e3 * 256 * 8, # fast domain
+                sample_rate=48e3 * 256 * 9, # fast domain
                 signals=signals,
                 sample_depth       = int(80 * 8 * 1024 / signals_bits),
-                samples_pretrigger = 2, #int(98 * 8 * 1024 / signals_bits),
-                with_enable=True)
+                samples_pretrigger = int(78 * 8 * 1024 / signals_bits),
+                with_enable=False)
 
         stream_ep = USBMultibyteStreamInEndpoint(
             endpoint_number=3, # EP 3 IN
@@ -732,8 +746,8 @@ class USB2AudioInterface(Elaboratable):
             #ila.trigger.eq(1),
             #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
             #ila.enable.eq(bundle_multiplexer_active),
-            ila.enable .eq(sof_fast),
-            ila.trigger.eq(sof_fast), #adat_receive_frames > 0x7),
+            #ila.enable .eq(sof_fast | adat_receivers[0].output_enable),
+            ila.trigger.eq(adat_receiver0_frames > 7),
             #ila.enable.eq(multiplexer_enable),
             #ila.trigger.eq(multiplexer_enable),
         ]
