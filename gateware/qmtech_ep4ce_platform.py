@@ -27,9 +27,11 @@ class ADATFaceClockDomainGenerator(Elaboratable):
 
         sys_clocks   = Signal(1)
         audio_clocks = Signal(4)
+        fast_clock   = Signal()
 
         sys_locked   = Signal()
         audio_locked = Signal()
+        fast_locked  = Signal()
         reset        = Signal()
 
         m.submodules.mainpll = Instance("ALTPLL",
@@ -88,9 +90,27 @@ class ADATFaceClockDomainGenerator(Elaboratable):
             o_locked = audio_locked,
         )
 
+        m.submodules.fastpll = Instance("ALTPLL",
+            p_BANDWIDTH_TYPE         = "AUTO",
+
+            # ADAT sampling clock = 48 kHz * 256 * 8 times oversampling
+            p_CLK0_DIVIDE_BY         = 1,
+            p_CLK0_DUTY_CYCLE        = 50,
+            p_CLK0_MULTIPLY_BY       = platform.fast_multiplier,
+            p_CLK0_PHASE_SHIFT       = 0,
+
+            p_INCLK0_INPUT_FREQUENCY = 81395,
+            p_OPERATION_MODE         = "NORMAL",
+
+            i_inclk  = audio_clocks[0],
+            o_clk    = fast_clock,
+            o_locked = fast_locked,
+        )
+
+
         m.d.comb += [
-            reset.eq(~(sys_locked & audio_locked)),
-            ClockSignal("fast").eq(audio_clocks[2]),
+            reset.eq(~(sys_locked & audio_locked & fast_locked)),
+            ClockSignal("fast").eq(fast_clock),
             ClockSignal("usb") .eq(sys_clocks[0]),
             ClockSignal("sync").eq(audio_clocks[3]),
             ClockSignal("dac").eq(audio_clocks[1]),
@@ -105,9 +125,10 @@ class ADATFaceClockDomainGenerator(Elaboratable):
         return m
 
 class ADATFacePlatform(QMTechEP4CEPlatform, LUNAPlatform):
+    fast_multiplier        = 9
     clock_domain_generator = ADATFaceClockDomainGenerator
     number_of_channels     = 32
-    fast_domain_clock_freq = int(48e3 * 256 * 8)
+    fast_domain_clock_freq = int(48e3 * 256 * fast_multiplier)
 
     @property
     def file_templates(self):
@@ -127,7 +148,7 @@ class ADATFacePlatform(QMTechEP4CEPlatform, LUNAPlatform):
             set_max_delay -from [get_clocks {car|audiopll|auto_generated|pll1|clk[3]}]  -to  [get_clocks {car|audiopll|auto_generated|pll1|clk[0]}] 5
 
             # USB to fast clock domain crossing
-            set_max_delay -from [get_clocks {car|mainpll|auto_generated|pll1|clk[0]}]  -to  [get_clocks {car|audiopll|auto_generated|pll1|clk[2]}] 5
+            set_max_delay -from [get_clocks {car|mainpll|auto_generated|pll1|clk[0]}]  -to  [get_clocks {car|fastopll|auto_generated|pll1|clk[0]}] 5
         """
         return templates
 
