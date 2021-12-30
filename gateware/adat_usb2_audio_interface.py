@@ -415,8 +415,11 @@ class USB2AudioInterface(Elaboratable):
         input_to_usb_fifo        = v['input_to_usb_fifo']
         usb_to_output_fifo_level = v['usb_to_output_fifo_level']
         bundle_multiplexer       = v['bundle_multiplexer']
+        adat_transmitters        = v['adat_transmitters']
 
         adat1_underflow_count = Signal(16)
+        with m.If(adat_transmitters[0].underflow_out):
+            m.d.sync += adat1_underflow_count.eq(adat1_underflow_count + 1)
 
         spi = platform.request("spi")
         m.submodules.led_display  = led_display = SerialLEDArray(divisor=10, init_delay=24e6)
