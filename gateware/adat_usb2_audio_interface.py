@@ -217,7 +217,7 @@ class USB2AudioInterface(Elaboratable):
         # signal path: ADAT receivers ===> USB
         #
         m.submodules.input_to_usb_fifo = input_to_usb_fifo = \
-            AsyncFIFOBuffered(width=audio_bits + number_of_channels_bits + 2, depth=16*8, w_domain="fast", r_domain="usb")
+            AsyncFIFOBuffered(width=audio_bits + number_of_channels_bits + 2, depth=256 * 4, w_domain="fast", r_domain="usb")
 
         chnr_start    = audio_bits
         chnr_end      = chnr_start + number_of_channels_bits
