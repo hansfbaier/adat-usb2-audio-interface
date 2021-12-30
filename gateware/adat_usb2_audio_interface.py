@@ -38,10 +38,13 @@ class USB2AudioInterface(Elaboratable):
     # one isochronous packet typically has 6 or 7 samples of 8 channels of 32 bit samples
     # 6 samples * 8 channels * 4 bytes/sample = 192 bytes
     # 7 samples * 8 channels * 4 bytes/sample = 224 bytes
-    MAX_PACKET_SIZE = 224 * 4
+    MAX_PACKET_SIZE      = 224 * 4
+    INPUT_CDC_FIFO_DEPTH = 256 * 4
 
-    USE_ILA = False
+    USE_ILA             = False
     ILA_MAX_PACKET_SIZE = 512
+
+    USE_DEBUG_LED_ARRAY = False
 
     def elaborate(self, platform):
         m = Module()
@@ -217,7 +220,7 @@ class USB2AudioInterface(Elaboratable):
         # signal path: ADAT receivers ===> USB
         #
         m.submodules.input_to_usb_fifo = input_to_usb_fifo = \
-            AsyncFIFOBuffered(width=audio_bits + number_of_channels_bits + 2, depth=256 * 4, w_domain="fast", r_domain="usb")
+            AsyncFIFOBuffered(width=audio_bits + number_of_channels_bits + 2, depth=self.INPUT_CDC_FIFO_DEPTH, w_domain="fast", r_domain="usb")
 
         chnr_start    = audio_bits
         chnr_end      = chnr_start + number_of_channels_bits
@@ -274,6 +277,9 @@ class USB2AudioInterface(Elaboratable):
         if self.USE_ILA:
             self.setup_ila(locals())
 
+        if self.USE_DEBUG_LED_ARRAY:
+            self.add_debug_led_array(locals())
+
         usb_aux1 = platform.request("usb_aux", 1)
         usb_aux2 = platform.request("usb_aux", 2)
 
@@ -288,56 +294,6 @@ class USB2AudioInterface(Elaboratable):
             leds.usb2.eq(usb_aux2.vbus),
         ]
         m.d.comb += [getattr(leds, f"sync{i + 1}").eq(adat_receivers[i].synced_out) for i in range(4)]
-
-        #
-        # DEBUG display
-        #
-        adat1_underflow_count = Signal(16)
-
-        with m.If(adat_transmitters[0].underflow_out):
-            m.d.sync += adat1_underflow_count.eq(adat1_underflow_count + 1)
-            m.d.sync += min_fifo_level.eq(0)
-
-        with m.If(sof_counter == 0):
-            m.d.sync += max_fifo_level.eq(0)
-
-        spi = platform.request("spi")
-        #m.submodules.sevensegment = sevensegment = (NumberToSevenSegmentHex(width=32))
-        m.submodules.led_display  = led_display          = (SerialLEDArray(divisor=10, init_delay=24e6))
-
-        rx_level_bars = []
-        for i in range(1, 5):
-            rx_level_bar = NumberToBitBar(0, 24, 8)
-            setattr(m.submodules, f"rx{i}_level_bar", rx_level_bar)
-            m.d.comb += rx_level_bar.value_in.eq(bundle_multiplexer.levels[i - 1])
-            rx_level_bars.append(rx_level_bar)
-
-        m.submodules.in_bar       = in_to_usb_fifo_bar   = NumberToBitBar(0, 16 * 8, 8)
-        m.submodules.in_fifo_bar  = channels_to_usb_bar  = NumberToBitBar(0, 2 * self.MAX_PACKET_SIZE, 8)
-        m.submodules.out_fifo_bar = out_fifo_bar         = NumberToBitBar(0, self.MAX_PACKET_SIZE // 2, 8)
-        m.d.sync += [
-            # seven segment display
-            #sevensegment.number_in[0:8].eq(adat1_underflow_count),
-            #sevensegment.number_in[8:16].eq(channels_to_usb_stream.level >> 3),
-            #sevensegment.number_in[16:32].eq(fill_count),
-            #sevensegment.dots_in.eq(channels_to_usb_stream.fifo_full),
-            #Cat(led_display.digits_in).eq(sevensegment.seven_segment_out),
-
-            # LED bar displays
-            in_to_usb_fifo_bar.value_in.eq(input_to_usb_fifo.r_level),
-            channels_to_usb_bar.value_in.eq(channels_to_usb_stream.level >> 3),
-            out_fifo_bar.value_in.eq(usb_to_output_fifo_level >> 1),
-
-            *[led_display.digits_in[i].eq(Cat(reversed(rx_level_bars[i].bitbar_out))) for i in range(4)],
-            led_display.digits_in[4].eq(Cat(reversed(in_to_usb_fifo_bar.bitbar_out))),
-            led_display.digits_in[5].eq(Cat(reversed(channels_to_usb_bar.bitbar_out))),
-            led_display.digits_in[6].eq(Cat(reversed(out_fifo_bar.bitbar_out))),
-            led_display.digits_in[7].eq(adat1_underflow_count),
-        ]
-        m.d.comb += [
-            *led_display.connect_to_resource(spi),
-            led_display.valid_in.eq(1),
-        ]
 
         return m
 
@@ -451,6 +407,48 @@ class USB2AudioInterface(Elaboratable):
         ]
 
         return (sof_counter, usb_to_output_fifo_level, usb_to_output_fifo_depth)
+
+    def add_debug_led_array(self, v):
+        m                        = v['m']
+        platform                 = v['platform']
+        channels_to_usb_stream   = v['channels_to_usb_stream']
+        input_to_usb_fifo        = v['input_to_usb_fifo']
+        usb_to_output_fifo_level = v['usb_to_output_fifo_level']
+        bundle_multiplexer       = v['bundle_multiplexer']
+
+        adat1_underflow_count = Signal(16)
+
+        spi = platform.request("spi")
+        m.submodules.led_display  = led_display = SerialLEDArray(divisor=10, init_delay=24e6)
+
+        rx_level_bars = []
+        for i in range(1, 5):
+            rx_level_bar = NumberToBitBar(0, 24, 8)
+            setattr(m.submodules, f"rx{i}_level_bar", rx_level_bar)
+            m.d.comb += rx_level_bar.value_in.eq(bundle_multiplexer.levels[i - 1])
+            rx_level_bars.append(rx_level_bar)
+
+        m.submodules.in_bar       = in_to_usb_fifo_bar  = NumberToBitBar(0, self.INPUT_CDC_FIFO_DEPTH, 8)
+        m.submodules.in_fifo_bar  = channels_to_usb_bar = NumberToBitBar(0, 2 * self.MAX_PACKET_SIZE, 8)
+        m.submodules.out_fifo_bar = out_fifo_bar        = NumberToBitBar(0, self.MAX_PACKET_SIZE // 2, 8)
+
+        m.d.sync += [
+            # LED bar displays
+            in_to_usb_fifo_bar.value_in.eq(input_to_usb_fifo.r_level),
+            channels_to_usb_bar.value_in.eq(channels_to_usb_stream.level >> 3),
+            out_fifo_bar.value_in.eq(usb_to_output_fifo_level >> 1),
+
+            *[led_display.digits_in[i].eq(Cat(reversed(rx_level_bars[i].bitbar_out))) for i in range(4)],
+            led_display.digits_in[4].eq(Cat(reversed(in_to_usb_fifo_bar.bitbar_out))),
+            led_display.digits_in[5].eq(Cat(reversed(channels_to_usb_bar.bitbar_out))),
+            led_display.digits_in[6].eq(Cat(reversed(out_fifo_bar.bitbar_out))),
+            led_display.digits_in[7].eq(adat1_underflow_count),
+        ]
+
+        m.d.comb += [
+            *led_display.connect_to_resource(spi),
+            led_display.valid_in.eq(1),
+        ]
 
     def setup_ila(self, v):
         m                        = v['m']
