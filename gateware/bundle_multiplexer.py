@@ -185,3 +185,16 @@ class BundleMultiplexerTest(GatewareTestCase):
                 yield from self.advance_cycles(8)
 
         yield from self.advance_cycles(16)
+
+
+    @sync_test_case
+    def test_all_inactive(self):
+        dut = self.dut
+        yield
+        yield dut.channel_stream_out.ready.eq(1)
+        for bundle in range(4):
+            yield self.dut.no_channels_in[bundle].eq(8)
+            yield dut.bundle_active_in[bundle].eq(0)
+
+        yield
+        yield from self.advance_cycles(96)

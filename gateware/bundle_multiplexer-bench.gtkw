@@ -2,10 +2,10 @@
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
 [*] Wed Dec 15 03:34:32 2021
 [*]
-[dumpfile] "/devel/HDL/src/adat-usb2-audio-interface/test_BundleMultiplexerTest_test_smoke.vcd"
+[dumpfile] "test_BundleMultiplexerTest_test_smoke.vcd"
 [dumpfile_mtime] "Wed Dec 15 03:34:24 2021"
 [dumpfile_size] 17713
-[savefile] "/devel/HDL/src/adat-usb2-audio-interface/gateware/bundle_multiplexer-bench.gtkw"
+[savefile] "gateware/bundle_multiplexer-bench.gtkw"
 [timestart] 0
 [size] 3828 2090
 [pos] -1 -1
