@@ -416,7 +416,7 @@ class USB2AudioInterface(Elaboratable):
         m.d.comb += fifo_level_feedback.eq(usb_to_output_fifo_level >> (usb_to_output_fifo_level.width - 7))
 
         adat_clock_usb = Signal()
-        m.submodules.adat_clock_usb_sync = FFSynchronizer(ClockSignal("adat"), adat_clock_usb, o_domain="usb")
+        m.submodules.adat_clock_usb_sync  = FFSynchronizer(ClockSignal("adat"), adat_clock_usb, o_domain="usb")
         m.submodules.adat_clock_usb_pulse = adat_clock_usb_pulse = DomainRenamer("usb")(EdgeToPulse())
         adat_clock_tick = Signal()
         m.d.usb += [
