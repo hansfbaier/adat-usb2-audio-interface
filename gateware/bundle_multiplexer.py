@@ -32,6 +32,7 @@ class BundleMultiplexer(Elaboratable):
         # debug ports
         self.current_bundle  = Signal(range(no_bundles))
         self.last_bundle     = Signal()
+        self.levels          = Array(Signal(5, name=f"rx{i}_fifo_level") for i in range(1,5))
 
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
@@ -56,6 +57,7 @@ class BundleMultiplexer(Elaboratable):
                 bundle_ready[i]   .eq(fifo.r_rdy),
                 bundle_sample[i]  .eq(fifo.r_data[:sample_width]),
                 bundle_channel[i] .eq(fifo.r_data[sample_width:sample_width + bundle_bits]),
+                self.levels[i]    .eq(fifo.r_level),
 
                 last[i].eq(fifo.r_data[-1]),
                 fifo.r_en.eq(read_enable[i]),
