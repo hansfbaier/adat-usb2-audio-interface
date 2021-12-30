@@ -303,10 +303,11 @@ class USB2AudioInterface(Elaboratable):
 
         spi = platform.request("spi")
         #m.submodules.sevensegment = sevensegment = (NumberToSevenSegmentHex(width=32))
-        m.submodules.led_display  = led_display  = (SerialLEDArray(divisor=10, init_delay=24e6))
-        m.submodules.in_bar       = in_to_usb_fifo_bar       = NumberToBitBar(0, 16 * 8, 8)
+        m.submodules.led_display  = led_display          = (SerialLEDArray(divisor=10, init_delay=24e6))
+
+        m.submodules.in_bar       = in_to_usb_fifo_bar   = NumberToBitBar(0, 16 * 8, 8)
         m.submodules.in_fifo_bar  = channels_to_usb_bar  = NumberToBitBar(0, 2 * self.MAX_PACKET_SIZE, 8)
-        m.submodules.out_fifo_bar = out_fifo_bar = NumberToBitBar(0, self.MAX_PACKET_SIZE // 2, 8)
+        m.submodules.out_fifo_bar = out_fifo_bar         = NumberToBitBar(0, self.MAX_PACKET_SIZE // 2, 8)
         m.d.sync += [
             # seven segment display
             #sevensegment.number_in[0:8].eq(adat1_underflow_count),
