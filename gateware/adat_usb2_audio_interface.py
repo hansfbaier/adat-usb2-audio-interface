@@ -440,7 +440,7 @@ class USB2AudioInterface(Elaboratable):
                 # provide negative feedback proportional to the fill level
                 # of the FIFO
                 m.d.usb += [
-                    feedbackValue.eq(adat_clock_counter - fifo_level_feedback),
+                    feedbackValue.eq(adat_clock_counter + 1 - fifo_level_feedback),
                     adat_clock_counter.eq(0),
                 ]
 
