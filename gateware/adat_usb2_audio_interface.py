@@ -304,8 +304,8 @@ class USB2AudioInterface(Elaboratable):
         spi = platform.request("spi")
         #m.submodules.sevensegment = sevensegment = (NumberToSevenSegmentHex(width=32))
         m.submodules.led_display  = led_display  = (SerialLEDArray(divisor=10, init_delay=24e6))
-        m.submodules.in_bar       = in_bar       = NumberToBitBar(0, 16 * 8, 8)
-        m.submodules.in_fifo_bar  = in_fifo_bar  = NumberToBitBar(0, 2 * self.MAX_PACKET_SIZE, 8)
+        m.submodules.in_bar       = in_to_usb_fifo_bar       = NumberToBitBar(0, 16 * 8, 8)
+        m.submodules.in_fifo_bar  = channels_to_usb_bar  = NumberToBitBar(0, 2 * self.MAX_PACKET_SIZE, 8)
         m.submodules.out_fifo_bar = out_fifo_bar = NumberToBitBar(0, self.MAX_PACKET_SIZE // 2, 8)
         m.d.sync += [
             # seven segment display
@@ -316,12 +316,12 @@ class USB2AudioInterface(Elaboratable):
             #Cat(led_display.digits_in).eq(sevensegment.seven_segment_out),
 
             # LED bar displays
-            in_bar.value_in.eq(input_to_usb_fifo.r_level),
-            in_fifo_bar.value_in.eq(channels_to_usb_stream.level >> 3),
+            in_to_usb_fifo_bar.value_in.eq(input_to_usb_fifo.r_level),
+            channels_to_usb_bar.value_in.eq(channels_to_usb_stream.level >> 3),
             out_fifo_bar.value_in.eq(usb_to_output_fifo_level >> 1),
 
-            led_display.digits_in[0].eq(in_bar.bitbar_out),
-            led_display.digits_in[1].eq(in_fifo_bar.bitbar_out),
+            led_display.digits_in[0].eq(in_to_usb_fifo_bar.bitbar_out),
+            led_display.digits_in[1].eq(channels_to_usb_bar.bitbar_out),
             *[led_display.digits_in[i].eq(0) for i in range(2, 6)],
             led_display.digits_in[6].eq(out_fifo_bar.bitbar_out),
             led_display.digits_in[7].eq(adat1_underflow_count),
