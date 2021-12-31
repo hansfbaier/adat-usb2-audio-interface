@@ -8,6 +8,7 @@ from amlib.test          import GatewareTestCase, sync_test_case
 class BundleMultiplexer(Elaboratable):
     NO_CHANNELS_ADAT = 8
     SAMPLE_WIDTH     = 24
+    FIFO_DEPTH       = 32 * NO_CHANNELS_ADAT
 
     def __init__(self, no_bundles=4):
         # parameters
@@ -46,7 +47,7 @@ class BundleMultiplexer(Elaboratable):
         read_enable    = Array(Signal(              name=f"bundle{i}_read_en") for i in range(self._no_bundles))
 
         for i in range(self._no_bundles):
-            fifo = SyncFIFO(width=sample_width + bundle_bits + 1, depth=3*self.NO_CHANNELS_ADAT)
+            fifo = SyncFIFO(width=sample_width + bundle_bits + 1, depth=self.FIFO_DEPTH)
             setattr(m.submodules, f"receive_fifo{i}", fifo)
 
             m.d.comb += [

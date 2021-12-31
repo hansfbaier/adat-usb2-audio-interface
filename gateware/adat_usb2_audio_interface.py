@@ -426,7 +426,7 @@ class USB2AudioInterface(Elaboratable):
 
         rx_level_bars = []
         for i in range(1, 5):
-            rx_level_bar = NumberToBitBar(0, 24, 8)
+            rx_level_bar = NumberToBitBar(0, bundle_multiplexer.FIFO_DEPTH, 8)
             setattr(m.submodules, f"rx{i}_level_bar", rx_level_bar)
             m.d.comb += rx_level_bar.value_in.eq(bundle_multiplexer.levels[i - 1])
             rx_level_bars.append(rx_level_bar)
