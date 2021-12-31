@@ -504,7 +504,6 @@ class USB2AudioInterface(Elaboratable):
         adat_receivers           = v['adat_receivers']
         bundle_demultiplexer     = v['bundle_demultiplexer']
         bundle_multiplexer       = v['bundle_multiplexer']
-        fill_count               = v['fill_count']
 
         adat_clock = Signal()
         m.d.comb += adat_clock.eq(ClockSignal("adat"))
@@ -537,6 +536,10 @@ class USB2AudioInterface(Elaboratable):
             strange_input.eq(  (channels_to_usb_stream.channel_stream_in.payload != 0)
                                 & (channels_to_usb_stream.channel_stream_in.channel_nr > 1)),
         ]
+
+        fill_count = Signal(16)
+        with m.If(channels_to_usb_stream.filling):
+            m.d.usb += fill_count.eq(fill_count + 1)
 
         channels_to_usb_input_frame = [
             usb1.sof_detected,
