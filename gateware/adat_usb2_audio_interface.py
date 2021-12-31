@@ -24,11 +24,13 @@ from luna.gateware.usb.usb2.request           import StallOnlyRequestHandler
 
 from adat import ADATTransmitter, ADATReceiver
 from adat import EdgeToPulse
+from gateware.stereopair_extractor import StereoPairExtractor
 
 from usb_stream_to_channels import USBStreamToChannels
 from channels_to_usb_stream import ChannelsToUSBStream
 from bundle_multiplexer     import BundleMultiplexer
 from bundle_demultiplexer   import BundleDemultiplexer
+from stereopair_extractor   import StereoPairExtractor
 from requesthandlers        import UAC2RequestHandlers
 
 from usb_descriptors import USBDescriptors
@@ -266,12 +268,41 @@ class USB2AudioInterface(Elaboratable):
         # I2S DACs
         m.submodules.dac1_transmitter = dac1 = DomainRenamer("usb")(I2STransmitter(sample_width=audio_bits))
         m.submodules.dac2_transmitter = dac2 = DomainRenamer("usb")(I2STransmitter(sample_width=audio_bits))
+        m.submodules.dac1_extractor   = dac1_extractor = DomainRenamer("usb")(StereoPairExtractor(platform.number_of_channels))
         dac1_pads = platform.request("i2s", 1)
         dac2_pads = platform.request("i2s", 2)
 
-        fill_count = Signal(16)
-        with m.If(channels_to_usb_stream.filling):
-            m.d.usb += fill_count.eq(fill_count + 1)
+        # divide bitclock to get word clock
+        # each half cycle has 32 bits in it
+        lrclk       = Signal(reset=1)
+        bit_counter = Signal(6)
+
+        m.d.dac   += bit_counter.eq(bit_counter + 1)
+        m.d.comb  += lrclk.eq(bit_counter[-1])
+
+        # wire up DAC/ADC
+        m.d.comb += [
+            dac1_extractor.selected_channel_in.eq(0),
+            dac1_extractor.channel_stream_in.valid.eq(  usb_to_channel_stream.channel_stream_out.valid
+                                                      & usb_to_channel_stream.channel_stream_out.ready),
+            dac1_extractor.channel_stream_in.payload.eq(usb_to_channel_stream.channel_stream_out.payload),
+            dac1_extractor.channel_stream_in.channel_nr.eq(usb_to_channel_stream.channel_stream_out.channel_nr),
+            dac1.stream_in.stream_eq(dac1_extractor.channel_stream_out),
+
+            # wire up DAC/ADC
+            # in I2S, everything happens on the negedge
+            # the easiest way to achieve this, is to invert
+            # the clock signal
+            dac1_pads.sclk.eq(~ClockSignal("adat")),
+            dac1_pads.bclk.eq(~ClockSignal("dac")),
+            dac1_pads.lrclk.eq(lrclk),
+            dac1_pads.data.eq(dac1.serial_data_out),
+            dac1.enable_in.eq(1),
+
+            # wire up I2S transmitter
+            dac1.word_select_in.eq(lrclk),
+            dac1.serial_clock_in.eq(~ClockSignal("dac")),
+        ]
 
         # Internal Logic Analyzer
         if self.USE_ILA:
