@@ -199,3 +199,35 @@ class BundleMultiplexerTest(GatewareTestCase):
 
         yield
         yield from self.advance_cycles(96)
+
+
+    def send_all_bundle_frame(self):
+        for channel in range(8):
+            for bundle in range(4):
+                yield self.dut.bundles_in[bundle].valid.eq(1)
+                yield self.dut.bundles_in[bundle].channel_nr.eq(channel)
+                yield self.dut.bundles_in[bundle].payload.eq((bundle << 16) | channel)
+                yield self.dut.bundles_in[bundle].first.eq(channel == 0)
+                yield self.dut.bundles_in[bundle].last.eq(channel == 7)
+
+            yield
+
+        for bundle in range(4):
+            yield self.dut.bundles_in[bundle].valid.eq(0)
+
+        yield
+
+    @sync_test_case
+    def test_all_sending(self):
+        dut = self.dut
+        yield
+        yield dut.channel_stream_out.ready.eq(1)
+        for bundle in range(4):
+            yield self.dut.no_channels_in[bundle].eq(8)
+            yield dut.bundle_active_in[bundle].eq(1)
+
+        yield
+        for _ in range(20):
+            yield from self.send_all_bundle_frame()
+
+        yield from self.advance_cycles(64)

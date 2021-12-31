@@ -1,20 +1,21 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Wed Dec 15 03:34:32 2021
+[*] Fri Dec 31 08:36:29 2021
 [*]
-[dumpfile] "test_BundleMultiplexerTest_test_smoke.vcd"
-[dumpfile_mtime] "Wed Dec 15 03:34:24 2021"
-[dumpfile_size] 17713
+[dumpfile] "test_BundleMultiplexerTest_test_all_sending.vcd"
+[dumpfile_mtime] "Fri Dec 31 08:35:29 2021"
+[dumpfile_size] 55739
 [savefile] "gateware/bundle_multiplexer-bench.gtkw"
 [timestart] 0
 [size] 3828 2090
 [pos] -1 -1
-*-15.418433 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-15.418433 151500 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] bench.
 [treeopen] bench.top.
 [sst_width] 562
 [signals_width] 606
 [sst_expanded] 1
-[sst_vpaned_height] 658
+[sst_vpaned_height] 650
 @28
 bench.top.clk
 @200
@@ -24,55 +25,70 @@ bench.top.no_channels0[3:0]
 bench.top.no_channels1[3:0]
 bench.top.no_channels2[3:0]
 bench.top.no_channels3[3:0]
-bench.top.input_bundle_0__channel_nr[2:0]
-bench.top.input_bundle_0__last
-bench.top.input_bundle_0__payload[23:0]
-bench.top.input_bundle_0__valid
-bench.top.input_bundle_1__channel_nr[2:0]
-bench.top.input_bundle_1__last
-bench.top.input_bundle_1__payload[23:0]
-bench.top.input_bundle_1__valid
-bench.top.input_bundle_2__channel_nr[2:0]
-bench.top.input_bundle_2__last
-bench.top.input_bundle_2__payload[23:0]
-bench.top.input_bundle_2__valid
-bench.top.input_bundle_3__channel_nr[2:0]
-bench.top.input_bundle_3__last
-bench.top.input_bundle_3__payload[23:0]
-bench.top.input_bundle_3__valid
+bench.top.input_bundle0__channel_nr[2:0]
+@28
+bench.top.input_bundle0__valid
+@22
+bench.top.input_bundle1__channel_nr[2:0]
+bench.top.input_bundle1__valid
+bench.top.input_bundle2__channel_nr[2:0]
+bench.top.input_bundle2__valid
+bench.top.input_bundle3__channel_nr[2:0]
+bench.top.input_bundle3__valid
+@200
+-FIFOS
+@22
+bench.top.receive_fifo0.w_level[4:0]
+bench.top.receive_fifo1.w_level[4:0]
+bench.top.receive_fifo2.w_level[4:0]
+@23
+bench.top.receive_fifo3.w_level[4:0]
 @200
 -Module
 @22
 bench.top.current_bundle[1:0]
 bench.top.current_channel[4:0]
-@29
+@28
 bench.top.bundle0_active
 bench.top.bundle1_active
 bench.top.bundle2_active
 bench.top.bundle3_active
 @22
 bench.top.first_bundle_channel[4:0]
+@200
+-
+@22
 bench.top.bundle0_channel[2:0]
 bench.top.bundle0_last
 bench.top.bundle0_read_en
 bench.top.bundle0_ready
 bench.top.bundle0_sample[23:0]
+@200
+-
+@22
 bench.top.bundle1_channel[2:0]
 bench.top.bundle1_last
 bench.top.bundle1_read_en
 bench.top.bundle1_ready
 bench.top.bundle1_sample[23:0]
+@200
+-
+@22
 bench.top.bundle2_channel[2:0]
 bench.top.bundle2_last
 bench.top.bundle2_read_en
 bench.top.bundle2_ready
 bench.top.bundle2_sample[23:0]
+@200
+-
+@22
 bench.top.bundle3_channel[2:0]
 bench.top.bundle3_last
 bench.top.bundle3_read_en
 bench.top.bundle3_ready
 bench.top.bundle3_sample[23:0]
 @200
+-
 -Output
 @28
 bench.top.channel_stream__first
