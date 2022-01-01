@@ -447,12 +447,12 @@ class USB2AudioInterface(Elaboratable):
             # the clock signal
             dac_pads.sclk.eq(~ClockSignal("adat")),
             dac_pads.bclk.eq(~ClockSignal("dac")),
-            dac_pads.lrclk.eq(lrclk),
+            dac_pads.lrclk.eq(~lrclk),
             dac_pads.data.eq(dac.serial_data_out),
             dac.enable_in.eq(1),
 
             # wire up I2S transmitter
-            dac.word_select_in.eq(lrclk),
+            dac.word_select_in.eq(~lrclk),
             dac.serial_clock_in.eq(~ClockSignal("dac")),
         ]
 
