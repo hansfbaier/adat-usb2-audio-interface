@@ -11,7 +11,8 @@ class StereoPairExtractor(Elaboratable):
         # I/O
         self.channel_stream_in   = StreamInterface(name="channel_stream_in", payload_width=24, extra_fields=[("channel_nr", self._channel_bits)])
         self.selected_channel_in = Signal(range(max_no_channels))
-        self.channel_stream_out  = StreamInterface(name="channel_stream_out", payload_width=24, extra_fields=[("channel_nr", 1)])
+        # the first=left and last=right signals mark the channel on the output stream
+        self.channel_stream_out  = StreamInterface(name="channel_stream_out", payload_width=24)
 
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
@@ -22,7 +23,7 @@ class StereoPairExtractor(Elaboratable):
         out_channel_nr = Signal(self._channel_bits)
 
         # the ready signal is not wired in the input stream because this
-        # module must not exert upstream back pressure,
+        # module must not exert upstream back pressure
         with m.If(  self.channel_stream_in.valid
                   & (  (in_channel_nr == self.selected_channel_in)
                      | (in_channel_nr == (self.selected_channel_in + 1)))):
@@ -35,7 +36,8 @@ class StereoPairExtractor(Elaboratable):
         m.d.comb += [
             out_channel_nr.eq(in_channel_nr - self.selected_channel_in),
             *connect_fifo_to_stream(fifo, self.channel_stream_out),
-            self.channel_stream_out.channel_nr.eq(fifo.r_data[-1]),
+            self.channel_stream_out.first.eq(~fifo.r_data[-1]),
+            self.channel_stream_out.last.eq(fifo.r_data[-1]),
         ]
 
         return m
