@@ -429,7 +429,6 @@ class USB2AudioInterface(Elaboratable):
     def wire_up_dac(self, m, usb_to_channel_stream, dac_extractor, dac, lrclk, dac_pads):
         # wire up DAC extractor
         m.d.comb += [
-            dac_extractor.selected_channel_in.eq(0),
             dac_extractor.channel_stream_in.valid.eq(  usb_to_channel_stream.channel_stream_out.valid
                                                       & usb_to_channel_stream.channel_stream_out.ready),
             dac_extractor.channel_stream_in.payload.eq(usb_to_channel_stream.channel_stream_out.payload),
