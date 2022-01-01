@@ -17,7 +17,7 @@ class StereoPairExtractor(Elaboratable):
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
 
-        m.submodules.fifo = fifo = SyncFIFO(width=24+1, depth=32*2)
+        m.submodules.fifo = fifo = SyncFIFO(width=24+1, depth=16*2)
 
         in_channel_nr  = self.channel_stream_in.channel_nr
         out_channel_nr = Signal(self._channel_bits)

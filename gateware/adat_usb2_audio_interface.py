@@ -269,6 +269,7 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.dac1_transmitter = dac1 = DomainRenamer("usb")(I2STransmitter(sample_width=audio_bits))
         m.submodules.dac2_transmitter = dac2 = DomainRenamer("usb")(I2STransmitter(sample_width=audio_bits))
         m.submodules.dac1_extractor   = dac1_extractor = DomainRenamer("usb")(StereoPairExtractor(platform.number_of_channels))
+        m.submodules.dac2_extractor   = dac2_extractor = DomainRenamer("usb")(StereoPairExtractor(platform.number_of_channels))
         dac1_pads = platform.request("i2s", 1)
         dac2_pads = platform.request("i2s", 2)
 
@@ -280,29 +281,15 @@ class USB2AudioInterface(Elaboratable):
         m.d.dac   += bit_counter.eq(bit_counter + 1)
         m.d.comb  += lrclk.eq(bit_counter[-1])
 
-        # wire up DAC/ADC
+        # hardwire DAC1 to channels 0/1 and DAC2 to 2/3
+        # until making it switchable via USB request
         m.d.comb += [
             dac1_extractor.selected_channel_in.eq(0),
-            dac1_extractor.channel_stream_in.valid.eq(  usb_to_channel_stream.channel_stream_out.valid
-                                                      & usb_to_channel_stream.channel_stream_out.ready),
-            dac1_extractor.channel_stream_in.payload.eq(usb_to_channel_stream.channel_stream_out.payload),
-            dac1_extractor.channel_stream_in.channel_nr.eq(usb_to_channel_stream.channel_stream_out.channel_nr),
-            dac1.stream_in.stream_eq(dac1_extractor.channel_stream_out),
-
-            # wire up DAC/ADC
-            # in I2S, everything happens on the negedge
-            # the easiest way to achieve this, is to invert
-            # the clock signal
-            dac1_pads.sclk.eq(~ClockSignal("adat")),
-            dac1_pads.bclk.eq(~ClockSignal("dac")),
-            dac1_pads.lrclk.eq(lrclk),
-            dac1_pads.data.eq(dac1.serial_data_out),
-            dac1.enable_in.eq(1),
-
-            # wire up I2S transmitter
-            dac1.word_select_in.eq(lrclk),
-            dac1.serial_clock_in.eq(~ClockSignal("dac")),
+            dac2_extractor.selected_channel_in.eq(2),
         ]
+
+        self.wire_up_dac(m, usb_to_channel_stream, dac1_extractor, dac1, lrclk, dac1_pads)
+        self.wire_up_dac(m, usb_to_channel_stream, dac2_extractor, dac2, lrclk, dac2_pads)
 
         # Internal Logic Analyzer
         if self.USE_ILA:
@@ -438,6 +425,36 @@ class USB2AudioInterface(Elaboratable):
         ]
 
         return (sof_counter, usb_to_output_fifo_level, usb_to_output_fifo_depth)
+
+    def wire_up_dac(self, m, usb_to_channel_stream, dac_extractor, dac, lrclk, dac_pads):
+        # wire up DAC extractor
+        m.d.comb += [
+            dac_extractor.selected_channel_in.eq(0),
+            dac_extractor.channel_stream_in.valid.eq(  usb_to_channel_stream.channel_stream_out.valid
+                                                      & usb_to_channel_stream.channel_stream_out.ready),
+            dac_extractor.channel_stream_in.payload.eq(usb_to_channel_stream.channel_stream_out.payload),
+            dac_extractor.channel_stream_in.channel_nr.eq(usb_to_channel_stream.channel_stream_out.channel_nr),
+        ]
+
+        # wire up DAC/ADC
+        m.d.comb += [
+            dac.stream_in.stream_eq(dac_extractor.channel_stream_out),
+
+            # wire up DAC/ADC
+            # in I2S, everything happens on the negedge
+            # the easiest way to achieve this, is to invert
+            # the clock signal
+            dac_pads.sclk.eq(~ClockSignal("adat")),
+            dac_pads.bclk.eq(~ClockSignal("dac")),
+            dac_pads.lrclk.eq(lrclk),
+            dac_pads.data.eq(dac.serial_data_out),
+            dac.enable_in.eq(1),
+
+            # wire up I2S transmitter
+            dac.word_select_in.eq(lrclk),
+            dac.serial_clock_in.eq(~ClockSignal("dac")),
+        ]
+
 
     def add_debug_led_array(self, v):
         m                        = v['m']
