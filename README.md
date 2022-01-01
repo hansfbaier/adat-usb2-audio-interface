@@ -10,6 +10,8 @@ FPGA based USB 2.0 High Speed audio interface featuring multiple optical ADAT in
 * runs without dropouts with FlexASIO with a buffer size of 32 samples (0.67ms latency)
 * has a hardware roundtrip latency (USB out -> ADAT out -> cable -> ADAT in -> USB in)
   of 2-3 USB2 microframes which is about 0.25ms to 0.375 ms
+* both headphone DACs on the board work now. In two channel mode, they are both wired to channels 0/1.
+  In 32 channel mode DAC1 is wired to channels 0/1 and DAC2 to channels 2/3
 
 ## Hardware
 The current board design is a custom development board,
