@@ -285,7 +285,9 @@ class USB2AudioInterface(Elaboratable):
         # until making it switchable via USB request
         m.d.comb += [
             dac1_extractor.selected_channel_in.eq(0),
-            dac2_extractor.selected_channel_in.eq(2),
+            # if stereo mode is enabled we want the second DAC to be wired
+            # to main lef/right channels, just as the first one
+            dac2_extractor.selected_channel_in.eq(Mux(no_channels == 2, 0, 2)),
         ]
 
         self.wire_up_dac(m, usb_to_channel_stream, dac1_extractor, dac1, lrclk, dac1_pads)
