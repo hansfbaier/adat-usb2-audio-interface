@@ -66,10 +66,10 @@ class USB2AudioInterface(Elaboratable):
         descriptors = USBDescriptors(max_packet_size=self.MAX_PACKET_SIZE, \
                                      number_of_channels=number_of_channels, \
                                      ila_max_packet_size=self.ILA_MAX_PACKET_SIZE, \
-                                     use_ila=self.USE_ILA).create_descriptors()
+                                     use_ila=self.USE_ILA)
 
         control_ep = usb1.add_control_endpoint()
-        control_ep.add_standard_request_handlers(descriptors, blacklist=[
+        control_ep.add_standard_request_handlers(descriptors.create_usb1_descriptors(), blacklist=[
             lambda setup:   (setup.type    == USBRequestType.STANDARD)
                           & (setup.request == USBStandardRequests.SET_INTERFACE)
         ])

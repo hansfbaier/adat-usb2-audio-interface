@@ -20,7 +20,7 @@ class USBDescriptors():
         self.USE_ILA             = use_ila
         self.ILA_MAX_PACKET_SIZE = ila_max_packet_size
 
-    def create_descriptors(self):
+    def create_usb1_descriptors(self):
         """ Creates the descriptors that describe our audio topology. """
 
         descriptors = DeviceDescriptorCollection()
@@ -51,7 +51,7 @@ class USBDescriptors():
             configDescr.add_subordinate_descriptor(interfaceDescriptor)
 
             # AudioControl Interface Descriptor
-            audioControlInterface = self.create_audio_control_interface_descriptor()
+            audioControlInterface = self.create_audio_control_interface_descriptor(self.number_of_channels)
             configDescr.add_subordinate_descriptor(audioControlInterface)
 
             self.create_output_channels_descriptor(configDescr)
@@ -69,7 +69,7 @@ class USBDescriptors():
         return descriptors
 
 
-    def create_audio_control_interface_descriptor(self):
+    def create_audio_control_interface_descriptor(self, number_of_channels):
         audioControlInterface = uac2.ClassSpecificAudioControlInterfaceDescriptorEmitter()
 
         # AudioControl Interface Descriptor (ClockSource)
@@ -103,7 +103,7 @@ class USBDescriptors():
         inputTerminal               = uac2.InputTerminalDescriptorEmitter()
         inputTerminal.bTerminalID   = 4
         inputTerminal.wTerminalType = uac2.InputTerminalTypes.MICROPHONE
-        inputTerminal.bNrChannels   = self.number_of_channels
+        inputTerminal.bNrChannels   = number_of_channels
         inputTerminal.bCSourceID    = 1
         audioControlInterface.add_subordinate_descriptor(inputTerminal)
 
@@ -137,7 +137,7 @@ class USBDescriptors():
         # AudioStreaming Interface Descriptor (Type I)
         typeIStreamingInterface  = uac2.TypeIFormatTypeDescriptorEmitter()
         typeIStreamingInterface.bSubslotSize   = 4
-        typeIStreamingInterface.bBitResolution = 24 # we use all 24 bits
+        typeIStreamingInterface.bBitResolution = 24
         c.add_subordinate_descriptor(typeIStreamingInterface)
 
         # Endpoint Descriptor (Audio out)
