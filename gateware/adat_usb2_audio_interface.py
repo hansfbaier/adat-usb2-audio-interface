@@ -41,8 +41,8 @@ class USB2AudioInterface(Elaboratable):
     # one isochronous packet typically has 6 or 7 samples of 8 channels of 32 bit samples
     # 6 samples * 8 channels * 4 bytes/sample = 192 bytes
     # 7 samples * 8 channels * 4 bytes/sample = 224 bytes
-    USB1_MAX_PACKET_SIZE = 224 * (4 + 1)
-    USB2_MAX_PACKET_SIZE = 224 * 1
+    USB1_MAX_PACKET_SIZE = int(224 * 4 + 224 // 2)
+    USB2_MAX_PACKET_SIZE = int(224 // 2)
     INPUT_CDC_FIFO_DEPTH = 256 * 4
 
     USE_ILA             = False
@@ -53,9 +53,9 @@ class USB2AudioInterface(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        usb1_number_of_channels      = 40
+        usb1_number_of_channels      = 36
         usb1_number_of_channels_bits = Shape.cast(range(usb1_number_of_channels)).width
-        usb2_number_of_channels      = 8
+        usb2_number_of_channels      = 4
         usb2_number_of_channels_bits = Shape.cast(range(usb2_number_of_channels)).width
         audio_bits                   = 24
         adat_number_of_channels      = usb1_number_of_channels - usb2_number_of_channels
@@ -336,7 +336,8 @@ class USB2AudioInterface(Elaboratable):
             usb2_to_usb1_fifo_level
                 .eq(usb2_to_usb1_fifo.w_level),
 
-            # connect USB2 channels to combiner
+            # connect USB2 channels to
+            usb1_channel_stream_combiner.upper_channels_active_in           .eq(~usb2.suspended),
             usb1_channel_stream_combiner.upper_channel_stream_in.payload    .eq(usb2_to_usb1_fifo.r_data[0:chnr_start]),
             usb1_channel_stream_combiner.upper_channel_stream_in.channel_nr .eq(usb2_channel_nr),
             usb1_channel_stream_combiner.upper_channel_stream_in.first      .eq(usb2_to_usb1_fifo.r_data[usb2_first_bit_pos]),
@@ -498,13 +499,15 @@ class USB2AudioInterface(Elaboratable):
         # half the maximum USB packet size should be more than enough
         usb1_to_output_fifo_depth = self.USB1_MAX_PACKET_SIZE // 2
         usb1_to_output_fifo_level = Signal(range(usb1_to_output_fifo_depth + 1))
+        print("usb1_to_output_fifo_depth in bits: " + str(usb1_to_output_fifo_level.width))
         usb1_fifo_level_feedback  = Signal.like(usb1_to_output_fifo_level)
         m.d.comb += usb1_fifo_level_feedback.eq(usb1_to_output_fifo_level >> (usb1_to_output_fifo_level.width - 7))
 
         usb2_to_usb1_fifo_depth = self.USB2_MAX_PACKET_SIZE // 2
         usb2_to_usb1_fifo_level = Signal(range(usb2_to_usb1_fifo_depth + 1))
+        print("usb1_to_usb1_fifo_depth in bits: " + str(usb2_to_usb1_fifo_level.width))
         usb2_fifo_level_feedback  = Signal.like(usb2_to_usb1_fifo_level)
-        m.d.comb += usb2_fifo_level_feedback.eq(usb2_to_usb1_fifo_level >> (usb2_to_usb1_fifo_level.width - 7))
+        m.d.comb += usb2_fifo_level_feedback.eq(usb2_to_usb1_fifo_level >> (usb2_to_usb1_fifo_level.width - 4))
 
 
         with m.If(adat_clock_tick):
