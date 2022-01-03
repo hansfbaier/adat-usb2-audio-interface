@@ -100,6 +100,7 @@ class USB2AudioInterface(Elaboratable):
         usb1_control_ep.add_request_handler(StallOnlyRequestHandler(stall_condition))
         usb2_control_ep.add_request_handler(StallOnlyRequestHandler(stall_condition))
 
+        # audio out ports of the host
         usb1_ep1_out = USBIsochronousOutStreamEndpoint(
             endpoint_number=1, # EP 1 OUT
             max_packet_size=self.USB1_MAX_PACKET_SIZE)
@@ -109,6 +110,7 @@ class USB2AudioInterface(Elaboratable):
             max_packet_size=self.USB1_MAX_PACKET_SIZE)
         usb2.add_endpoint(usb2_ep1_out)
 
+        # audio rate feedback input ports of the host
         usb1_ep1_in = USBIsochronousInMemoryEndpoint(
             endpoint_number=1, # EP 1 IN
             max_packet_size=4)
@@ -118,6 +120,7 @@ class USB2AudioInterface(Elaboratable):
             max_packet_size=4)
         usb2.add_endpoint(usb2_ep1_in)
 
+        # audio input ports of the host
         usb1_ep2_in = USBIsochronousInStreamEndpoint(
             endpoint_number=2, # EP 2 IN
             max_packet_size=self.USB1_MAX_PACKET_SIZE)
@@ -142,8 +145,9 @@ class USB2AudioInterface(Elaboratable):
         usb2_sof_counter, usb2_to_usb1_fifo_level, usb2_to_usb1_fifo_depth = \
             self.create_sample_rate_feedback_circuit(m, usb1, usb1_ep1_in, usb2, usb2_ep1_in)
 
-        usb1_audio_in_active = self.detect_active_audio_in(m, "usb1", usb1, usb1_ep2_in)
-        usb2_audio_in_active = self.detect_active_audio_in(m, "usb2", usb2, usb2_ep2_in)
+        usb1_audio_in_active  = self.detect_active_audio_in (m, "usb1", usb1, usb1_ep2_in)
+        usb2_audio_in_active  = self.detect_active_audio_in (m, "usb2", usb2, usb2_ep2_in)
+        usb2_audio_out_active = self.detect_active_audio_out(m, "usb2", usb2, usb2_ep1_out)
 
         #
         # USB <-> Channel Stream conversion
@@ -337,7 +341,7 @@ class USB2AudioInterface(Elaboratable):
                 .eq(usb2_to_usb1_fifo.w_level),
 
             # connect USB2 channels to
-            usb1_channel_stream_combiner.upper_channels_active_in           .eq(~usb2.suspended),
+            usb1_channel_stream_combiner.upper_channels_active_in           .eq(usb2_audio_out_active),
             usb1_channel_stream_combiner.upper_channel_stream_in.payload    .eq(usb2_to_usb1_fifo.r_data[0:chnr_start]),
             usb1_channel_stream_combiner.upper_channel_stream_in.channel_nr .eq(usb2_channel_nr),
             usb1_channel_stream_combiner.upper_channel_stream_in.first      .eq(usb2_to_usb1_fifo.r_data[usb2_first_bit_pos]),
@@ -432,6 +436,23 @@ class USB2AudioInterface(Elaboratable):
         return audio_in_active
 
 
+    def detect_active_audio_out(self, m, name: str, usb, ep1_out):
+        audio_out_seen   = Signal(name=f"{name}_audio_out_seen")
+        audio_out_active = Signal(name=f"{name}_audio_out_active")
+
+        # detect if we don't have a USB audio OUT packet
+        with m.If(usb.sof_detected):
+            m.d.usb += [
+                audio_out_active.eq(audio_out_seen),
+                audio_out_seen.eq(0),
+            ]
+
+        with m.If(ep1_out.stream.last):
+            m.d.usb += audio_out_seen.eq(1)
+
+        return audio_out_active
+
+
     def calculate_usb_input_frame_size(self, m: Module, usb1_ep1_out, usb1_ep2_in, number_of_channels):
         """calculate the number of bytes one packet of audio input contains"""
 
@@ -508,7 +529,6 @@ class USB2AudioInterface(Elaboratable):
         print("usb2_to_usb1_fifo_depth in bits: " + str(usb2_to_usb1_fifo_level.width))
         usb2_fifo_level_feedback  = Signal.like(usb2_to_usb1_fifo_level)
         m.d.comb += usb2_fifo_level_feedback.eq(usb2_to_usb1_fifo_level >> (usb2_to_usb1_fifo_level.width - 4))
-
 
         with m.If(adat_clock_tick):
             m.d.usb += [
