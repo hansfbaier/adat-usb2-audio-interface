@@ -26,12 +26,13 @@ from adat import ADATTransmitter, ADATReceiver
 from adat import EdgeToPulse
 from gateware.stereopair_extractor import StereoPairExtractor
 
-from usb_stream_to_channels import USBStreamToChannels
-from channels_to_usb_stream import ChannelsToUSBStream
-from bundle_multiplexer     import BundleMultiplexer
-from bundle_demultiplexer   import BundleDemultiplexer
-from stereopair_extractor   import StereoPairExtractor
-from requesthandlers        import UAC2RequestHandlers
+from usb_stream_to_channels  import USBStreamToChannels
+from channels_to_usb_stream  import ChannelsToUSBStream
+from channel_stream_combiner import ChannelStreamCombiner
+from bundle_multiplexer      import BundleMultiplexer
+from bundle_demultiplexer    import BundleDemultiplexer
+from stereopair_extractor    import StereoPairExtractor
+from requesthandlers         import UAC2RequestHandlers
 
 from usb_descriptors import USBDescriptors
 
@@ -57,6 +58,7 @@ class USB2AudioInterface(Elaboratable):
         usb2_number_of_channels      = 8
         usb2_number_of_channels_bits = Shape.cast(range(usb2_number_of_channels)).width
         audio_bits                   = 24
+        adat_number_of_channels      = usb1_number_of_channels - usb2_number_of_channels
 
         m.submodules.car = platform.clock_domain_generator()
 
@@ -151,6 +153,9 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.usb2_to_channel_stream = usb2_to_channel_stream = \
             DomainRenamer("usb")(USBStreamToChannels(8))
 
+        m.submodules.usb1_channel_stream_combiner = usb1_channel_stream_combiner = \
+            DomainRenamer("usb")(ChannelStreamCombiner(usb1_no_channels - usb2_no_channels, usb2_no_channels))
+
         m.submodules.channels_to_usb1_stream = channels_to_usb1_stream = \
             DomainRenamer("usb")(ChannelsToUSBStream(usb1_number_of_channels, max_packet_size=self.USB1_MAX_PACKET_SIZE))
         m.submodules.channels_to_usb2_stream = channels_to_usb2_stream = \
@@ -218,10 +223,6 @@ class USB2AudioInterface(Elaboratable):
         usb1_first_bit_pos     = usb1_channel_bits_end
         usb1_last_bit_pos      = usb1_first_bit_pos + 1
 
-        usb2_channel_bits_end  = channel_bits_start + usb2_number_of_channels_bits
-        usb2_first_bit_pos     = usb2_channel_bits_end
-        usb2_last_bit_pos      = usb2_first_bit_pos + 1
-
         m.d.comb += [
             # convert USB stream to audio stream
             usb1_to_channel_stream.usb_stream_in.stream_eq(usb1_ep1_out.stream),
@@ -278,30 +279,34 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.input_to_usb_fifo = input_to_usb_fifo = \
             AsyncFIFOBuffered(width=audio_bits + usb1_number_of_channels_bits + 2, depth=self.INPUT_CDC_FIFO_DEPTH, w_domain="fast", r_domain="usb")
 
-        chnr_start    = audio_bits
-        chnr_end      = chnr_start + usb1_number_of_channels_bits
-        channel_nr    = input_to_usb_fifo.r_data[chnr_start:chnr_end]
-        first_channel = 0
-        last_channel  = (usb1_number_of_channels - 1)
+        chnr_start        = audio_bits
+        input_chnr_end    = chnr_start + adat_number_of_channels
+        input_channel_nr  = input_to_usb_fifo.r_data[chnr_start:input_chnr_end]
+
+        first_channel      = 0
+        input_last_channel = (adat_number_of_channels - 1)
+        usb2_last_channel  = (usb2_number_of_channels - 1)
 
         m.d.comb += [
             # wire up receive FIFO to bundle multiplexer
             input_to_usb_fifo.w_data[0:chnr_start]        .eq(bundle_multiplexer.channel_stream_out.payload),
-            input_to_usb_fifo.w_data[chnr_start:chnr_end] .eq(bundle_multiplexer.channel_stream_out.channel_nr),
+            input_to_usb_fifo.w_data[chnr_start:input_chnr_end] .eq(bundle_multiplexer.channel_stream_out.channel_nr),
             input_to_usb_fifo.w_en                        .eq(bundle_multiplexer.channel_stream_out.valid & input_to_usb_fifo.w_rdy),
             bundle_multiplexer.channel_stream_out.ready.eq(input_to_usb_fifo.w_rdy),
 
             # convert audio stream to USB stream
-            channels_to_usb1_stream.channel_stream_in.payload    .eq(input_to_usb_fifo.r_data[0:chnr_start]),
-            channels_to_usb1_stream.channel_stream_in.channel_nr .eq(channel_nr),
-            channels_to_usb1_stream.channel_stream_in.first      .eq(channel_nr == first_channel),
-            channels_to_usb1_stream.channel_stream_in.last       .eq(channel_nr == last_channel),
-            channels_to_usb1_stream.channel_stream_in.valid      .eq(input_to_usb_fifo.r_rdy),
+            # connect ADAT channels to combiner
+            usb1_channel_stream_combiner.lower_channel_stream_in.payload    .eq(input_to_usb_fifo.r_data[0:chnr_start]),
+            usb1_channel_stream_combiner.lower_channel_stream_in.channel_nr .eq(input_channel_nr),
+            usb1_channel_stream_combiner.lower_channel_stream_in.first      .eq(input_channel_nr == first_channel),
+            usb1_channel_stream_combiner.lower_channel_stream_in.last       .eq(input_channel_nr == input_last_channel),
+            usb1_channel_stream_combiner.lower_channel_stream_in.valid      .eq(input_to_usb_fifo.r_rdy),
+            input_to_usb_fifo.r_en.eq(usb1_channel_stream_combiner.lower_channels_stream_in.ready),
 
+            # connect combiner output to USB1
+            channels_to_usb1_stream.channel_stream_in.stream_eq(usb1_channel_stream_combiner.combined_channel_stream_out),
             channels_to_usb1_stream.data_requested_in .eq(usb1_ep2_in.data_requested),
             channels_to_usb1_stream.frame_finished_in .eq(usb1_ep2_in.frame_finished),
-
-            input_to_usb_fifo.r_en.eq(channels_to_usb1_stream.channel_stream_in.ready),
 
             # wire up USB audio IN
             usb1_ep2_in.stream.stream_eq(channels_to_usb1_stream.usb_stream_out),
@@ -310,6 +315,11 @@ class USB2AudioInterface(Elaboratable):
         #
         # signal path: USB2 <-> USB1
         #
+        usb2_channel_bits_end  = channel_bits_start + usb2_number_of_channels_bits
+        usb2_first_bit_pos     = usb2_channel_bits_end
+        usb2_last_bit_pos      = usb2_first_bit_pos + 1
+
+        usb2_channel_nr        = usb2_to_usb1_fifo.r_data[chnr_start:usb2_channel_bits_end]
         m.d.comb +=[
             usb2_to_channel_stream.usb_stream_in.stream_eq(usb2_ep1_out.stream),
             *connect_stream_to_fifo(usb2_to_channel_stream.channel_stream_out, usb2_to_usb1_fifo),
@@ -323,21 +333,18 @@ class USB2AudioInterface(Elaboratable):
             usb2_to_usb1_fifo.w_data[usb2_last_bit_pos]
                 .eq(usb2_to_channel_stream.channel_stream_out.last),
 
-            usb2_to_usb1_fifo.r_en  .eq(TODO),
-            usb2_to_usb1_fifo_level .eq(usb2_to_usb1_fifo.w_level),
+            usb2_to_usb1_fifo_level
+                .eq(usb2_to_usb1_fifo.w_level),
+
+            # connect USB2 channels to combiner
+            usb1_channel_stream_combiner.upper_channel_stream_in.payload    .eq(usb2_to_usb1_fifo.r_data[0:chnr_start]),
+            usb1_channel_stream_combiner.upper_channel_stream_in.channel_nr .eq(usb2_channel_nr),
+            usb1_channel_stream_combiner.upper_channel_stream_in.first      .eq(usb2_to_usb1_fifo.r_data[usb2_first_bit_pos]),
+            usb1_channel_stream_combiner.upper_channel_stream_in.last       .eq(usb2_to_usb1_fifo.r_data[usb2_last_bit_pos]),
+            usb1_channel_stream_combiner.upper_channel_stream_in.valid      .eq(usb2_to_usb1_fifo.r_rdy),
+            usb2_to_usb1_fifo.r_en.eq(usb1_channel_stream_combiner.upper_channels_stream_in.ready),
         ]
 
-        #
-        # USB => output FIFO level debug signals
-        #
-        min_fifo_level = Signal.like(usb1_to_output_fifo_level, reset=usb1_to_output_fifo_depth)
-        max_fifo_level = Signal.like(usb1_to_output_fifo_level)
-
-        with m.If(usb1_to_output_fifo_level > max_fifo_level):
-            m.d.sync += max_fifo_level.eq(usb1_to_output_fifo_level)
-
-        with m.If(usb1_to_output_fifo_level < min_fifo_level):
-            m.d.sync += min_fifo_level.eq(usb1_to_output_fifo_level)
         #
         # I2S DACs
         #
@@ -368,6 +375,18 @@ class USB2AudioInterface(Elaboratable):
         self.wire_up_dac(m, usb1_to_channel_stream, dac1_extractor, dac1, lrclk, dac1_pads)
         self.wire_up_dac(m, usb1_to_channel_stream, dac2_extractor, dac2, lrclk, dac2_pads)
 
+        #
+        # USB => output FIFO level debug signals
+        #
+        min_fifo_level = Signal.like(usb1_to_output_fifo_level, reset=usb1_to_output_fifo_depth)
+        max_fifo_level = Signal.like(usb1_to_output_fifo_level)
+
+        with m.If(usb1_to_output_fifo_level > max_fifo_level):
+            m.d.sync += max_fifo_level.eq(usb1_to_output_fifo_level)
+
+        with m.If(usb1_to_output_fifo_level < min_fifo_level):
+            m.d.sync += min_fifo_level.eq(usb1_to_output_fifo_level)
+
         # Internal Logic Analyzer
         if self.USE_ILA:
             self.setup_ila(locals())
@@ -378,7 +397,9 @@ class USB2AudioInterface(Elaboratable):
         usb_aux1 = platform.request("usb_aux", 1)
         usb_aux2 = platform.request("usb_aux", 2)
 
+        #
         # board status LEDs
+        #
         leds = platform.request("leds")
         m.d.comb += [
             leds.active1.eq(usb1.tx_activity_led | usb1.rx_activity_led),
