@@ -187,8 +187,8 @@ class USBDescriptors():
         # we need the default alternate setting to be stereo
         # out for windows to automatically recognize
         # and use this audio interface
-        self.create_output_streaming_interface(c, no_channels=2, alt_setting_nr=1)
-        if self.no_channels > 2:
+        self.create_output_streaming_interface(c, no_channels=2, alt_setting_nr=1, max_packet_size=max_packet_size)
+        if no_channels > 2:
             self.create_output_streaming_interface(c, no_channels=no_channels, alt_setting_nr=2, max_packet_size=max_packet_size)
 
 
@@ -241,6 +241,6 @@ class USBDescriptors():
 
         # Windows wants a stereo pair as default setting, so let's have it
         self.create_input_streaming_interface(c, no_channels=2, alt_setting_nr=1, channel_config=0x3, max_packet_size=max_packet_size)
-        if self.no_channels > 2:
+        if no_channels > 2:
             self.create_input_streaming_interface(c, no_channels=no_channels, alt_setting_nr=2, channel_config=0x0, max_packet_size=max_packet_size)
 
