@@ -53,9 +53,9 @@ class USB2AudioInterface(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        usb1_number_of_channels      = 36
+        usb1_number_of_channels      = 38
         usb1_number_of_channels_bits = Shape.cast(range(usb1_number_of_channels)).width
-        usb2_number_of_channels      = 4
+        usb2_number_of_channels      = 6
         usb2_number_of_channels_bits = Shape.cast(range(usb2_number_of_channels)).width
         audio_bits                   = 24
         adat_number_of_channels      = usb1_number_of_channels - usb2_number_of_channels
@@ -143,7 +143,7 @@ class USB2AudioInterface(Elaboratable):
             self.create_sample_rate_feedback_circuit(m, usb1, usb1_ep1_in, usb2, usb2_ep1_in)
 
         usb1_audio_in_active = self.detect_active_audio_in(m, "usb1", usb1, usb1_ep2_in)
-        usb2_audio_in_active = self.detect_active_audio_in(m, "usb1", usb2, usb2_ep2_in)
+        usb2_audio_in_active = self.detect_active_audio_in(m, "usb2", usb2, usb2_ep2_in)
 
         #
         # USB <-> Channel Stream conversion
@@ -505,7 +505,7 @@ class USB2AudioInterface(Elaboratable):
 
         usb2_to_usb1_fifo_depth = self.USB2_MAX_PACKET_SIZE // 2
         usb2_to_usb1_fifo_level = Signal(range(usb2_to_usb1_fifo_depth + 1))
-        print("usb1_to_usb1_fifo_depth in bits: " + str(usb2_to_usb1_fifo_level.width))
+        print("usb2_to_usb1_fifo_depth in bits: " + str(usb2_to_usb1_fifo_level.width))
         usb2_fifo_level_feedback  = Signal.like(usb2_to_usb1_fifo_level)
         m.d.comb += usb2_fifo_level_feedback.eq(usb2_to_usb1_fifo_level >> (usb2_to_usb1_fifo_level.width - 4))
 
