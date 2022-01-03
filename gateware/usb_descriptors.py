@@ -11,17 +11,35 @@ from usb_protocol.emitters                    import DeviceDescriptorCollection
 from usb_protocol.emitters.descriptors        import uac2, standard
 
 class USBDescriptors():
-    def __init__(self, *, max_packet_size, number_of_channels, ila_max_packet_size, use_ila=False) -> None:
-        # audio interface layout
-        self.MAX_PACKET_SIZE     = max_packet_size
-        self.number_of_channels  = number_of_channels
-
+    def __init__(self, *, ila_max_packet_size: int, use_ila=False) -> None:
         # ILA
         self.USE_ILA             = use_ila
         self.ILA_MAX_PACKET_SIZE = ila_max_packet_size
 
-    def create_usb1_descriptors(self):
-        """ Creates the descriptors that describe our audio topology. """
+
+    def create_usb1_descriptors(self, no_channels: int, max_packet_size: int):
+        """ Creates the descriptors for the main USB interface """
+
+        configDescr, descriptors = self.create_descriptors("ADATface (USB1)", no_channels, max_packet_size)
+
+        if self.USE_ILA:
+            with configDescr.InterfaceDescriptor() as i:
+                i.bInterfaceNumber = 3
+
+                with i.EndpointDescriptor() as e:
+                    e.bEndpointAddress = USBDirection.IN.to_endpoint_address(3) # EP 3 IN
+                    e.wMaxPacketSize   = self.ILA_MAX_PACKET_SIZE
+
+        return descriptors
+
+
+    def create_usb2_descriptors(self, no_channels: int, max_packet_size: int):
+        """ Creates the descriptors for the secondary USB interface """
+        return self.create_descriptors("ADATface (USB2)", no_channels, max_packet_size)[1]
+
+
+    def create_descriptors(self, product_id: str, no_channels: int, max_packet_size: int):
+        """ Creates the descriptors for the main USB interface """
 
         descriptors = DeviceDescriptorCollection()
 
@@ -33,7 +51,7 @@ class USBDescriptors():
             d.idVendor           = 0x1209
             d.idProduct          = 0xADA1
             d.iManufacturer      = "OpenAudioGear"
-            d.iProduct           = "ADATface"
+            d.iProduct           = product_id
             d.iSerialNumber      = "0"
             d.bcdDevice          = 0.01
 
@@ -51,22 +69,14 @@ class USBDescriptors():
             configDescr.add_subordinate_descriptor(interfaceDescriptor)
 
             # AudioControl Interface Descriptor
-            audioControlInterface = self.create_audio_control_interface_descriptor(self.number_of_channels)
+            audioControlInterface = self.create_audio_control_interface_descriptor(no_channels)
             configDescr.add_subordinate_descriptor(audioControlInterface)
 
-            self.create_output_channels_descriptor(configDescr)
+            self.create_output_channels_descriptor(configDescr, no_channels, max_packet_size)
 
-            self.create_input_channels_descriptor(configDescr)
+            self.create_input_channels_descriptor(configDescr, no_channels, max_packet_size)
 
-            if self.USE_ILA:
-                with configDescr.InterfaceDescriptor() as i:
-                    i.bInterfaceNumber = 3
-
-                    with i.EndpointDescriptor() as e:
-                        e.bEndpointAddress = USBDirection.IN.to_endpoint_address(3) # EP 3 IN
-                        e.wMaxPacketSize   = self.ILA_MAX_PACKET_SIZE
-
-        return descriptors
+        return (configDescr, descriptors)
 
 
     def create_audio_control_interface_descriptor(self, number_of_channels):
@@ -118,7 +128,7 @@ class USBDescriptors():
         return audioControlInterface
 
 
-    def create_output_streaming_interface(self, c, *, nr_channels, alt_setting_nr):
+    def create_output_streaming_interface(self, c, *, no_channels: int, alt_setting_nr: int, max_packet_size):
         # Interface Descriptor (Streaming, OUT, active setting)
         activeAudioStreamingInterface                   = uac2.AudioStreamingInterfaceDescriptorEmitter()
         activeAudioStreamingInterface.bInterfaceNumber  = 1
@@ -131,7 +141,7 @@ class USBDescriptors():
         audioStreamingInterface.bTerminalLink = 2
         audioStreamingInterface.bFormatType   = uac2.FormatTypes.FORMAT_TYPE_I
         audioStreamingInterface.bmFormats     = uac2.TypeIFormats.PCM
-        audioStreamingInterface.bNrChannels   = nr_channels
+        audioStreamingInterface.bNrChannels   = no_channels
         c.add_subordinate_descriptor(audioStreamingInterface)
 
         # AudioStreaming Interface Descriptor (Type I)
@@ -146,7 +156,7 @@ class USBDescriptors():
         audioOutEndpoint.bmAttributes         = USBTransferType.ISOCHRONOUS  | \
                                                 (USBSynchronizationType.ASYNC << 2) | \
                                                 (USBUsageType.DATA << 4)
-        audioOutEndpoint.wMaxPacketSize = self.MAX_PACKET_SIZE
+        audioOutEndpoint.wMaxPacketSize = max_packet_size
         audioOutEndpoint.bInterval       = 1
         c.add_subordinate_descriptor(audioOutEndpoint)
 
@@ -165,7 +175,7 @@ class USBDescriptors():
         c.add_subordinate_descriptor(feedbackInEndpoint)
 
 
-    def create_output_channels_descriptor(self, c):
+    def create_output_channels_descriptor(self, c, no_channels: int, max_packet_size: int):
         #
         # Interface Descriptor (Streaming, OUT, quiet setting)
         #
@@ -177,12 +187,12 @@ class USBDescriptors():
         # we need the default alternate setting to be stereo
         # out for windows to automatically recognize
         # and use this audio interface
-        self.create_output_streaming_interface(c, nr_channels=2, alt_setting_nr=1)
-        if self.number_of_channels > 2:
-            self.create_output_streaming_interface(c, nr_channels=self.number_of_channels, alt_setting_nr=2)
+        self.create_output_streaming_interface(c, no_channels=2, alt_setting_nr=1)
+        if self.no_channels > 2:
+            self.create_output_streaming_interface(c, no_channels=no_channels, alt_setting_nr=2, max_packet_size=max_packet_size)
 
 
-    def create_input_streaming_interface(self, c, *, nr_channels, alt_setting_nr, channel_config=0):
+    def create_input_streaming_interface(self, c, *, no_channels: int, alt_setting_nr: int, channel_config: int=0, max_packet_size: int):
         # Interface Descriptor (Streaming, IN, active setting)
         activeAudioStreamingInterface = uac2.AudioStreamingInterfaceDescriptorEmitter()
         activeAudioStreamingInterface.bInterfaceNumber  = 2
@@ -195,7 +205,7 @@ class USBDescriptors():
         audioStreamingInterface.bTerminalLink   = 5
         audioStreamingInterface.bFormatType     = uac2.FormatTypes.FORMAT_TYPE_I
         audioStreamingInterface.bmFormats       = uac2.TypeIFormats.PCM
-        audioStreamingInterface.bNrChannels     = nr_channels
+        audioStreamingInterface.bNrChannels     = no_channels
         audioStreamingInterface.bmChannelConfig = channel_config
         c.add_subordinate_descriptor(audioStreamingInterface)
 
@@ -211,7 +221,7 @@ class USBDescriptors():
         audioOutEndpoint.bmAttributes         = USBTransferType.ISOCHRONOUS  | \
                                                 (USBSynchronizationType.ASYNC << 2) | \
                                                 (USBUsageType.DATA << 4)
-        audioOutEndpoint.wMaxPacketSize = self.MAX_PACKET_SIZE
+        audioOutEndpoint.wMaxPacketSize = max_packet_size
         audioOutEndpoint.bInterval      = 1
         c.add_subordinate_descriptor(audioOutEndpoint)
 
@@ -220,7 +230,7 @@ class USBDescriptors():
         c.add_subordinate_descriptor(audioControlEndpoint)
 
 
-    def create_input_channels_descriptor(self, c):
+    def create_input_channels_descriptor(self, c, no_channels: int, max_packet_size: int):
         #
         # Interface Descriptor (Streaming, IN, quiet setting)
         #
@@ -230,7 +240,7 @@ class USBDescriptors():
         c.add_subordinate_descriptor(quietAudioStreamingInterface)
 
         # Windows wants a stereo pair as default setting, so let's have it
-        self.create_input_streaming_interface(c, nr_channels=2, alt_setting_nr=1, channel_config=0x3)
-        if self.number_of_channels > 2:
-            self.create_input_streaming_interface(c, nr_channels=self.number_of_channels, alt_setting_nr=2, channel_config=0x0)
+        self.create_input_streaming_interface(c, no_channels=2, alt_setting_nr=1, channel_config=0x3, max_packet_size=max_packet_size)
+        if self.no_channels > 2:
+            self.create_input_streaming_interface(c, no_channels=no_channels, alt_setting_nr=2, channel_config=0x0, max_packet_size=max_packet_size)
 
