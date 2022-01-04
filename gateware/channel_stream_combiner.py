@@ -45,7 +45,10 @@ class ChannelStreamCombiner(Elaboratable):
 
                     with m.If(self.lower_channel_stream_in.last):
                         m.d.sync += upper_channel_counter.eq(0)
-                        m.next = "UPPER_CHANNELS"
+                        with m.If(self.upper_channels_active_in):
+                            m.next = "UPPER_CHANNELS"
+                        with m.Else():
+                            m.next = "FILL_UPPER"
 
             with m.State("UPPER_CHANNELS"):
                 with m.If(self.combined_channel_stream_out.ready):
@@ -63,27 +66,35 @@ class ChannelStreamCombiner(Elaboratable):
                             ]
 
                             with m.If(self.upper_channel_stream_in.last):
-                                m.next = "LOWER_CHANNELS"
+                                with m.If(self.upper_channel_stream_in.channel_nr == 2):
+                                    m.d.sync += upper_channel_counter.eq(2)
+                                    m.next = "FILL_UPPER"
+                                with m.Else():
+                                    m.next = "LOWER_CHANNELS"
 
                     # USB is not active: Fill in zeros
                     with m.Else():
-                        m.d.comb += [
-                            # we just drain all stale data from the upstream FIFOs
-                            # if the upper channels are not active
-                            self.upper_channel_stream_in.ready.eq(1),
+                        m.next = "FILL_UPPER"
 
-                            self.combined_channel_stream_out.payload.eq(0),
-                            self.combined_channel_stream_out.channel_nr.eq(\
-                                self.no_lower_channels +
-                                upper_channel_counter),
-                            self.combined_channel_stream_out.valid.eq(1),
-                            self.combined_channel_stream_out.first.eq(0),
-                            self.combined_channel_stream_out.last.eq(0),
-                        ]
+            with m.State("FILL_UPPER"):
+                with m.If(self.combined_channel_stream_out.ready):
+                    m.d.comb += [
+                        # we just drain all stale data from the upstream FIFOs
+                        # if the upper channels are not active
+                        self.upper_channel_stream_in.ready.eq(1),
 
-                        last_channel = upper_channel_counter == (self.no_upper_channels - 1)
-                        with m.If(last_channel):
-                            m.d.comb += self.combined_channel_stream_out.last.eq(1)
-                            m.next = "LOWER_CHANNELS"
+                        self.combined_channel_stream_out.payload.eq(0),
+                        self.combined_channel_stream_out.channel_nr.eq(\
+                            self.no_lower_channels +
+                            upper_channel_counter),
+                        self.combined_channel_stream_out.valid.eq(1),
+                        self.combined_channel_stream_out.first.eq(0),
+                        self.combined_channel_stream_out.last.eq(0),
+                    ]
+
+                    last_channel = upper_channel_counter == (self.no_upper_channels - 1)
+                    with m.If(last_channel):
+                        m.d.comb += self.combined_channel_stream_out.last.eq(1)
+                        m.next = "LOWER_CHANNELS"
 
         return m
