@@ -10,7 +10,8 @@ from amaranth.lib.cdc    import FFSynchronizer, PulseSynchronizer
 
 from amlib.stream        import connect_stream_to_fifo
 from amlib.io.i2s        import I2STransmitter
-from amlib.io.max7219    import SerialLEDArray, NumberToSevenSegmentHex, NumberToBitBar
+from amlib.io.led        import NumberToBitBar
+from amlib.io.max7219    import SerialLEDArray
 from amlib.debug.ila     import StreamILA, ILACoreParameters
 
 from luna                import top_level_cli
