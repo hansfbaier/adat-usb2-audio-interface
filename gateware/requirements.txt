@@ -1,3 +1,4 @@
+wheel
 git+https://github.com/amaranth-lang/amaranth.git
 git+https://github.com/amaranth-lang/amaranth-soc.git
 git+https://github.com/amaranth-community-unofficial/amaranth-boards.git
