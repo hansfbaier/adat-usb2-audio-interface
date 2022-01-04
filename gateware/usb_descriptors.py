@@ -20,25 +20,15 @@ class USBDescriptors():
     def create_usb1_descriptors(self, no_channels: int, max_packet_size: int):
         """ Creates the descriptors for the main USB interface """
 
-        configDescr, descriptors = self.create_descriptors("ADATface (USB1)", no_channels, max_packet_size)
-
-        if self.USE_ILA:
-            with configDescr.InterfaceDescriptor() as i:
-                i.bInterfaceNumber = 3
-
-                with i.EndpointDescriptor() as e:
-                    e.bEndpointAddress = USBDirection.IN.to_endpoint_address(3) # EP 3 IN
-                    e.wMaxPacketSize   = self.ILA_MAX_PACKET_SIZE
-
-        return descriptors
+        return self.create_descriptors("ADATface (USB1)", no_channels, max_packet_size, self.USE_ILA)
 
 
     def create_usb2_descriptors(self, no_channels: int, max_packet_size: int):
         """ Creates the descriptors for the secondary USB interface """
-        return self.create_descriptors("ADATface (USB2)", no_channels, max_packet_size)[1]
+        return self.create_descriptors("ADATface (USB2)", no_channels, max_packet_size)
 
 
-    def create_descriptors(self, product_id: str, no_channels: int, max_packet_size: int):
+    def create_descriptors(self, product_id: str, no_channels: int, max_packet_size: int, create_ila=False):
         """ Creates the descriptors for the main USB interface """
 
         descriptors = DeviceDescriptorCollection()
@@ -76,7 +66,16 @@ class USBDescriptors():
 
             self.create_input_channels_descriptor(configDescr, no_channels, max_packet_size)
 
-        return (configDescr, descriptors)
+            if create_ila:
+                with configDescr.InterfaceDescriptor() as i:
+                    i.bInterfaceNumber = 3
+
+                    with i.EndpointDescriptor() as e:
+                        e.bEndpointAddress = USBDirection.IN.to_endpoint_address(3) # EP 3 IN
+                        e.wMaxPacketSize   = self.ILA_MAX_PACKET_SIZE
+
+
+        return descriptors
 
 
     def create_audio_control_interface_descriptor(self, number_of_channels):
