@@ -25,12 +25,17 @@ class ChannelStreamCombiner(Elaboratable):
                                                    payload_width=self.SAMPLE_WIDTH,
                                                    extra_fields=[("channel_nr", self.lower_channel_bits)])
 
+        # debug signals
+        self.state = Signal(range(3))
+
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
 
         upper_channel_counter = Signal(self.upper_channel_bits)
 
-        with m.FSM():
+        with m.FSM() as fsm:
+            m.d.comb += self.state.eq(fsm.state)
+
             with m.State("LOWER_CHANNELS"):
                 with m.If(  self.combined_channel_stream_out.ready
                           & self.lower_channel_stream_in.valid):
