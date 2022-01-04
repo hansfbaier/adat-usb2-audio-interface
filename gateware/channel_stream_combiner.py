@@ -30,6 +30,9 @@ class ChannelStreamCombiner(Elaboratable):
         self.state = Signal(range(3))
         self.upper_channel_counter = Signal(self.upper_channel_bits)
 
+        # debug signals
+        self.state = Signal(range(3))
+
     def elaborate(self, platform: Platform) -> Module:
         m = Module()
 

@@ -660,6 +660,7 @@ class USB2AudioInterface(Elaboratable):
         usb1_ep1_out                 = v['usb1_ep1_out']
         usb1_ep2_in                  = v['usb1_ep2_in']
         usb2_audio_out_active        = v['usb2_audio_out_active']
+        usb1_audio_in_active         = v['usb1_audio_in_active']
         channels_to_usb1_stream      = v['channels_to_usb1_stream']
         usb1_to_channel_stream       = v['usb1_to_channel_stream']
         input_to_usb_fifo            = v['input_to_usb_fifo']
