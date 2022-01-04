@@ -25,7 +25,6 @@ from luna.gateware.usb.usb2.request           import StallOnlyRequestHandler
 
 from adat import ADATTransmitter, ADATReceiver
 from adat import EdgeToPulse
-from gateware.stereopair_extractor import StereoPairExtractor
 
 from usb_stream_to_channels import USBStreamToChannels
 from channels_to_usb_stream import ChannelsToUSBStream
