@@ -7,10 +7,11 @@ class ChannelStreamCombiner(Elaboratable):
     SAMPLE_WIDTH = 24
 
     def __init__(self, no_lower_channels, no_upper_channels):
-        self.no_lower_channels = no_lower_channels
-        self.no_upper_channels = no_upper_channels
-        self.lower_channel_bits = Shape.cast(range(no_lower_channels)).width
-        self.upper_channel_bits = Shape.cast(range(no_upper_channels)).width
+        self.no_lower_channels     = no_lower_channels
+        self.no_upper_channels     = no_upper_channels
+        self.lower_channel_bits    = Shape.cast(range(no_lower_channels)).width
+        self.upper_channel_bits    = Shape.cast(range(no_upper_channels)).width
+        self.combined_channel_bits = Shape.cast(range(no_lower_channels + no_upper_channels)).width
 
         self.lower_channel_stream_in = StreamInterface(name="lower_channels",
                                                    payload_width=self.SAMPLE_WIDTH,
@@ -23,7 +24,7 @@ class ChannelStreamCombiner(Elaboratable):
 
         self.combined_channel_stream_out = StreamInterface(name="combined_channels",
                                                    payload_width=self.SAMPLE_WIDTH,
-                                                   extra_fields=[("channel_nr", self.lower_channel_bits)])
+                                                   extra_fields=[("channel_nr", self.combined_channel_bits)])
 
         # debug signals
         self.state = Signal(range(3))
@@ -85,6 +86,7 @@ class ChannelStreamCombiner(Elaboratable):
 
             with m.State("FILL_UPPER"):
                 with m.If(self.combined_channel_stream_out.ready):
+                    m.d.sync += upper_channel_counter.eq(upper_channel_counter + 1)
                     m.d.comb += [
                         # we just drain all stale data from the upstream FIFOs
                         # if the upper channels are not active
@@ -99,7 +101,7 @@ class ChannelStreamCombiner(Elaboratable):
                         self.combined_channel_stream_out.last.eq(0),
                     ]
 
-                    last_channel = upper_channel_counter == (self.no_upper_channels - 1)
+                    last_channel = upper_channel_counter >= (self.no_upper_channels - 1)
                     with m.If(last_channel):
                         m.d.comb += self.combined_channel_stream_out.last.eq(1)
                         m.next = "LOWER_CHANNELS"

@@ -993,7 +993,7 @@ class USB2AudioInterface(Elaboratable):
             #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
             #ila.enable.eq(bundle_multiplexer_active),
             #ila.enable .eq(sof_fast | adat_receivers[0].output_enable),
-            ila.trigger.eq(channel_stream_combiner_active),
+            ila.trigger.eq(1),
             #ila.enable.eq(multiplexer_enable),
             #ila.trigger.eq(multiplexer_enable),
         ]
