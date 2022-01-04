@@ -342,7 +342,7 @@ class USB2AudioInterface(Elaboratable):
                 .eq(usb2_to_usb1_fifo.w_level),
 
             # connect USB2 channels to
-            usb1_channel_stream_combiner.upper_channels_active_in           .eq(usb2_audio_out_active),
+            usb1_channel_stream_combiner.upper_channels_active_in           .eq(~usb2.suspended & usb2_audio_out_active),
             usb1_channel_stream_combiner.upper_channel_stream_in.payload    .eq(usb2_to_usb1_fifo.r_data[0:chnr_start]),
             usb1_channel_stream_combiner.upper_channel_stream_in.channel_nr .eq(usb2_channel_nr),
             usb1_channel_stream_combiner.upper_channel_stream_in.first      .eq(usb2_to_usb1_fifo.r_data[usb2_first_bit_pos]),
