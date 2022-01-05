@@ -42,8 +42,10 @@ class USB2AudioInterface(Elaboratable):
     # one isochronous packet typically has 6 or 7 samples of 8 channels of 32 bit samples
     # 6 samples * 8 channels * 4 bytes/sample = 192 bytes
     # 7 samples * 8 channels * 4 bytes/sample = 224 bytes
-    USB1_MAX_PACKET_SIZE = int(224 * 4 + 224 // 2)
-    USB2_MAX_PACKET_SIZE = int(224 // 2)
+    USB2_NO_CHANNELS     = 4
+    USB1_NO_CHANNELS     = 32 + USB2_NO_CHANNELS
+    USB2_MAX_PACKET_SIZE = int(224 // 8 * USB2_NO_CHANNELS)
+    USB1_MAX_PACKET_SIZE = int(224 * 4 + USB2_MAX_PACKET_SIZE)
     INPUT_CDC_FIFO_DEPTH = 256 * 4
 
     USE_ILA             = False
@@ -54,9 +56,9 @@ class USB2AudioInterface(Elaboratable):
     def elaborate(self, platform):
         m = Module()
 
-        usb1_number_of_channels      = 38
+        usb1_number_of_channels      = self.USB1_NO_CHANNELS
         usb1_number_of_channels_bits = Shape.cast(range(usb1_number_of_channels)).width
-        usb2_number_of_channels      = 6
+        usb2_number_of_channels      = self.USB2_NO_CHANNELS
         usb2_number_of_channels_bits = Shape.cast(range(usb2_number_of_channels)).width
         audio_bits                   = 24
         adat_number_of_channels      = usb1_number_of_channels - usb2_number_of_channels
