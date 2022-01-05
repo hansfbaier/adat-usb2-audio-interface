@@ -108,7 +108,7 @@ class USB2AudioInterface(Elaboratable):
         usb1.add_endpoint(usb1_ep1_out)
         usb2_ep1_out = USBIsochronousOutStreamEndpoint(
             endpoint_number=1, # EP 1 OUT
-            max_packet_size=self.USB1_MAX_PACKET_SIZE)
+            max_packet_size=self.USB2_MAX_PACKET_SIZE)
         usb2.add_endpoint(usb2_ep1_out)
 
         # audio rate feedback input ports of the host
@@ -128,7 +128,7 @@ class USB2AudioInterface(Elaboratable):
         usb1.add_endpoint(usb1_ep2_in)
         usb2_ep2_in = USBIsochronousInStreamEndpoint(
             endpoint_number=2, # EP 2 IN
-            max_packet_size=self.USB1_MAX_PACKET_SIZE)
+            max_packet_size=self.USB2_MAX_PACKET_SIZE)
         usb2.add_endpoint(usb2_ep2_in)
 
         m.d.comb += [
@@ -156,7 +156,7 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.usb1_to_channel_stream = usb1_to_channel_stream = \
             DomainRenamer("usb")(USBStreamToChannels(usb1_number_of_channels))
         m.submodules.usb2_to_channel_stream = usb2_to_channel_stream = \
-            DomainRenamer("usb")(USBStreamToChannels(8))
+            DomainRenamer("usb")(USBStreamToChannels(usb2_number_of_channels))
 
         m.submodules.usb1_channel_stream_combiner = usb1_channel_stream_combiner = \
             DomainRenamer("usb")(ChannelStreamCombiner(adat_number_of_channels, usb2_number_of_channels))
