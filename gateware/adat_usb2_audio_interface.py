@@ -629,7 +629,7 @@ class USB2AudioInterface(Elaboratable):
             m.d.sync += adat1_underflow_count.eq(adat1_underflow_count + 1)
 
         spi = platform.request("spi")
-        m.submodules.led_display  = led_display = DomainRenamer("usb")(SerialLEDArray(divisor=10, init_delay=24e6))
+        m.submodules.led_display  = led_display = SerialLEDArray(divisor=10, init_delay=24e6)
 
         if USB_TO_DEBUG == 1:
             rx_level_bars = []
@@ -639,11 +639,11 @@ class USB2AudioInterface(Elaboratable):
                 m.d.comb += rx_level_bar.value_in.eq(bundle_multiplexer.levels[i - 1])
                 rx_level_bars.append(rx_level_bar)
 
-            m.submodules.in_bar       = in_to_usb_fifo_bar  = DomainRenamer("usb")(NumberToBitBar(0, self.INPUT_CDC_FIFO_DEPTH, 8))
-            m.submodules.in_fifo_bar  = channels_to_usb_bar = DomainRenamer("usb")(NumberToBitBar(0, 2 * self.USB1_MAX_PACKET_SIZE, 8))
-            m.submodules.out_fifo_bar = out_fifo_bar        = DomainRenamer("usb")(NumberToBitBar(0, usb1_to_output_fifo_depth, 8))
+            m.submodules.in_bar       = in_to_usb_fifo_bar  = NumberToBitBar(0, self.INPUT_CDC_FIFO_DEPTH, 8)
+            m.submodules.in_fifo_bar  = channels_to_usb_bar = NumberToBitBar(0, 2 * self.USB1_MAX_PACKET_SIZE, 8)
+            m.submodules.out_fifo_bar = out_fifo_bar        = NumberToBitBar(0, usb1_to_output_fifo_depth, 8)
 
-            m.d.usb += [
+            m.d.comb += [
                 # LED bar displays
                 in_to_usb_fifo_bar.value_in.eq(input_to_usb_fifo.r_level),
                 channels_to_usb_bar.value_in.eq(channels_to_usb1_stream.level >> 3),
@@ -656,8 +656,8 @@ class USB2AudioInterface(Elaboratable):
                 led_display.digits_in[7].eq(adat1_underflow_count),
             ]
         elif USB_TO_DEBUG == 2:
-            m.submodules.fifo_bar  = fifo_bar = DomainRenamer("usb")(NumberToBitBar(0, usb2_to_usb1_fifo_depth, 8))
-            m.d.usb += [
+            m.submodules.fifo_bar  = fifo_bar = NumberToBitBar(0, usb2_to_usb1_fifo_depth, 8)
+            m.d.comb += [
                 fifo_bar.value_in.eq(usb2_to_usb1_fifo_level),
 
                 led_display.digits_in[0][0].eq(usb2_audio_out_active),
