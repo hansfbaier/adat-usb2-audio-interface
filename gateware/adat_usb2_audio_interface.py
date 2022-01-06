@@ -30,6 +30,7 @@ from gateware.stereopair_extractor import StereoPairExtractor
 from usb_stream_to_channels  import USBStreamToChannels
 from channels_to_usb_stream  import ChannelsToUSBStream
 from channel_stream_combiner import ChannelStreamCombiner
+from channel_stream_splitter import ChannelStreamSplitter
 from bundle_multiplexer      import BundleMultiplexer
 from bundle_demultiplexer    import BundleDemultiplexer
 from stereopair_extractor    import StereoPairExtractor
@@ -163,6 +164,9 @@ class USB2AudioInterface(Elaboratable):
         m.submodules.usb1_channel_stream_combiner = usb1_channel_stream_combiner = \
             DomainRenamer("usb")(ChannelStreamCombiner(adat_number_of_channels, usb2_number_of_channels))
 
+        m.submodules.usb1_channel_stream_splitter = usb1_channel_stream_splitter = \
+            DomainRenamer("usb")(ChannelStreamSplitter(adat_number_of_channels, usb2_number_of_channels))
+
         m.submodules.channels_to_usb1_stream = channels_to_usb1_stream = \
             DomainRenamer("usb")(ChannelsToUSBStream(usb1_number_of_channels, max_packet_size=self.USB1_MAX_PACKET_SIZE))
         m.submodules.channels_to_usb2_stream = channels_to_usb2_stream = \
@@ -231,18 +235,20 @@ class USB2AudioInterface(Elaboratable):
         usb1_last_bit_pos      = usb1_first_bit_pos + 1
 
         m.d.comb += [
-            # convert USB stream to audio stream
+            # convert USB stream to channel splitter to (output audio, USB2 audio IN)
             usb1_to_channel_stream.usb_stream_in.stream_eq(usb1_ep1_out.stream),
-            *connect_stream_to_fifo(usb1_to_channel_stream.channel_stream_out, usb1_to_output_fifo),
+            usb1_channel_stream_splitter.combined_channel_stream_in.stream_eq(usb1_to_channel_stream.channel_stream_out),
+
+            *connect_stream_to_fifo(usb1_channel_stream_splitter.lower_channel_stream_out, usb1_to_output_fifo),
 
             usb1_to_output_fifo.w_data[channel_bits_start:usb1_channel_bits_end]
-                .eq(usb1_to_channel_stream.channel_stream_out.channel_nr),
+                .eq(usb1_channel_stream_splitter.lower_channel_stream_out.channel_nr),
 
             usb1_to_output_fifo.w_data[usb1_first_bit_pos]
-                .eq(usb1_to_channel_stream.channel_stream_out.first),
+                .eq(usb1_channel_stream_splitter.lower_channel_stream_out.first),
 
             usb1_to_output_fifo.w_data[usb1_last_bit_pos]
-                .eq(usb1_to_channel_stream.channel_stream_out.last),
+                .eq(usb1_channel_stream_splitter.lower_channel_stream_out.last),
 
             usb1_to_output_fifo.r_en  .eq(bundle_demultiplexer.channel_stream_in.ready),
             usb1_to_output_fifo_level .eq(usb1_to_output_fifo.w_level),
@@ -315,7 +321,7 @@ class USB2AudioInterface(Elaboratable):
             channels_to_usb1_stream.data_requested_in .eq(usb1_ep2_in.data_requested),
             channels_to_usb1_stream.frame_finished_in .eq(usb1_ep2_in.frame_finished),
 
-            # wire up USB audio IN
+            # wire up USB1 audio IN
             usb1_ep2_in.stream.stream_eq(channels_to_usb1_stream.usb_stream_out),
         ]
 
@@ -343,7 +349,7 @@ class USB2AudioInterface(Elaboratable):
             usb2_to_usb1_fifo_level
                 .eq(usb2_to_usb1_fifo.w_level),
 
-            # connect USB2 channels to
+            # connect USB2 OUT channels to USB1 IN
             usb1_channel_stream_combiner.upper_channels_active_in           .eq(~usb2.suspended & usb2_audio_out_active),
             usb1_channel_stream_combiner.upper_channel_stream_in.payload    .eq(usb2_to_usb1_fifo.r_data[0:chnr_start]),
             usb1_channel_stream_combiner.upper_channel_stream_in.channel_nr .eq(usb2_channel_nr),
@@ -351,6 +357,13 @@ class USB2AudioInterface(Elaboratable):
             usb1_channel_stream_combiner.upper_channel_stream_in.last       .eq(usb2_to_usb1_fifo.r_data[usb2_last_bit_pos]),
             usb1_channel_stream_combiner.upper_channel_stream_in.valid      .eq(usb2_to_usb1_fifo.r_rdy),
             usb2_to_usb1_fifo.r_en.eq(usb1_channel_stream_combiner.upper_channel_stream_in.ready),
+
+            # connect USB2 IN channels to USB1 OUT
+            channels_to_usb2_stream.channel_stream_in.stream_eq(usb1_channel_stream_splitter.upper_channel_stream_out),
+            channels_to_usb2_stream.data_requested_in .eq(usb1_ep2_in.data_requested),
+            channels_to_usb2_stream.frame_finished_in .eq(usb1_ep2_in.frame_finished),
+
+            usb2_ep2_in.stream.stream_eq(channels_to_usb2_stream.usb_stream_out),
         ]
 
         #
