@@ -316,7 +316,6 @@ class USB2AudioInterface(Elaboratable):
 
             # connect combiner output to USB1
             channels_to_usb1_stream.channel_stream_in.stream_eq(usb1_channel_stream_combiner.combined_channel_stream_out),
-            channels_to_usb1_stream.channel_stream_in.channel_nr.eq(usb1_channel_stream_combiner.combined_channel_stream_out.channel_nr),
             channels_to_usb1_stream.data_requested_in .eq(usb1_ep2_in.data_requested),
             channels_to_usb1_stream.frame_finished_in .eq(usb1_ep2_in.frame_finished),
 
@@ -359,8 +358,8 @@ class USB2AudioInterface(Elaboratable):
 
             # connect USB2 IN channels to USB1 OUT
             channels_to_usb2_stream.channel_stream_in.stream_eq(usb1_channel_stream_splitter.upper_channel_stream_out),
-            channels_to_usb2_stream.data_requested_in .eq(usb1_ep2_in.data_requested),
-            channels_to_usb2_stream.frame_finished_in .eq(usb1_ep2_in.frame_finished),
+            channels_to_usb2_stream.data_requested_in .eq(usb2_ep2_in.data_requested),
+            channels_to_usb2_stream.frame_finished_in .eq(usb2_ep2_in.frame_finished),
 
             usb2_ep2_in.stream.stream_eq(channels_to_usb2_stream.usb_stream_out),
         ]
