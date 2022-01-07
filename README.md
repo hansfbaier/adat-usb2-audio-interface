@@ -11,9 +11,10 @@ FPGA based USB 2.0 High Speed audio interface featuring multiple optical ADAT in
 * Has a hardware roundtrip latency (USB out -> ADAT out -> cable -> ADAT in -> USB in)
   of 2-3 USB2 microframes which is about 0.25ms to 0.375 ms
 * Both headphone DACs on the board work now. In two channel mode, they are both wired to channels 0/1.
-  In 32 channel mode DAC1 is wired to channels 0/1 and DAC2 to channels 2/3
-* Both USB PHYs now are operational. USB1 has access to all ADAT I/Os.
+  In 36 channel mode DAC1 is wired to channels 0/1 and DAC2 to channels 2/3
+* Both USB PHYs now are operational. USB1 has access to all 32 ADAT I/Os and has 4 extra channels to/from USB2.
   USB2 enumerates as a 4-channel sound card which sends/receives audio to/from USB1
+* Currently only sending audio from USB2 -> USB1 works. The other direction is work in progress.
 
 ## Hardware
 The current board design is a custom development board,
