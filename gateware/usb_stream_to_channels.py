@@ -25,7 +25,7 @@ class USBStreamToChannels(Elaboratable):
         usb_payload      = Signal(8)
         out_ready        = Signal()
 
-        last_channel  = Signal(self._channel_bits)
+        last_channel = Signal(self._channel_bits)
 
         m.d.comb += [
             usb_first.eq(self.usb_stream_in.first),

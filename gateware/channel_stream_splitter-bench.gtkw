@@ -1,0 +1,52 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Thu Jan  6 02:29:19 2022
+[*]
+[dumpfile] "test_ChannelStreamSplitterTest_test_smoke.vcd"
+[dumpfile_mtime] "Thu Jan  6 02:28:21 2022"
+[dumpfile_size] 5390
+[savefile] "gateware/channel_stream_splitter-bench.gtkw"
+[timestart] 0
+[size] 3828 2090
+[pos] -1 -1
+*-16.000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] bench.
+[sst_width] 65
+[signals_width] 540
+[sst_expanded] 0
+[sst_vpaned_height] 658
+@28
+bench.top.clk
+@200
+-Input
+@22
+bench.top.combined_channels__channel_nr[5:0]
+bench.top.combined_channels__payload[23:0]
+@28
+bench.top.combined_channels__first
+bench.top.combined_channels__last
+bench.top.combined_channels__ready
+bench.top.combined_channels__valid
+@200
+-Output 1
+@22
+bench.top.lower_channels__channel_nr[4:0]
+bench.top.lower_channels__payload[23:0]
+@28
+bench.top.lower_channels__first
+bench.top.lower_channels__last
+bench.top.lower_channels__ready
+bench.top.lower_channels__valid
+@200
+-Output 2
+@22
+bench.top.upper_channels__channel_nr[4:0]
+@23
+bench.top.upper_channels__payload[23:0]
+@28
+bench.top.upper_channels__first
+bench.top.upper_channels__last
+bench.top.upper_channels__ready
+bench.top.upper_channels__valid
+[pattern_trace] 1
+[pattern_trace] 0
