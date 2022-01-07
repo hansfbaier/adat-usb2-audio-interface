@@ -39,7 +39,7 @@ class USBDescriptors():
             d.bDeviceSubclass    = 0x02
             d.bDeviceProtocol    = 0x01
             d.idVendor           = 0x1209
-            d.idProduct          = 0xADA1
+            d.idProduct          = 0xADA1 if "USB1" in product_id else 0xADA2
             d.iManufacturer      = "OpenAudioGear"
             d.iProduct           = product_id
             d.iSerialNumber      = "0"
