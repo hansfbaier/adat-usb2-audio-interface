@@ -705,6 +705,7 @@ class USB2AudioInterface(Elaboratable):
         bundle_demultiplexer         = v['bundle_demultiplexer']
         bundle_multiplexer           = v['bundle_multiplexer']
         usb1_channel_stream_combiner = v['usb1_channel_stream_combiner']
+        usb1_channel_stream_splitter = v['usb1_channel_stream_splitter']
 
         adat_clock = Signal()
         m.d.comb += adat_clock.eq(ClockSignal("adat"))
@@ -994,7 +995,45 @@ class USB2AudioInterface(Elaboratable):
                 usb1_channel_stream_combiner.lower_channel_stream_in.ready))
         ]
 
-        signals = usb_out_debug
+        channel_stream_splitter_debug = [
+            usb1_channel_stream_splitter.lower_channel_stream_out.valid,
+            usb1_channel_stream_splitter.lower_channel_stream_out.ready,
+            usb1_channel_stream_splitter.lower_channel_stream_out.payload,
+            usb1_channel_stream_splitter.lower_channel_stream_out.channel_nr,
+            usb1_channel_stream_splitter.lower_channel_stream_out.first,
+            usb1_channel_stream_splitter.lower_channel_stream_out.last,
+            usb2_audio_out_active,
+            usb1_channel_stream_splitter.upper_channel_stream_out.valid,
+            usb1_channel_stream_splitter.upper_channel_stream_out.ready,
+            usb1_channel_stream_splitter.upper_channel_stream_out.payload,
+            usb1_channel_stream_splitter.upper_channel_stream_out.channel_nr,
+            usb1_channel_stream_splitter.upper_channel_stream_out.first,
+            usb1_channel_stream_splitter.upper_channel_stream_out.last,
+            usb1_channel_stream_splitter.combined_channel_stream_in.valid,
+            usb1_channel_stream_splitter.combined_channel_stream_in.ready,
+            usb1_channel_stream_splitter.combined_channel_stream_in.payload,
+            usb1_channel_stream_splitter.combined_channel_stream_in.channel_nr,
+            usb1_channel_stream_splitter.combined_channel_stream_in.first,
+            usb1_channel_stream_splitter.combined_channel_stream_in.last,
+        ]
+
+        splitter_upper_channel_active = Signal()
+        channel_stream_splitter_active = Signal()
+        m.d.comb += [
+            splitter_upper_channel_active.eq(usb1_channel_stream_splitter.upper_channel_stream_out.valid &
+                                             usb1_channel_stream_splitter.upper_channel_stream_out.ready),
+            channel_stream_splitter_active.eq(
+                splitter_upper_channel_active |
+                (usb1_channel_stream_splitter.combined_channel_stream_in.valid &
+                 usb1_channel_stream_splitter.combined_channel_stream_in.ready) |
+                (usb1_channel_stream_splitter.lower_channel_stream_out.valid &
+                 usb1_channel_stream_splitter.lower_channel_stream_out.ready))
+        ]
+
+        #
+        # signals to trace
+        #
+        signals = channel_stream_splitter_debug
 
         signals_bits = sum([s.width for s in signals])
         m.submodules.ila = ila = \
@@ -1006,7 +1045,7 @@ class USB2AudioInterface(Elaboratable):
                 signals=signals,
                 sample_depth       = int(80 * 8 * 1024 / signals_bits),
                 samples_pretrigger = 2, #int(78 * 8 * 1024 / signals_bits),
-                with_enable=True)
+                with_enable=False)
 
         stream_ep = USBMultibyteStreamInEndpoint(
             endpoint_number=3, # EP 3 IN
@@ -1020,18 +1059,7 @@ class USB2AudioInterface(Elaboratable):
         m.d.comb += [
             stream_ep.stream.stream_eq(ila.stream),
             garbage.eq(channels_to_usb1_stream.skipping | channels_to_usb1_stream.filling),
-            #ila.enable.eq(usb_outputting | weird_frame_size | usb1_ep1_out.stream.first | usb1_ep1_out.stream.last),
-            #ila.enable.eq(usb_channel_outputting),
-            #ila.enable.eq(input_or_output_active | garbage | usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
-            #ila.enable.eq(usb1_ep2_in.data_requested | usb1_ep2_in.frame_finished),
-            #ila.trigger.eq(1),
-            #ila.trigger.eq(audio_in_frame_bytes > 0xc0),
-            #ila.enable.eq(bundle_multiplexer_active),
-            #ila.enable .eq(sof_fast | adat_receivers[0].output_enable),
-            ila.trigger.eq(usb_channel_outputting),
-            ila.enable.eq(usb_channel_outputting),
-            #ila.enable.eq(multiplexer_enable),
-            #ila.trigger.eq(multiplexer_enable),
+            ila.trigger.eq(1),
         ]
 
         ILACoreParameters(ila).pickle()
