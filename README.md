@@ -3,15 +3,17 @@
 FPGA based USB 2.0 High Speed audio interface featuring multiple optical ADAT inputs and outputs
 
 ## Status / current limitations
-* enumerates as class compliant audio device on Windows and Linux (Mac OS not tested). 2 and 32 channel modes.
-* audio input and output seems to work glitch free.
-* only 48kHz sample rate supported
-* integrated USB2 high speed logic analyzer works
-* runs without dropouts with FlexASIO with a buffer size of 32 samples (0.67ms latency)
-* has a hardware roundtrip latency (USB out -> ADAT out -> cable -> ADAT in -> USB in)
+* Enumerates as class compliant audio device on Windows and Linux (Mac OS not tested). 2 and 32 channel modes.
+* Audio input and output seems to work glitch free.
+* Only 48kHz sample rate supported
+* Integrated USB2 high speed logic analyzer works
+* Runs without dropouts with FlexASIO with a buffer size of 32 samples (0.67ms latency)
+* Has a hardware roundtrip latency (USB out -> ADAT out -> cable -> ADAT in -> USB in)
   of 2-3 USB2 microframes which is about 0.25ms to 0.375 ms
-* both headphone DACs on the board work now. In two channel mode, they are both wired to channels 0/1.
+* Both headphone DACs on the board work now. In two channel mode, they are both wired to channels 0/1.
   In 32 channel mode DAC1 is wired to channels 0/1 and DAC2 to channels 2/3
+* Both USB PHYs now are operational. USB1 has access to all ADAT I/Os.
+  USB2 enumerates as a 4-channel sound card which sends/receives audio to/from USB1
 
 ## Hardware
 The current board design is a custom development board,
