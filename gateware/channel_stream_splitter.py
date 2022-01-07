@@ -45,7 +45,7 @@ class ChannelStreamSplitter(Elaboratable):
         with m.If(input_stream.valid & input_stream.ready):
             with m.If(input_stream.channel_nr < self.no_lower_channels):
                 m.d.comb += [
-                    self.lower_channel_stream_out.payload.eq(input_stream.payload[0:self.no_lower_channels]),
+                    self.lower_channel_stream_out.payload.eq(input_stream.payload),
                     self.lower_channel_stream_out.channel_nr.eq(input_stream.channel_nr),
                     self.lower_channel_stream_out.first.eq(input_stream.first),
                     self.lower_channel_stream_out.last.eq(input_stream.channel_nr == (self.no_lower_channels - 1)),
@@ -53,7 +53,7 @@ class ChannelStreamSplitter(Elaboratable):
                 ]
             with m.Else():
                 m.d.comb += [
-                    self.upper_channel_stream_out.payload.eq(input_stream.payload[self.no_lower_channels:]),
+                    self.upper_channel_stream_out.payload.eq(input_stream.payload),
                     self.upper_channel_stream_out.channel_nr.eq(input_stream.channel_nr - self.no_lower_channels),
                     self.upper_channel_stream_out.first.eq(input_stream.channel_nr == self.no_lower_channels),
                     self.upper_channel_stream_out.last.eq(input_stream.last),
