@@ -687,11 +687,11 @@ class USB2AudioInterface(Elaboratable):
         m                            = v['m']
         usb1_sof_counter             = v['usb1_sof_counter']
         usb1                         = v['usb1']
-        usb1_ep1_out                 = v['usb1_ep1_out']
-        usb1_ep2_in                  = v['usb1_ep2_in']
+        ep1_out                      = v['usb2_ep1_out']
+        ep2_in                       = v['usb2_ep2_in']
         usb2_audio_out_active        = v['usb2_audio_out_active']
         usb1_audio_in_active         = v['usb1_audio_in_active']
-        channels_to_usb1_stream      = v['channels_to_usb1_stream']
+        channels_to_usb_stream       = v['channels_to_usb2_stream']
         usb_to_channel_stream        = v['usb2_to_channel_stream']
         input_to_usb_fifo            = v['input_to_usb_fifo']
         usb1_to_output_fifo          = v['usb1_to_output_fifo']
@@ -713,73 +713,75 @@ class USB2AudioInterface(Elaboratable):
         m.d.comb += sof_wrap.eq(usb1_sof_counter == 0)
 
         usb_packet_counter = Signal(10)
-        with m.If(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready):
+        with m.If(ep1_out.stream.valid & ep1_out.stream.ready):
             m.d.usb += usb_packet_counter.eq(usb_packet_counter + 1)
-            with m.If(usb1_ep1_out.stream.last):
+            with m.If(ep1_out.stream.last):
                 m.d.usb += usb_packet_counter.eq(0)
 
         weird_packet = Signal()
-        m.d.comb += weird_packet.eq(usb1_ep1_out.stream.last & (
+        m.d.comb += weird_packet.eq(ep1_out.stream.last & (
             usb_packet_counter[0:2] != Const(0b11, 2)
         ))
 
-        strange_input = Signal()
-        input_active  = Signal()
-        output_active = Signal()
+        strange_input          = Signal()
+        input_active           = Signal()
+        output_active          = Signal()
         input_or_output_active = Signal()
+        garbage                = Signal()
+        usb_frame_borders      = Signal()
 
         m.d.comb += [
-            input_active.eq (  channels_to_usb1_stream.channel_stream_in.ready
-                                & channels_to_usb1_stream.channel_stream_in.valid),
-            output_active.eq(  channels_to_usb1_stream.usb_stream_out.ready
-                                & channels_to_usb1_stream.usb_stream_out.valid),
+            input_active.eq (  channels_to_usb_stream.channel_stream_in.ready
+                                & channels_to_usb_stream.channel_stream_in.valid),
+            output_active.eq(  channels_to_usb_stream.usb_stream_out.ready
+                                & channels_to_usb_stream.usb_stream_out.valid),
             input_or_output_active.eq(input_active | output_active),
 
-            strange_input.eq(  (channels_to_usb1_stream.channel_stream_in.payload != 0)
-                                & (channels_to_usb1_stream.channel_stream_in.channel_nr > 1)),
+            strange_input.eq(  (channels_to_usb_stream.channel_stream_in.payload != 0)
+                                & (channels_to_usb_stream.channel_stream_in.channel_nr > 1)),
+            garbage.eq(channels_to_usb_stream.skipping | channels_to_usb_stream.filling),
+            usb_frame_borders.eq(ep2_in.data_requested | ep2_in.frame_finished),
         ]
 
         fill_count = Signal(16)
-        with m.If(channels_to_usb1_stream.filling):
+        with m.If(channels_to_usb_stream.filling):
             m.d.usb += fill_count.eq(fill_count + 1)
 
         channels_to_usb_input_frame = [
             usb1.sof_detected,
-            #audio_in_active,
             input_to_usb_fifo.r_level,
-            channels_to_usb1_stream.channel_stream_in.channel_nr,
-            channels_to_usb1_stream.channel_stream_in.first,
-            channels_to_usb1_stream.channel_stream_in.last,
+            channels_to_usb_stream.channel_stream_in.channel_nr,
+            channels_to_usb_stream.channel_stream_in.first,
+            channels_to_usb_stream.channel_stream_in.last,
             input_active,
             #channels_to_usb_stream.channel_stream_in.payload,
         ]
 
         weird_frame_size = Signal()
         usb_outputting   = Signal()
-        m.d.comb += usb_outputting.eq(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready)
+        m.d.comb += usb_outputting.eq(ep1_out.stream.valid & ep1_out.stream.ready)
 
         usb_out_level_maxed = Signal()
         m.d.comb += usb_out_level_maxed.eq(usb1_to_output_fifo_level >= (usb1_to_output_fifo_depth - 1))
 
         m.d.comb += weird_frame_size.eq((audio_in_frame_bytes & 0b11) != 0)
 
-
         channels_to_usb_debug = [
             audio_in_frame_bytes,
-            channels_to_usb1_stream.current_channel,
-            channels_to_usb1_stream.channel_stream_in.ready,
-            channels_to_usb1_stream.level,
-            channels_to_usb1_stream.fifo_full,
-            channels_to_usb1_stream.fifo_level_insufficient,
-            channels_to_usb1_stream.out_channel,
-            channels_to_usb1_stream.fifo_read,
-            channels_to_usb1_stream.usb_channel,
-            channels_to_usb1_stream.done,
-            channels_to_usb1_stream.usb_byte_pos,
-            channels_to_usb1_stream.skipping,
-            channels_to_usb1_stream.filling,
-            usb1_ep2_in.data_requested,
-            usb1_ep2_in.frame_finished,
+            channels_to_usb_stream.current_channel,
+            channels_to_usb_stream.channel_stream_in.ready,
+            channels_to_usb_stream.level,
+            channels_to_usb_stream.fifo_full,
+            channels_to_usb_stream.fifo_level_insufficient,
+            channels_to_usb_stream.out_channel,
+            channels_to_usb_stream.fifo_read,
+            channels_to_usb_stream.usb_channel,
+            channels_to_usb_stream.done,
+            channels_to_usb_stream.usb_byte_pos,
+            channels_to_usb_stream.skipping,
+            channels_to_usb_stream.filling,
+            ep2_in.data_requested,
+            ep2_in.frame_finished,
         ]
 
         usb_out_debug = [
@@ -885,7 +887,7 @@ class USB2AudioInterface(Elaboratable):
 
         levels = [
             input_to_usb_fifo.r_level,
-            channels_to_usb1_stream.level,
+            channels_to_usb_stream.level,
         ]
 
         adat_transmit_count       = Signal(8)
@@ -943,7 +945,7 @@ class USB2AudioInterface(Elaboratable):
             usb_receive_frames,
         ]
 
-        with m.If(channels_to_usb1_stream.channel_stream_in.last & channels_to_usb1_stream.channel_stream_in.valid & channels_to_usb1_stream.channel_stream_in.ready):
+        with m.If(channels_to_usb_stream.channel_stream_in.last & channels_to_usb_stream.channel_stream_in.valid & channels_to_usb_stream.channel_stream_in.ready):
             m.d.usb += adat_channels2usb_count.eq(adat_channels2usb_count + 1)
 
         with m.If(usb_to_channel_stream.channel_stream_out.last & usb_to_channel_stream.channel_stream_out.valid & usb_to_channel_stream.channel_stream_out.ready):
@@ -1033,7 +1035,7 @@ class USB2AudioInterface(Elaboratable):
         #
         # signals to trace
         #
-        signals = channel_stream_splitter_debug
+        signals = channels_to_usb_debug
 
         signals_bits = sum([s.width for s in signals])
         m.submodules.ila = ila = \
@@ -1045,7 +1047,7 @@ class USB2AudioInterface(Elaboratable):
                 signals=signals,
                 sample_depth       = int(80 * 8 * 1024 / signals_bits),
                 samples_pretrigger = 2, #int(78 * 8 * 1024 / signals_bits),
-                with_enable=False)
+                with_enable=True)
 
         stream_ep = USBMultibyteStreamInEndpoint(
             endpoint_number=3, # EP 3 IN
@@ -1054,12 +1056,10 @@ class USB2AudioInterface(Elaboratable):
         )
         usb1.add_endpoint(stream_ep)
 
-        garbage = Signal()
-
         m.d.comb += [
             stream_ep.stream.stream_eq(ila.stream),
-            garbage.eq(channels_to_usb1_stream.skipping | channels_to_usb1_stream.filling),
             ila.trigger.eq(1),
+            ila.enable.eq(input_or_output_active | garbage | usb_frame_borders),
         ]
 
         ILACoreParameters(ila).pickle()
