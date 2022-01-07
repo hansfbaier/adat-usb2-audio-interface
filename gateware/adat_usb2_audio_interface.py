@@ -141,8 +141,10 @@ class USB2AudioInterface(Elaboratable):
             usb2.full_speed_only  .eq(0),
         ]
 
-        audio_in_frame_bytes = \
-            self.calculate_usb_input_frame_size(m, usb1_ep1_out, usb1_ep2_in, usb1_number_of_channels)
+        usb1_audio_in_frame_bytes = \
+            self.calculate_usb_input_frame_size(m, "usb1", usb1_ep1_out, usb1_ep2_in, usb1_number_of_channels, self.USB1_MAX_PACKET_SIZE)
+        usb2_audio_in_frame_bytes = \
+            self.calculate_usb_input_frame_size(m, "usb2", usb2_ep1_out, usb2_ep2_in, usb2_number_of_channels, self.USB2_MAX_PACKET_SIZE)
 
         usb1_sof_counter, usb1_to_output_fifo_level, usb1_to_output_fifo_depth, \
         usb2_sof_counter, usb2_to_usb1_fifo_level, usb2_to_usb1_fifo_depth = \
@@ -467,29 +469,29 @@ class USB2AudioInterface(Elaboratable):
         return audio_out_active
 
 
-    def calculate_usb_input_frame_size(self, m: Module, usb1_ep1_out, usb1_ep2_in, number_of_channels):
+    def calculate_usb_input_frame_size(self, m: Module, usb_name: str, ep1_out, ep2_in, number_of_channels: int, max_packet_size: int):
         """calculate the number of bytes one packet of audio input contains"""
 
-        audio_in_frame_byte_counter   = Signal(range(self.USB1_MAX_PACKET_SIZE), reset=24 * number_of_channels)
-        audio_in_frame_bytes_counting = Signal()
+        audio_in_frame_byte_counter   = Signal(range(max_packet_size), name=f"{usb_name}_audio_in_frame_byte_counter", reset=24 * number_of_channels)
+        audio_in_frame_bytes_counting = Signal(name=f"{usb_name}_audio_in_frame_bytes_counting")
 
-        with m.If(usb1_ep1_out.stream.valid & usb1_ep1_out.stream.ready):
+        with m.If(ep1_out.stream.valid & ep1_out.stream.ready):
             with m.If(audio_in_frame_bytes_counting):
                 m.d.usb += audio_in_frame_byte_counter.eq(audio_in_frame_byte_counter + 1)
 
-            with m.If(usb1_ep1_out.stream.first):
+            with m.If(ep1_out.stream.first):
                 m.d.usb += [
                     audio_in_frame_byte_counter.eq(1),
                     audio_in_frame_bytes_counting.eq(1),
                 ]
-            with m.Elif(usb1_ep1_out.stream.last):
+            with m.Elif(ep1_out.stream.last):
                 m.d.usb += audio_in_frame_bytes_counting.eq(0)
 
-        audio_in_frame_bytes = Signal.like(audio_in_frame_byte_counter)
-        with m.If(usb1_ep1_out.stream.last):
+        audio_in_frame_bytes = Signal.like(audio_in_frame_byte_counter, name=f"{usb_name}_audio_in_frame_bytes")
+        with m.If(ep1_out.stream.last):
             m.d.usb += audio_in_frame_bytes.eq(audio_in_frame_byte_counter + 1)
 
-        m.d.comb += usb1_ep2_in.bytes_in_frame.eq(audio_in_frame_bytes),
+        m.d.comb += ep2_in.bytes_in_frame.eq(audio_in_frame_bytes),
 
         return audio_in_frame_bytes
 
@@ -630,6 +632,7 @@ class USB2AudioInterface(Elaboratable):
         usb2_to_usb1_fifo_level   = v['usb2_to_usb1_fifo_level']
         usb2_to_usb1_fifo_depth   = v['usb2_to_usb1_fifo_depth']
         usb2_audio_out_active     = v['usb2_audio_out_active']
+        usb2_audio_in_active      = v['usb2_audio_in_active']
         bundle_multiplexer        = v['bundle_multiplexer']
         adat_transmitters         = v['adat_transmitters']
 
@@ -672,6 +675,7 @@ class USB2AudioInterface(Elaboratable):
                 fifo_bar.value_in.eq(usb2_to_usb1_fifo_level),
 
                 led_display.digits_in[0][0].eq(usb2_audio_out_active),
+                led_display.digits_in[0][7].eq(usb2_audio_in_active),
                 led_display.digits_in[1].eq(Cat(reversed(fifo_bar.bitbar_out))),
             ]
 
@@ -696,7 +700,7 @@ class USB2AudioInterface(Elaboratable):
         usb1_to_output_fifo          = v['usb1_to_output_fifo']
         usb1_to_output_fifo_level    = v['usb1_to_output_fifo_level']
         usb1_to_output_fifo_depth    = v['usb1_to_output_fifo_depth']
-        audio_in_frame_bytes         = v['audio_in_frame_bytes']
+        audio_in_frame_bytes         = v['usb2_audio_in_frame_bytes']
         min_fifo_level               = v['min_fifo_level']
         max_fifo_level               = v['max_fifo_level']
         adat_transmitters            = v['adat_transmitters']
@@ -766,6 +770,7 @@ class USB2AudioInterface(Elaboratable):
         m.d.comb += weird_frame_size.eq((audio_in_frame_bytes & 0b11) != 0)
 
         channels_to_usb_debug = [
+            usb2_audio_out_active,
             audio_in_frame_bytes,
             channels_to_usb_stream.current_channel,
             channels_to_usb_stream.channel_stream_in.ready,
@@ -781,6 +786,11 @@ class USB2AudioInterface(Elaboratable):
             channels_to_usb_stream.filling,
             ep2_in.data_requested,
             ep2_in.frame_finished,
+            channels_to_usb_stream.usb_stream_out.valid,
+            channels_to_usb_stream.usb_stream_out.ready,
+            channels_to_usb_stream.usb_stream_out.first,
+            channels_to_usb_stream.usb_stream_out.last,
+            channels_to_usb_stream.usb_stream_out.payload,
         ]
 
         usb_out_debug = [
