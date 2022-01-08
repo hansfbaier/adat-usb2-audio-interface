@@ -215,7 +215,7 @@ class USB2AudioInterface(Elaboratable):
         adat_receivers    = []
         adat_pads         = []
         for i in range(1, 5):
-            transmitter = ADATTransmitter(fifo_depth=4)
+            transmitter = ADATTransmitter(fifo_depth=9*4)
             setattr(m.submodules, f"adat{i}_transmitter", transmitter)
             adat_transmitters.append(transmitter)
 
@@ -631,6 +631,7 @@ class USB2AudioInterface(Elaboratable):
         usb1_to_output_fifo_depth = v['usb1_to_output_fifo_depth']
         usb2_to_usb1_fifo_level   = v['usb2_to_usb1_fifo_level']
         usb2_to_usb1_fifo_depth   = v['usb2_to_usb1_fifo_depth']
+        channels_to_usb2_stream   = v['channels_to_usb2_stream']
         usb2_audio_out_active     = v['usb2_audio_out_active']
         usb2_audio_in_active      = v['usb2_audio_in_active']
         bundle_multiplexer        = v['bundle_multiplexer']
@@ -670,15 +671,17 @@ class USB2AudioInterface(Elaboratable):
                 led_display.digits_in[7].eq(adat1_underflow_count),
             ]
         elif USB_TO_DEBUG == 2:
-            m.submodules.fifo_bar  = fifo_bar = NumberToBitBar(0, usb2_to_usb1_fifo_depth, 8)
-            m.d.comb += [
-                fifo_bar.value_in.eq(usb2_to_usb1_fifo_level),
+            m.submodules.usb2_output_fifo_bar = usb2_output_fifo_bar = NumberToBitBar(0, usb2_to_usb1_fifo_depth, 8)
+            m.submodules.usb2_input_fifo_bar  = usb2_input_fifo_bar  = NumberToBitBar(0, channels_to_usb2_stream._fifo_depth, 8)
 
+            m.d.comb += [
+                usb2_output_fifo_bar.value_in.eq(usb2_to_usb1_fifo_level),
+                usb2_input_fifo_bar.value_in.eq(channels_to_usb2_stream.level),
                 led_display.digits_in[0][0].eq(usb2_audio_out_active),
                 led_display.digits_in[0][7].eq(usb2_audio_in_active),
-                led_display.digits_in[1].eq(Cat(reversed(fifo_bar.bitbar_out))),
+                led_display.digits_in[1].eq(Cat(usb2_output_fifo_bar.bitbar_out)),
+                led_display.digits_in[2].eq(Cat(reversed(usb2_input_fifo_bar.bitbar_out))),
             ]
-
 
         m.d.comb += [
             *led_display.connect_to_resource(spi),
@@ -839,6 +842,18 @@ class USB2AudioInterface(Elaboratable):
             adat_receivers[adat_nr].adat_in,
             adat_first,
             adat_receivers[adat_nr].output_enable,
+        ]
+
+        adat_transmitter_debug = [
+            adat_clock,
+            bundle_demultiplexer.bundles_out[adat_nr].channel_nr,
+            adat_transmitters[adat_nr].sample_in,
+            adat_transmitters[adat_nr].valid_in,
+            adat_transmitters[adat_nr].last_in,
+            adat_transmitters[adat_nr].ready_out,
+            adat_transmitters[adat_nr].fifo_level_out,
+            adat_transmitters[adat_nr].underflow_out,
+            adat_transmitters[adat_nr].adat_out,
         ]
 
         bundle0_active            = Signal()
@@ -1044,19 +1059,19 @@ class USB2AudioInterface(Elaboratable):
         #
         # signals to trace
         #
-        signals = channels_to_usb_debug
+        signals = adat_transmitter_debug
 
         signals_bits = sum([s.width for s in signals])
         m.submodules.ila = ila = \
             StreamILA(
-                domain="usb", o_domain="usb",
-                sample_rate=60e6, # usb domain
-                #sample_rate=48e3 * 256 * 5, # sync domain
+                domain="sync", o_domain="usb",
+                #sample_rate=60e6, # usb domain
+                sample_rate=48e3 * 256 * 5, # sync domain
                 #sample_rate=48e3 * 256 * 9, # fast domain
                 signals=signals,
                 sample_depth       = int(80 * 8 * 1024 / signals_bits),
                 samples_pretrigger = 2, #int(78 * 8 * 1024 / signals_bits),
-                with_enable=True)
+                with_enable=False)
 
         stream_ep = USBMultibyteStreamInEndpoint(
             endpoint_number=3, # EP 3 IN
@@ -1067,8 +1082,8 @@ class USB2AudioInterface(Elaboratable):
 
         m.d.comb += [
             stream_ep.stream.stream_eq(ila.stream),
+            # ila.enable.eq(input_or_output_active | garbage | usb_frame_borders),
             ila.trigger.eq(1),
-            ila.enable.eq(input_or_output_active | garbage | usb_frame_borders),
         ]
 
         ILACoreParameters(ila).pickle()
