@@ -75,9 +75,9 @@ class ADATFaceCycloneIV(QMTechEP4CEPlatform, LUNAPlatform):
 # right now the design probably would not fit into this device anymore
 class ADATFaceCyclone10(QMTech10CL006Platform, LUNAPlatform):
     clock_domain_generator = IntelFPGAClockDomainGenerator
-    default_usb_connection = "ulpi"
-    number_of_channels     = 8
-    bitwidth               = 24
+    fast_multiplier        = 9
+    clock_domain_generator = IntelFPGAClockDomainGenerator
+    fast_domain_clock_freq = int(48e3 * 256 * fast_multiplier)
 
     @property
     def file_templates(self):
