@@ -435,15 +435,15 @@ class USB2AudioInterface(Elaboratable):
         #
         usb_midi_fifo_depth = 4 * USBDescriptors.MAX_PACKET_SIZE_MIDI
         m.submodules.usb1_to_usb2_midi_fifo = usb1_to_usb2_midi_fifo = \
-            SyncFIFO(width=8+2, depth=usb_midi_fifo_depth)
+            DomainRenamer("usb")(SyncFIFOBuffered(width=8+2, depth=usb_midi_fifo_depth))
         m.submodules.usb2_to_usb1_midi_fifo = usb2_to_usb1_midi_fifo = \
-            SyncFIFO(width=8+2, depth=usb_midi_fifo_depth)
+            DomainRenamer("usb")(SyncFIFOBuffered(width=8+2, depth=usb_midi_fifo_depth))
 
         m.d.comb += [
-            *connect_stream_to_fifo(usb1_ep3_out.stream,    usb1_to_usb2_midi_fifo, firstBit=8, lastBit=9),
-            *connect_fifo_to_stream(usb1_to_usb2_midi_fifo, usb2_ep3_in.stream,     firstBit=8, lastBit=9),
-            *connect_stream_to_fifo(usb2_ep3_out.stream,    usb2_to_usb1_midi_fifo, firstBit=8, lastBit=9),
-            *connect_fifo_to_stream(usb2_to_usb1_midi_fifo, usb1_ep3_in.stream,     firstBit=8, lastBit=9),
+            *connect_stream_to_fifo(usb1_ep3_out.stream,    usb1_to_usb2_midi_fifo, firstBit=-2, lastBit=-1),
+            *connect_fifo_to_stream(usb1_to_usb2_midi_fifo, usb2_ep3_in.stream,     firstBit=-2, lastBit=-1),
+            *connect_stream_to_fifo(usb2_ep3_out.stream,    usb2_to_usb1_midi_fifo, firstBit=-2, lastBit=-1),
+            *connect_fifo_to_stream(usb2_to_usb1_midi_fifo, usb1_ep3_in.stream,     firstBit=-2, lastBit=-1),
         ]
 
         # Internal Logic Analyzer

@@ -106,6 +106,8 @@ def setup_ila(v, ila_max_packet_size):
     bundle_multiplexer           = v['bundle_multiplexer']
     usb1_channel_stream_combiner = v['usb1_channel_stream_combiner']
     usb1_channel_stream_splitter = v['usb1_channel_stream_splitter']
+    usb1_ep3_in                  = v['usb1_ep3_in']
+    usb1_ep3_out                 = v['usb1_ep3_out']
     usb2_ep3_in                  = v['usb2_ep3_in']
     usb2_ep3_out                 = v['usb2_ep3_out']
     usb1_to_usb2_midi_fifo       = v['usb1_to_usb2_midi_fifo']
@@ -464,7 +466,9 @@ def setup_ila(v, ila_max_packet_size):
     midi_out_stream = StreamInterface(name="midi_out")
     m.d.comb += midi_out_stream.stream_eq(usb2_ep3_out.stream, omit="ready")
     midi_in_stream = StreamInterface(name="midi_in")
-    m.d.comb += midi_in_stream.stream_eq(usb2_ep3_in.stream, omit="ready")
+    m.d.comb += midi_in_stream.stream_eq(usb1_ep3_in.stream, omit="ready")
+    in_ready = Signal()
+    m.d.comb += in_ready.eq(usb1_ep3_in.stream.ready)
 
     midi_out = [
         usb2_ep3_out.stream.ready,
@@ -473,6 +477,11 @@ def setup_ila(v, ila_max_packet_size):
         midi_out_stream.first,
         midi_out_stream.last,
         usb2_to_usb1_midi_fifo.r_level,
+        in_ready,
+        midi_in_stream.valid,
+        midi_in_stream.payload,
+        midi_in_stream.first,
+        midi_in_stream.last,
     ]
 
     #
@@ -488,9 +497,9 @@ def setup_ila(v, ila_max_packet_size):
             #sample_rate=48e3 * 256 * 5, # sync domain
             #sample_rate=48e3 * 256 * 9, # fast domain
             signals=signals,
-            sample_depth       = int(10 * 8 * 1024 / signals_bits),
+            sample_depth       = 2 * 1024, # int(10 * 8 * 1024 / signals_bits),
             samples_pretrigger = 2, #int(78 * 8 * 1024 / signals_bits),
-            with_enable=False)
+            with_enable=True)
 
     stream_ep = USBMultibyteStreamInEndpoint(
         endpoint_number=4, # EP 4 IN
@@ -502,8 +511,8 @@ def setup_ila(v, ila_max_packet_size):
     m.d.comb += [
         stream_ep.stream.stream_eq(ila.stream),
         # ila.enable.eq(input_or_output_active | garbage | usb_frame_borders),
-        ila.trigger.eq(midi_out_active),
-        #ila.enable .eq(midi_out_active),
+        ila.trigger.eq(midi_active),
+        ila.enable .eq(midi_active),
     ]
 
     ILACoreParameters(ila).pickle()
