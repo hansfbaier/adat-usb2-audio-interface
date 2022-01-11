@@ -25,6 +25,7 @@ def add_debug_led_array(v):
     adat_transmitters         = v['adat_transmitters']
     usb1_to_usb2_midi_fifo    = v['usb1_to_usb2_midi_fifo']
     usb2_to_usb1_midi_fifo    = v['usb2_to_usb1_midi_fifo']
+    usb_midi_fifo_depth       = v['usb_midi_fifo_depth']
 
 
     adat1_underflow_count = Signal(16)
@@ -62,6 +63,8 @@ def add_debug_led_array(v):
 
     m.submodules.usb2_output_fifo_bar = usb2_output_fifo_bar = NumberToBitBar(0, usb2_to_usb1_fifo_depth, 8)
     m.submodules.usb2_input_fifo_bar  = usb2_input_fifo_bar  = NumberToBitBar(0, channels_to_usb2_stream._fifo_depth, 8)
+    m.submodules.usb2_to_usb1_bar     = usb2_to_usb1_bar     = NumberToBitBar(0, usb_midi_fifo_depth, 8)
+    m.submodules.usb1_to_usb2_bar     = usb1_to_usb2_bar     = NumberToBitBar(0, usb_midi_fifo_depth, 8)
 
     m.d.comb += [
         usb2_output_fifo_bar.value_in.eq(usb2_to_usb1_fifo_level),
@@ -70,8 +73,8 @@ def add_debug_led_array(v):
         led_display.digits_in[usb2(0)][7].eq(usb2_audio_in_active),
         led_display.digits_in[usb2(1)].eq(Cat(usb2_output_fifo_bar.bitbar_out)),
         led_display.digits_in[usb2(2)].eq(Cat(reversed(usb2_input_fifo_bar.bitbar_out))),
-        led_display.digits_in[usb2(3)].eq(usb1_to_usb2_midi_fifo.level),
-        led_display.digits_in[usb2(4)].eq(usb2_to_usb1_midi_fifo.level),
+        led_display.digits_in[usb2(3)].eq(usb2_to_usb1_bar.bitbar_out),
+        led_display.digits_in[usb2(4)].eq(usb1_to_usb2_bar.bitbar_out),
     ]
 
     m.d.comb += [
