@@ -3,15 +3,19 @@
 # Copyright (c) 2021 Hans Baier <hansfbaier@gmail.com>
 # SPDX-License-Identifier: CERN-OHL-W-2.0
 
-from amaranth              import *
+from amaranth import *
 
 from usb_protocol.types                       import USBRequestType, USBRequestRecipient, USBTransferType, USBSynchronizationType, USBUsageType, USBDirection, USBStandardRequests
 from usb_protocol.types.descriptors.uac2      import AudioClassSpecificRequestCodes
 from usb_protocol.emitters                    import DeviceDescriptorCollection
 from usb_protocol.emitters.descriptors        import uac2, standard
+from usb_protocol.emitters.descriptors        import midi1
 
 class USBDescriptors():
+    MAX_PACKET_SIZE_MIDI = 64
+
     def __init__(self, *, ila_max_packet_size: int, use_ila=False) -> None:
+
         # ILA
         self.USE_ILA             = use_ila
         self.ILA_MAX_PACKET_SIZE = ila_max_packet_size
@@ -66,12 +70,16 @@ class USBDescriptors():
 
             self.create_input_channels_descriptor(configDescr, no_channels, max_packet_size)
 
+            midi_interface, midi_streaming_interface = self.create_midi_interface_descriptor()
+            configDescr.add_subordinate_descriptor(midi_interface)
+            configDescr.add_subordinate_descriptor(midi_streaming_interface)
+
             if create_ila:
                 with configDescr.InterfaceDescriptor() as i:
-                    i.bInterfaceNumber = 3
+                    i.bInterfaceNumber = 4
 
                     with i.EndpointDescriptor() as e:
-                        e.bEndpointAddress = USBDirection.IN.to_endpoint_address(3) # EP 3 IN
+                        e.bEndpointAddress = USBDirection.IN.to_endpoint_address(4)
                         e.wMaxPacketSize   = self.ILA_MAX_PACKET_SIZE
 
 
@@ -243,3 +251,52 @@ class USBDescriptors():
         if no_channels > 2:
             self.create_input_streaming_interface(c, no_channels=no_channels, alt_setting_nr=2, channel_config=0x0, max_packet_size=max_packet_size)
 
+
+    def create_midi_interface_descriptor(self):
+        midi_interface = midi1.StandardMidiStreamingInterfaceDescriptorEmitter()
+        midi_interface.bInterfaceNumber = 3
+        midi_interface.bNumEndpoints    = 2
+
+        midi_streaming_interface = midi1.ClassSpecificMidiStreamingInterfaceDescriptorEmitter()
+
+        outToHostJack = midi1.MidiOutJackDescriptorEmitter()
+        outToHostJack.bJackID = 1
+        outToHostJack.bJackType = midi1.MidiStreamingJackTypes.EMBEDDED
+        outToHostJack.add_source(2)
+        midi_streaming_interface.add_subordinate_descriptor(outToHostJack)
+
+        inToDeviceJack = midi1.MidiInJackDescriptorEmitter()
+        inToDeviceJack.bJackID = 2
+        inToDeviceJack.bJackType = midi1.MidiStreamingJackTypes.EXTERNAL
+        midi_streaming_interface.add_subordinate_descriptor(inToDeviceJack)
+
+        inFromHostJack = midi1.MidiInJackDescriptorEmitter()
+        inFromHostJack.bJackID = 3
+        inFromHostJack.bJackType = midi1.MidiStreamingJackTypes.EMBEDDED
+        midi_streaming_interface.add_subordinate_descriptor(inFromHostJack)
+
+        outFromDeviceJack = midi1.MidiOutJackDescriptorEmitter()
+        outFromDeviceJack.bJackID = 4
+        outFromDeviceJack.bJackType = midi1.MidiStreamingJackTypes.EXTERNAL
+        outFromDeviceJack.add_source(3)
+        midi_streaming_interface.add_subordinate_descriptor(outFromDeviceJack)
+
+        outEndpoint = midi1.StandardMidiStreamingBulkDataEndpointDescriptorEmitter()
+        outEndpoint.bEndpointAddress = USBDirection.OUT.to_endpoint_address(3)
+        outEndpoint.wMaxPacketSize = self.MAX_PACKET_SIZE_MIDI
+        midi_streaming_interface.add_subordinate_descriptor(outEndpoint)
+
+        outMidiEndpoint = midi1.ClassSpecificMidiStreamingBulkDataEndpointDescriptorEmitter()
+        outMidiEndpoint.add_associated_jack(3)
+        midi_streaming_interface.add_subordinate_descriptor(outMidiEndpoint)
+
+        inEndpoint = midi1.StandardMidiStreamingBulkDataEndpointDescriptorEmitter()
+        inEndpoint.bEndpointAddress = USBDirection.IN.to_endpoint_address(3)
+        inEndpoint.wMaxPacketSize = self.MAX_PACKET_SIZE_MIDI
+        midi_streaming_interface.add_subordinate_descriptor(inEndpoint)
+
+        inMidiEndpoint = midi1.ClassSpecificMidiStreamingBulkDataEndpointDescriptorEmitter()
+        inMidiEndpoint.add_associated_jack(1)
+        midi_streaming_interface.add_subordinate_descriptor(inMidiEndpoint)
+
+        return (midi_interface, midi_streaming_interface)
