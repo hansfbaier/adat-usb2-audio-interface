@@ -14,6 +14,7 @@ FPGA based USB 2.0 High Speed audio interface featuring multiple optical ADAT in
   In 36 channel mode DAC1 is wired to channels 0/1 and DAC2 to channels 2/3
 * Both USB PHYs now are operational. USB1 has access to all 32 ADAT I/Os and has 4 extra channels to/from USB2.
   USB2 enumerates as a 4-channel sound card which sends/receives audio to/from USB1
+* Both USB interfaces will also enumerate as USB MIDI devices and send each other MIDI
 
 ## Hardware
 The current board design is a custom development board,
