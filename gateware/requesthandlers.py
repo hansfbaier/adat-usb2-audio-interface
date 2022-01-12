@@ -1,3 +1,4 @@
+from enum import IntEnum
 from amaranth import *
 from luna.gateware.usb.usb2.request   import USBRequestHandler
 from luna.gateware.stream.generator   import StreamSerializer
@@ -5,6 +6,9 @@ from luna.gateware.stream.generator   import StreamSerializer
 from usb_protocol.types                       import USBRequestType, USBRequestRecipient, USBStandardRequests
 from usb_protocol.types.descriptors.uac2      import AudioClassSpecificRequestCodes
 from luna.gateware.usb.stream                 import USBInStreamInterface
+
+class VendorRequests(IntEnum):
+    ILA_STOP_CAPTURE = 0
 
 class UAC2RequestHandlers(USBRequestHandler):
     """ request handlers to implement UAC2 functionality. """
@@ -65,10 +69,10 @@ class UAC2RequestHandlers(USBRequestHandler):
                     with m.If(request_clock_freq):
                         m.d.comb += [
                             Cat(transmitter.data).eq(
-                                Cat(Const(0x1, 16), # no triples
-                                    Const(48000, 32), # MIN
-                                    Const(48000, 32), # MAX
-                                    Const(0, 32))),   # RES
+                                Cat(Const(0x1,   16),   # no triples
+                                    Const(48000, 32),   # MIN
+                                    Const(48000, 32),   # MAX
+                                    Const(0,     32))), # RES
                             transmitter.max_length.eq(setup.length)
                         ]
                     with m.Else():
@@ -107,4 +111,16 @@ class UAC2RequestHandlers(USBRequestHandler):
                     with m.If(interface.status_requested | interface.data_requested):
                         m.d.comb += interface.handshakes_out.stall.eq(1)
 
-                return m
+        with m.Elif(setup.type == USBRequestType.VENDOR):
+            with m.Switch(setup.request):
+                with m.Case(VendorRequests.ILA_STOP_CAPTURE):
+                    # TODO - will be implemented when needed
+                    pass
+
+                with m.Default():
+                    m.d.comb += self.interface.handshakes_out.stall.eq(1)
+
+        with m.Else():
+            m.d.comb += self.interface.handshakes_out.stall.eq(1)
+
+        return m

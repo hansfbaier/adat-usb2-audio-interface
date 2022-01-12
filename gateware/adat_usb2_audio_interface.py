@@ -22,7 +22,6 @@ from luna.usb2           import USBDevice, \
 from usb_protocol.types                       import USBRequestType, USBStandardRequests
 
 from luna.gateware.usb.usb2.device            import USBDevice
-from luna.gateware.usb.usb2.request           import StallOnlyRequestHandler
 
 from adat import ADATTransmitter, ADATReceiver
 from adat import EdgeToPulse
@@ -95,15 +94,6 @@ class USB2AudioInterface(Elaboratable):
         ])
         usb2_class_request_handler = UAC2RequestHandlers()
         usb2_control_ep.add_request_handler(usb2_class_request_handler)
-
-
-        # attach class-request handlers that stall any vendor or reserved requests,
-        # as we don't have or need any.
-        stall_condition = lambda setup : \
-            (setup.type == USBRequestType.VENDOR) | \
-            (setup.type == USBRequestType.RESERVED)
-        usb1_control_ep.add_request_handler(StallOnlyRequestHandler(stall_condition))
-        usb2_control_ep.add_request_handler(StallOnlyRequestHandler(stall_condition))
 
         # audio out ports of the host
         usb1_ep1_out = USBIsochronousOutStreamEndpoint(
