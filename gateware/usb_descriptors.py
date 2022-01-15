@@ -5,14 +5,15 @@
 
 from amaranth import *
 
-from usb_protocol.types                       import USBRequestType, USBRequestRecipient, USBTransferType, USBSynchronizationType, USBUsageType, USBDirection, USBStandardRequests
-from usb_protocol.types.descriptors.uac2      import AudioClassSpecificRequestCodes
+from usb_protocol.types                       import USBTransferType, USBSynchronizationType, USBUsageType, USBDirection
 from usb_protocol.emitters                    import DeviceDescriptorCollection
 from usb_protocol.emitters.descriptors        import uac2, standard
 from usb_protocol.emitters.descriptors        import midi1
 
 class USBDescriptors():
     MAX_PACKET_SIZE_MIDI = 64
+    CLOCK_ID          = 1
+    CLOCK_SELECTOR_ID = 2
 
     def __init__(self, *, ila_max_packet_size: int, use_ila=False) -> None:
 
@@ -82,7 +83,6 @@ class USBDescriptors():
                         e.bEndpointAddress = USBDirection.IN.to_endpoint_address(4)
                         e.wMaxPacketSize   = self.ILA_MAX_PACKET_SIZE
 
-
         return descriptors
 
 
@@ -91,10 +91,17 @@ class USBDescriptors():
 
         # AudioControl Interface Descriptor (ClockSource)
         clockSource = uac2.ClockSourceDescriptorEmitter()
-        clockSource.bClockID     = 1
+        clockSource.bClockID     = self.CLOCK_ID
         clockSource.bmAttributes = uac2.ClockAttributes.INTERNAL_FIXED_CLOCK
-        clockSource.bmControls   = uac2.ClockFrequencyControl.HOST_READ_ONLY
+        clockSource.bmControls   = uac2.ClockFrequencyControl.HOST_PROGRAMMABLE
         audioControlInterface.add_subordinate_descriptor(clockSource)
+
+        clockSelector = uac2.ClockSelectorDescriptorEmitter()
+        clockSelector.bClockID   = self.CLOCK_SELECTOR_ID
+        clockSelector.bNrInPins  = 1
+        clockSelector.add_source(1)
+        clockSelector.add_controls(uac2.ClockFrequencyControl.HOST_PROGRAMMABLE)
+        audioControlInterface.add_subordinate_descriptor(clockSelector)
 
         # streaming input port from the host to the USB interface
         inputTerminal               = uac2.InputTerminalDescriptorEmitter()
@@ -164,7 +171,7 @@ class USBDescriptors():
                                                 (USBSynchronizationType.ASYNC << 2) | \
                                                 (USBUsageType.DATA << 4)
         audioOutEndpoint.wMaxPacketSize = max_packet_size
-        audioOutEndpoint.bInterval       = 1
+        audioOutEndpoint.bInterval      = 1
         c.add_subordinate_descriptor(audioOutEndpoint)
 
         # AudioControl Endpoint Descriptor

@@ -5,7 +5,7 @@
 import os
 
 from amaranth            import *
-from amaranth.lib.fifo   import AsyncFIFOBuffered, AsyncFIFO, SyncFIFOBuffered, SyncFIFO
+from amaranth.lib.fifo   import AsyncFIFOBuffered, AsyncFIFO, SyncFIFOBuffered
 from amaranth.lib.cdc    import FFSynchronizer
 
 from amlib.stream        import connect_fifo_to_stream, connect_stream_to_fifo
@@ -64,7 +64,7 @@ class USB2AudioInterface(Elaboratable):
         audio_bits                   = 24
         adat_number_of_channels      = usb1_number_of_channels - usb2_number_of_channels
 
-        m.submodules.car = platform.clock_domain_generator()
+        m.submodules.car = car = platform.clock_domain_generator()
 
         #
         # USB
@@ -85,6 +85,8 @@ class USB2AudioInterface(Elaboratable):
         ])
         usb1_class_request_handler = UAC2RequestHandlers()
         usb1_control_ep.add_request_handler(usb1_class_request_handler)
+
+        m.d.comb += car.clock_select_in.eq(usb1_class_request_handler.clock_select_out)
 
         usb2_control_ep = usb2.add_control_endpoint()
         usb2_descriptors = descriptors.create_usb2_descriptors(usb2_number_of_channels, self.USB2_MAX_PACKET_SIZE)
