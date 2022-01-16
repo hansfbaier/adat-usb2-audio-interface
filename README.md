@@ -15,6 +15,12 @@ FPGA based USB 2.0 High Speed audio interface featuring multiple optical ADAT in
 * Both USB PHYs now are operational. USB1 has access to all 32 ADAT I/Os and has 4 extra channels to/from USB2.
   USB2 enumerates as a 4-channel sound card which sends/receives audio to/from USB1
 * Both USB interfaces will also enumerate as USB MIDI devices and send each other MIDI
+* The current board design has not been designed with the case in mind: In the current version of the case,
+  only ADAT-cables with thin connectors will fit into the holes. Cables with fat connectors will hit the case
+  wall before they can be fully inserted. This will be fixed in a future iteration of the PCB and case.
+* The current case design lacks a guide channel for the LED light pipes. Therefore there is considerable bleed
+  from lightpipes into each other, and they also can't be positioned exactly over the LEDs.
+  Will be fixed in the next version of the case.
 
 ## Hardware
 The current board design is a custom development board,
