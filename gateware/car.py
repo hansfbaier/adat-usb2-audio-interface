@@ -137,9 +137,9 @@ class IntelFPGAClockDomainGenerator(Elaboratable):
             reset.eq(~(sys_locked & audio_locked & fast_locked)),
             ClockSignal("fast").eq(fast_clock_48k),
             ClockSignal("usb") .eq(main_clocks[0]),
-            ClockSignal("sync").eq(audio_clocks[3]),
-            ClockSignal("dac").eq(audio_clocks[1]),
             ClockSignal("adat").eq(audio_clocks[0]),
+            ClockSignal("dac").eq(audio_clocks[1]),
+            ClockSignal("sync").eq(audio_clocks[3]),
         ]
 
         m.submodules.reset_sync_fast = ResetSynchronizer(reset, domain="fast")
