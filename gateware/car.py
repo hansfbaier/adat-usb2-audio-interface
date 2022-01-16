@@ -135,9 +135,60 @@ class IntelFPGAClockDomainGenerator(Elaboratable):
             o_locked = fast_locked,
         )
 
+        clock_select = Signal(2)
+
+        with m.Switch(self.clock_select_in):
+            with m.Case(0):
+                m.d.comb += clock_select.eq(2)
+            with m.Default():
+                m.d.comb += clock_select.eq(3)
+
+        #m.submodules.clkselect_adat = Instance("CYCLONEV_CLKSELECT",
+        #    i_CLKSELECT = clock_select,
+        #    i_INCLK     = Cat(0, 0, main_clocks[1], audio_clocks[0]),
+        #    o_OUTCLK    = ClockSignal("adat"),
+        #)
+
+        #m.submodules.clkselect_dac = Instance("CYCLONEV_CLKSELECT",
+        #    i_CLKSELECT = clock_select,
+        #    i_INCLK     = Cat(0, 0, main_clocks[2], audio_clocks[1]),
+        #    o_OUTCLK    = ClockSignal("dac"),
+        #)
+
+        m.submodules.clkselect_fast = Instance("CYCLONEV_CLKSELECT",
+            i_CLKSELECT = clock_select,
+            i_INCLK     = Cat(0, 0, main_clocks[3], fast_clock_48k),
+            o_OUTCLK    = ClockSignal("fast"),
+        )
+
+        m.submodules.clkselect_sync = Instance("CYCLONEV_CLKSELECT",
+            i_CLKSELECT = clock_select,
+            i_INCLK     = Cat(0, 0, main_clocks[4], audio_clocks[3]),
+            o_OUTCLK    = ClockSignal("sync"),
+        )
+
+        fast_div_2  = Signal()
+        fast_div_4  = Signal()
+        fast_div_8  = Signal()
+        fast_div_16 = Signal()
+        fast_div_32 = Signal()
+
+        m.d.fast += fast_div_2.eq(~fast_div_2)
+
+        with m.If(fast_div_2):
+            m.d.fast += fast_div_4.eq(~fast_div_4)
+        with m.If(fast_div_4):
+            m.d.fast += fast_div_8.eq(~fast_div_8)
+        with m.If(fast_div_8):
+            m.d.fast += fast_div_16.eq(~fast_div_16)
+        with m.If(fast_div_16):
+            m.d.fast += fast_div_32.eq(~fast_div_32)
+
         m.d.comb += [
             reset.eq(~(sys_locked & audio_locked & fast_locked)),
             ClockSignal("usb")   .eq(main_clocks[0]),
+            ClockSignal("adat")  .eq(fast_div_8),
+            ClockSignal("dac")   .eq(fast_div_32),
         ]
 
         m.submodules.reset_sync_fast = ResetSynchronizer(reset, domain="fast")
@@ -145,21 +196,5 @@ class IntelFPGAClockDomainGenerator(Elaboratable):
         m.submodules.reset_sync_sync = ResetSynchronizer(reset, domain="sync")
         m.submodules.reset_sync_dac  = ResetSynchronizer(reset, domain="dac")
         m.submodules.reset_sync_adat = ResetSynchronizer(reset, domain="adat")
-
-        with m.Switch(self.clock_select_in):
-            with m.Case(0):
-                m.d.comb += [
-                    ClockSignal("adat")  .eq(main_clocks[1]),
-                    ClockSignal("dac")   .eq(main_clocks[2]),
-                    ClockSignal("fast")  .eq(main_clocks[3]),
-                    ClockSignal("sync")  .eq(main_clocks[4]),
-                ]
-            with m.Default():
-                m.d.comb += [
-                    ClockSignal("adat")  .eq(audio_clocks[0]),
-                    ClockSignal("dac")   .eq(audio_clocks[1]),
-                    ClockSignal("fast")  .eq(fast_clock_48k),
-                    ClockSignal("sync")  .eq(audio_clocks[3]),
-                ]
 
         return m
