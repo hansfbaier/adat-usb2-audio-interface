@@ -32,4 +32,4 @@ a complete custom design, including the FPGA.
 
 ![P1173938](https://user-images.githubusercontent.com/148607/149684388-dc81b2b4-235a-4fb7-9b58-c8799dd494fb.jpg)
 
-![image](https://user-images.githubusercontent.com/148607/149700459-ec0b6755-9759-43cb-94e9-a3f0916d86cd.png)
+![image](https://user-images.githubusercontent.com/148607/149700539-21e60090-d90e-4338-9a27-27a406f1c2f6.png)
