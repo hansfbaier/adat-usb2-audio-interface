@@ -2,7 +2,7 @@
 
 FPGA based USB 2.0 High Speed audio interface featuring multiple optical ADAT inputs and outputs
 
-![BlockDiagram](https://user-images.githubusercontent.com/148607/149699808-c7879a89-c1e7-4eb8-bc41-e2f33fe4702a.png)
+![BlockDiagram](https://user-images.githubusercontent.com/148607/149699910-284d7113-11b3-4edd-9c6e-68ed0b58e31d.png)
 
 ## Status / current limitations
 * Enumerates as class compliant audio device on Windows and Linux (Mac OS not tested). 2 and 32 channel modes.
