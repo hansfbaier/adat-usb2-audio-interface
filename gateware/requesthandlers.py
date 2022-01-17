@@ -4,8 +4,10 @@ from luna.gateware.usb.usb2.request   import USBRequestHandler
 from luna.gateware.stream.generator   import StreamSerializer
 
 from usb_protocol.types                       import USBRequestType, USBRequestRecipient, USBStandardRequests
-from usb_protocol.types.descriptors.uac2      import AudioClassSpecificRequestCodes
+from usb_protocol.types.descriptors.uac2      import AudioClassSpecificRequestCodes, ClockSourceControlSelectors
 from luna.gateware.usb.stream                 import USBInStreamInterface
+
+from usb_descriptors import USBDescriptors
 
 class VendorRequests(IntEnum):
     ILA_STOP_CAPTURE = 0
@@ -60,7 +62,16 @@ class UAC2RequestHandlers(USBRequestHandler):
                 with m.If(interface.status_requested):
                     m.d.comb += self.send_zlp()
 
-        request_clock_freq = (setup.value == 0x100) & (setup.index == 0x0100)
+        clock_freq =   (setup.value == Const(ClockSourceControlSelectors.CS_SAM_FREQ_CONTROL << 8, 16)) \
+                     & (setup.index == Const(USBDescriptors.CLOCK_ID << 8, 16))
+
+        request_clock_freq     = clock_freq     & setup.is_in_request
+        set_clock_freq         = clock_freq     & ~setup.is_in_request
+
+        SRATE_44_1k = Const(44100, 32)
+        SRATE_48k   = Const(48000, 32)
+        ZERO        = Const(0, 32)
+
         with m.Elif(setup.type == USBRequestType.CLASS):
             with m.Switch(setup.request):
                 with m.Case(AudioClassSpecificRequestCodes.RANGE):
@@ -70,9 +81,9 @@ class UAC2RequestHandlers(USBRequestHandler):
                         m.d.comb += [
                             Cat(transmitter.data).eq(
                                 Cat(Const(0x1,   16),   # no triples
-                                    Const(48000, 32),   # MIN
-                                    Const(48000, 32),   # MAX
-                                    Const(0,     32))), # RES
+                                    SRATE_48k,   # MIN
+                                    SRATE_48k,   # MAX
+                                    ZERO)),      # RES
                             transmitter.max_length.eq(setup.length)
                         ]
                     with m.Else():
@@ -104,7 +115,7 @@ class UAC2RequestHandlers(USBRequestHandler):
                     with m.If(interface.status_requested):
                         m.d.comb += interface.handshakes_out.ack.eq(1)
 
-                with m.Case():
+                with m.Default():
                     #
                     # Stall unhandled requests.
                     #

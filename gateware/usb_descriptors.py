@@ -13,6 +13,7 @@ from usb_protocol.emitters.descriptors        import midi1
 
 class USBDescriptors():
     MAX_PACKET_SIZE_MIDI = 64
+    CLOCK_ID             = 1
 
     def __init__(self, *, ila_max_packet_size: int, use_ila=False) -> None:
 
@@ -82,7 +83,6 @@ class USBDescriptors():
                         e.bEndpointAddress = USBDirection.IN.to_endpoint_address(4)
                         e.wMaxPacketSize   = self.ILA_MAX_PACKET_SIZE
 
-
         return descriptors
 
 
@@ -91,7 +91,7 @@ class USBDescriptors():
 
         # AudioControl Interface Descriptor (ClockSource)
         clockSource = uac2.ClockSourceDescriptorEmitter()
-        clockSource.bClockID     = 1
+        clockSource.bClockID     = self.CLOCK_ID
         clockSource.bmAttributes = uac2.ClockAttributes.INTERNAL_FIXED_CLOCK
         clockSource.bmControls   = uac2.ClockFrequencyControl.HOST_READ_ONLY
         audioControlInterface.add_subordinate_descriptor(clockSource)
@@ -164,7 +164,7 @@ class USBDescriptors():
                                                 (USBSynchronizationType.ASYNC << 2) | \
                                                 (USBUsageType.DATA << 4)
         audioOutEndpoint.wMaxPacketSize = max_packet_size
-        audioOutEndpoint.bInterval       = 1
+        audioOutEndpoint.bInterval      = 1
         c.add_subordinate_descriptor(audioOutEndpoint)
 
         # AudioControl Endpoint Descriptor
