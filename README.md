@@ -28,7 +28,6 @@ based on the QMTech core FPGA boards.
 Once the chip shortage is over, it is planned to move to
 a complete custom design, including the FPGA.
 
-### PCB in functional state:
 ![P1173938](https://user-images.githubusercontent.com/148607/149684388-dc81b2b4-235a-4fb7-9b58-c8799dd494fb.jpg)
 
 
