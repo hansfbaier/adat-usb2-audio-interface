@@ -383,8 +383,8 @@ class USB2AudioInterface(Elaboratable):
         #
         m.submodules.dac1_transmitter = dac1 = DomainRenamer("usb")(I2STransmitter(sample_width=audio_bits))
         m.submodules.dac2_transmitter = dac2 = DomainRenamer("usb")(I2STransmitter(sample_width=audio_bits))
-        m.submodules.dac1_extractor   = dac1_extractor = DomainRenamer("usb")(StereoPairExtractor(usb1_number_of_channels))
-        m.submodules.dac2_extractor   = dac2_extractor = DomainRenamer("usb")(StereoPairExtractor(usb1_number_of_channels))
+        m.submodules.dac1_extractor   = dac1_extractor = DomainRenamer("usb")(StereoPairExtractor(usb1_number_of_channels, usb1_to_output_fifo_depth))
+        m.submodules.dac2_extractor   = dac2_extractor = DomainRenamer("usb")(StereoPairExtractor(usb1_number_of_channels, usb1_to_output_fifo_depth))
         dac1_pads = platform.request("i2s", 1)
         dac2_pads = platform.request("i2s", 2)
 
@@ -624,7 +624,7 @@ class USB2AudioInterface(Elaboratable):
     def wire_up_dac(self, m, usb_to_channel_stream, dac_extractor, dac, lrclk, dac_pads):
         # wire up DAC extractor
         m.d.comb += [
-            dac_extractor.channel_stream_in.valid.eq(  usb_to_channel_stream.channel_stream_out.valid
+            dac_extractor.channel_stream_in.valid.eq(   usb_to_channel_stream.channel_stream_out.valid
                                                       & usb_to_channel_stream.channel_stream_out.ready),
             dac_extractor.channel_stream_in.payload.eq(usb_to_channel_stream.channel_stream_out.payload),
             dac_extractor.channel_stream_in.channel_nr.eq(usb_to_channel_stream.channel_stream_out.channel_nr),

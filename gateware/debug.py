@@ -112,6 +112,7 @@ def setup_ila(v, ila_max_packet_size):
     usb2_ep3_out                 = v['usb2_ep3_out']
     usb1_to_usb2_midi_fifo       = v['usb1_to_usb2_midi_fifo']
     usb2_to_usb1_midi_fifo       = v['usb2_to_usb1_midi_fifo']
+    dac1_extractor               = v['dac1_extractor']
 
     adat_clock = Signal()
     m.d.comb += adat_clock.eq(ClockSignal("adat"))
@@ -484,10 +485,23 @@ def setup_ila(v, ila_max_packet_size):
         midi_in_stream.last,
     ]
 
+    dac_extractor_debug = [
+        #dac1_extractor.selected_channel_in,
+        dac1_extractor.level,
+        dac1_extractor.channel_stream_in.channel_nr,
+        #dac1_extractor.channel_stream_in.payload,
+        dac1_extractor.channel_stream_in.valid,
+        #dac1_extractor.channel_stream_out.payload,
+        #dac1_extractor.channel_stream_out.valid,
+        dac1_extractor.channel_stream_out.ready,
+        dac1_extractor.channel_stream_out.first,
+        dac1_extractor.channel_stream_out.last,
+    ]
+
     #
     # signals to trace
     #
-    signals = midi_out
+    signals = dac_extractor_debug
 
     signals_bits = sum([s.width for s in signals])
     m.submodules.ila = ila = \
@@ -497,7 +511,7 @@ def setup_ila(v, ila_max_packet_size):
             #sample_rate=48e3 * 256 * 5, # sync domain
             #sample_rate=48e3 * 256 * 9, # fast domain
             signals=signals,
-            sample_depth       = 2 * 1024, # int(10 * 8 * 1024 / signals_bits),
+            sample_depth       = int(50 * 8 * 1024 / signals_bits),
             samples_pretrigger = 2, #int(78 * 8 * 1024 / signals_bits),
             with_enable=True)
 
@@ -511,8 +525,10 @@ def setup_ila(v, ila_max_packet_size):
     m.d.comb += [
         stream_ep.stream.stream_eq(ila.stream),
         # ila.enable.eq(input_or_output_active | garbage | usb_frame_borders),
-        ila.trigger.eq(midi_active),
-        ila.enable .eq(midi_active),
+        ila.trigger.eq(dac1_extractor.channel_stream_out.valid),
+        ila.enable .eq((dac1_extractor.channel_stream_out.valid & dac1_extractor.channel_stream_out.ready) |
+                       dac1_extractor.channel_stream_in.valid
+        ),
     ]
 
     ILACoreParameters(ila).pickle()
