@@ -84,19 +84,28 @@ def add_debug_led_array(v):
 
 
 def setup_ila(v, ila_max_packet_size):
+    examined_usb                 = "usb1"
     m                            = v['m']
     usb1_sof_counter             = v['usb1_sof_counter']
     usb1                         = v['usb1']
-    ep1_out                      = v['usb2_ep1_out']
-    ep2_in                       = v['usb2_ep2_in']
-    usb2_audio_out_active        = v['usb2_audio_out_active']
+
+    usb1_ep3_in                  = v['usb1_ep3_in']
+    usb1_ep3_out                 = v['usb1_ep3_out']
+    usb2_ep3_in                  = v['usb2_ep3_in']
+    usb2_ep3_out                 = v['usb2_ep3_out']
+    ep1_out                      = v[f'{examined_usb}_ep1_out']
+    ep2_in                       = v[f'{examined_usb}_ep2_in']
+    channels_to_usb_stream       = v[f'channels_to_{examined_usb}_stream']
+    usb_to_channel_stream        = v[f'{examined_usb}_to_channel_stream']
+
     usb1_audio_in_active         = v['usb1_audio_in_active']
-    channels_to_usb_stream       = v['channels_to_usb2_stream']
-    usb_to_channel_stream        = v['usb2_to_channel_stream']
+    usb2_audio_out_active        = v['usb2_audio_out_active']
+
     input_to_usb_fifo            = v['input_to_usb_fifo']
     usb1_to_output_fifo          = v['usb1_to_output_fifo']
     usb1_to_output_fifo_level    = v['usb1_to_output_fifo_level']
     usb1_to_output_fifo_depth    = v['usb1_to_output_fifo_depth']
+
     audio_in_frame_bytes         = v['usb2_audio_in_frame_bytes']
     min_fifo_level               = v['min_fifo_level']
     max_fifo_level               = v['max_fifo_level']
@@ -106,12 +115,10 @@ def setup_ila(v, ila_max_packet_size):
     bundle_multiplexer           = v['bundle_multiplexer']
     usb1_channel_stream_combiner = v['usb1_channel_stream_combiner']
     usb1_channel_stream_splitter = v['usb1_channel_stream_splitter']
-    usb1_ep3_in                  = v['usb1_ep3_in']
-    usb1_ep3_out                 = v['usb1_ep3_out']
-    usb2_ep3_in                  = v['usb2_ep3_in']
-    usb2_ep3_out                 = v['usb2_ep3_out']
+
     usb1_to_usb2_midi_fifo       = v['usb1_to_usb2_midi_fifo']
     usb2_to_usb1_midi_fifo       = v['usb2_to_usb1_midi_fifo']
+
     dac1_extractor               = v['dac1_extractor']
 
     adat_clock = Signal()
@@ -501,7 +508,7 @@ def setup_ila(v, ila_max_packet_size):
     #
     # signals to trace
     #
-    signals = dac_extractor_debug
+    signals = channels_to_usb_debug
 
     signals_bits = sum([s.width for s in signals])
     m.submodules.ila = ila = \
@@ -525,10 +532,8 @@ def setup_ila(v, ila_max_packet_size):
     m.d.comb += [
         stream_ep.stream.stream_eq(ila.stream),
         # ila.enable.eq(input_or_output_active | garbage | usb_frame_borders),
-        ila.trigger.eq(dac1_extractor.channel_stream_out.valid),
-        ila.enable .eq((dac1_extractor.channel_stream_out.valid & dac1_extractor.channel_stream_out.ready) |
-                       dac1_extractor.channel_stream_in.valid
-        ),
+        ila.trigger.eq(1),
+        ila.enable .eq(input_or_output_active),
     ]
 
     ILACoreParameters(ila).pickle()
