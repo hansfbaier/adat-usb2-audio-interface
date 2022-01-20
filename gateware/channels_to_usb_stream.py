@@ -41,7 +41,6 @@ class ChannelsToUSBStream(Elaboratable):
         m.submodules.out_fifo = out_fifo = SyncFIFO(width=8 + self._channel_bits, depth=self._fifo_depth, fwft=True)
 
         channel_stream  = self.channel_stream_in
-        channel_payload = Signal(self._sample_width)
         channel_valid   = Signal()
         channel_ready   = Signal()
 
@@ -69,7 +68,6 @@ class ChannelsToUSBStream(Elaboratable):
             self.out_channel.eq(out_fifo.r_data[8:]),
             self.usb_stream_out.valid.eq(out_valid),
             out_stream_ready.eq(self.usb_stream_out.ready),
-            channel_payload.eq(channel_stream.payload),
             channel_valid.eq(channel_stream.valid),
             channel_stream.ready.eq(channel_ready),
             self.level.eq(out_fifo.r_level),
@@ -110,11 +108,11 @@ class ChannelsToUSBStream(Elaboratable):
 
                 # discard all channels above no_channels_in
                 # important for stereo operation
-                with m.If(out_fifo_can_write_sample
+                with m.If(  out_fifo_can_write_sample
                           & channel_valid
                           & (channel_stream.channel_nr < self.no_channels_in)):
                     m.d.sync += [
-                        current_sample.eq(channel_payload << shift),
+                        current_sample.eq(channel_stream.payload << shift),
                         current_channel.eq(channel_stream.channel_nr),
                     ]
                     m.next = "SEND"
