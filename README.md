@@ -23,6 +23,9 @@ FPGA based USB 2.0 High Speed audio interface featuring multiple optical ADAT in
 * The current case design lacks a guide channel for the LED light pipes. Therefore there is considerable bleed
   from lightpipes into each other, and they also can't be positioned exactly over the LEDs.
   Will be fixed in the next version of the case.
+* Limitation: Currently audio input will not work properly when audio output is inactive.
+  This should not be a problem for most uses (VoIP, Videoconference, DAW recording).
+  If you have an important use case which needs this, please file an issue.
 
 ## Hardware
 The current board design is a custom development board,
