@@ -502,6 +502,7 @@ class USB2AudioInterface(Elaboratable):
 
         audio_in_frame_byte_counter   = Signal(range(max_packet_size), name=f"{usb_name}_audio_in_frame_byte_counter", reset=24 * number_of_channels)
         audio_in_frame_bytes_counting = Signal(name=f"{usb_name}_audio_in_frame_bytes_counting")
+        audio_in_frame_bytes          = Signal.like(audio_in_frame_byte_counter, name=f"{usb_name}_audio_in_frame_bytes")
 
         with m.If(ep1_out.stream.valid & ep1_out.stream.ready):
             with m.If(audio_in_frame_bytes_counting):
@@ -512,12 +513,12 @@ class USB2AudioInterface(Elaboratable):
                     audio_in_frame_byte_counter.eq(1),
                     audio_in_frame_bytes_counting.eq(1),
                 ]
-            with m.Elif(ep1_out.stream.last):
-                m.d.usb += audio_in_frame_bytes_counting.eq(0)
 
-        audio_in_frame_bytes = Signal.like(audio_in_frame_byte_counter, name=f"{usb_name}_audio_in_frame_bytes")
-        with m.If(ep1_out.stream.last):
-            m.d.usb += audio_in_frame_bytes.eq(audio_in_frame_byte_counter + 1)
+            with m.If(ep1_out.stream.last):
+                m.d.usb += [
+                    audio_in_frame_bytes_counting.eq(0),
+                    audio_in_frame_bytes.eq(audio_in_frame_byte_counter + 1),
+                ]
 
         m.d.comb += ep2_in.bytes_in_frame.eq(audio_in_frame_bytes),
 

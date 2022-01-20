@@ -1,68 +1,63 @@
 [*]
-[*] GTKWave Analyzer v3.3.111 (w)1999-2020 BSI
-[*] Wed Nov 10 23:04:08 2021
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Wed Jan 19 00:02:36 2022
 [*]
-[dumpfile] "/devel/HDL/src/adat-usb2-audio-interface/gateware/test_ChannelsToUSBStreamTest_test_smoke.vcd"
-[dumpfile_mtime] "Wed Nov 10 23:01:43 2021"
-[dumpfile_size] 25866
-[savefile] "/devel/HDL/src/adat-usb2-audio-interface/gateware/channels_to_usb_stream.gtkw"
+[dumpfile] "test_ChannelsToUSBStreamTest_test_smoke.vcd"
+[dumpfile_mtime] "Tue Jan 18 23:57:47 2022"
+[dumpfile_size] 44363
+[savefile] "channels_to_usb_stream.gtkw"
 [timestart] 0
 [size] 3828 2090
-[pos] -1 -1
-*-16.270115 854700 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
-[treeopen] top.
-[treeopen] top.out_fifo.
+[pos] -1921 27
+*-16.270115 48200 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] bench.
+[treeopen] bench.top.
+[treeopen] bench.top.out_fifo.
 [sst_width] 447
-[signals_width] 390
+[signals_width] 495
 [sst_expanded] 1
-[sst_vpaned_height] 658
+[sst_vpaned_height] 650
 @28
-top.clk
+bench.top.clk
+bench.top.channel_stream__ready
+bench.top.channel_stream__valid
 @22
-top.channel_payload[23:0]
+bench.top.channel_stream__payload[23:0]
+@24
+bench.top.channel_stream__channel_nr[2:0]
+@22
+bench.top.no_channels_in[3:0]
 @28
-top.channel_ready
-top.channel_valid
-top.data_requested_in
-top.frame_finished_in
+bench.top.data_requested_in
 @200
 -Channels To USB
 @28
-top.fifo_feeder_state
+bench.top.current_byte[1:0]
+bench.top.current_channel[2:0]
 @22
-top.current_sample[31:0]
-@24
-top.current_channel[2:0]
-top.current_byte[1:0]
+bench.top.current_sample[31:0]
+@28
+bench.top.usb_byte_pos[1:0]
+bench.top.feeder_state
 @200
 -Output FIFO
 @28
-[color] 3
-top.out_fifo.w_en
-@22
-[color] 3
-top.w_data[10:0]
-[color] 3
-top.r_data[10:0]
-@28
-top.out_fifo.r_rdy
-[color] 3
-top.r_en
+bench.top.fifo_full
+bench.top.fifo_level_insufficient
+bench.top.fifo_level_sufficient
+bench.top.fifo_postprocess_state
 @200
 -USB Stream
 @28
-[color] 2
-top.fifo_postprocess_state
-@24
-[color] 2
-top.out_channel[2:0]
+bench.top.skipping
+bench.top.filling
+bench.top.usb_byte_pos[1:0]
+bench.top.usb_channel[2:0]
 @22
-[color] 2
-top.usb_stream__payload[7:0]
+bench.top.usb_stream__payload[7:0]
+@29
+bench.top.usb_stream__valid
 @28
-[color] 2
-top.usb_stream__ready
-[color] 2
-top.usb_stream__valid
+bench.top.usb_stream__ready
 [pattern_trace] 1
 [pattern_trace] 0
