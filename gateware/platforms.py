@@ -5,10 +5,11 @@ from amaranth_boards.resources import *
 from amaranth_boards.qmtech_ep4ce   import QMTechEP4CEPlatform
 from amaranth_boards.qmtech_5cefa2  import QMTech5CEFA2Platform
 from amaranth_boards.qmtech_10cl006 import QMTech10CL006Platform
+from amaranth_boards.qmtech_xc7a35t import QMTechXC7A35TPlatform
 
 from luna.gateware.platform.core import LUNAPlatform
 
-from car                     import IntelFPGAClockDomainGenerator
+from car                     import IntelFPGAClockDomainGenerator, Xilinx7SeriesClockDomainGenerator
 from adatface_rev0_baseboard import ADATFaceRev0Baseboard
 
 class IntelFPGAParameters:
@@ -44,7 +45,7 @@ class ADATFaceCycloneV(QMTech5CEFA2Platform, LUNAPlatform):
         return templates
 
     def __init__(self):
-        self.resources += ADATFaceRev0Baseboard.resources
+        self.resources += ADATFaceRev0Baseboard.resources(Attrs(io_standard="3.3-V LVCMOS"))
         # swap connector numbers, because on ADATface the connector
         # names are swapped compared to the QMTech daughterboard
         self.connectors[0].number = 3
@@ -64,7 +65,7 @@ class ADATFaceCycloneIV(QMTechEP4CEPlatform, LUNAPlatform):
         return templates
 
     def __init__(self):
-        self.resources += ADATFaceRev0Baseboard.resources
+        self.resources += ADATFaceRev0Baseboard.resources(Attrs(io_standard="3.3-V LVCMOS"))
         # swap connector numbers, because on ADATface the connector
         # names are swapped compared to the QMTech daughterboard
         self.connectors[0].number = 3
@@ -76,7 +77,6 @@ class ADATFaceCycloneIV(QMTechEP4CEPlatform, LUNAPlatform):
 class ADATFaceCyclone10(QMTech10CL006Platform, LUNAPlatform):
     clock_domain_generator = IntelFPGAClockDomainGenerator
     fast_multiplier        = 9
-    clock_domain_generator = IntelFPGAClockDomainGenerator
     fast_domain_clock_freq = int(48e3 * 256 * fast_multiplier)
 
     @property
@@ -87,7 +87,26 @@ class ADATFaceCyclone10(QMTech10CL006Platform, LUNAPlatform):
         return templates
 
     def __init__(self):
-        self.resources += ADATFaceRev0Baseboard.resources
+        self.resources += ADATFaceRev0Baseboard.resources(Attrs(io_standard="3.3-V LVCMOS"))
+        # swap connector numbers, because on ADATface the connector
+        # names are swapped compared to the QMTech daughterboard
+        self.connectors[0].number = 3
+        self.connectors[1].number = 2
+
+        super().__init__(standalone=False)
+
+class ADATFaceArtix7(QMTechXC7A35TPlatform, LUNAPlatform):
+    clock_domain_generator = Xilinx7SeriesClockDomainGenerator
+    fast_multiplier        = 9
+    fast_domain_clock_freq = int(48e3 * 256 * fast_multiplier)
+
+    @property
+    def file_templates(self):
+        templates = super().file_templates
+        return templates
+
+    def __init__(self):
+        self.resources += ADATFaceRev0Baseboard.resources(Attrs(IOSTANDARD="LVCMOS33"))
         # swap connector numbers, because on ADATface the connector
         # names are swapped compared to the QMTech daughterboard
         self.connectors[0].number = 3
