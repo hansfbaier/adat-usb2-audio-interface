@@ -36,3 +36,36 @@ a complete custom design, including the FPGA.
 ![P1173938](https://user-images.githubusercontent.com/148607/149684388-dc81b2b4-235a-4fb7-9b58-c8799dd494fb.jpg)
 
 ![image](https://user-images.githubusercontent.com/148607/149700539-21e60090-d90e-4338-9a27-27a406f1c2f6.png)
+
+## How to build
+1. Download and install [Intel Quartus Lite](https://fpgasoftware.intel.com/?edition=lite)
+2. put the bin/ directory of Quartus into your PATH variable:
+```bash
+export PATH=$PATH:/opt/intelFPGA_lite/21.1/quartus/bin/
+```
+Of course you need to adjust this to the install directory and version of your particular installation.
+
+3. Set up python venv and install requirements:
+```bash
+$ cd gateware/
+$ ./initialize-python-environment.sh
+$ cd ..
+```
+
+4. Activate the venv and build
+```bash
+$ source ./gateware/venv/bin/activate
+$ python3 gateware/adat_usb2_audio_interface.py
+```
+
+This will create a directory named build/ and after a successful build will directly
+try to load the generated bitstream into the FPGA, if an USB-Blaster is connected.
+Or, you can flash the bitstream manually, by opening the Quartus GUI with:
+```bash
+quartus build/*.qpf
+```
+and then open the programmer application from there.
+Alternatively you could directly start the programmer with:
+```bash
+quartus_pgmw
+```
