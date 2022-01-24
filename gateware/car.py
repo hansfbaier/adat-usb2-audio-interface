@@ -180,11 +180,11 @@ class IntelCycloneVFPGAClockDomainGenerator(Elaboratable, ClockDomainGeneratorBa
         clk = platform.request(platform.default_clk)
 
         main_clock    = Signal()
-        audio_clocks  = Signal(2)
+        audio_clocks  = Signal(3)
         fast_clocks   = Signal(2)
 
         sys_cascade   = Signal()
-        audio_cascade = Signal(2)
+        audio_cascade = Signal(3)
 
         sys_locked    = Signal()
         audio_locked  = Signal()
@@ -193,14 +193,16 @@ class IntelCycloneVFPGAClockDomainGenerator(Elaboratable, ClockDomainGeneratorBa
         reset         = Signal()
 
         m.submodules.mainpll = Instance("altera_pll",
+            p_pll_type="Cyclone V",
+            #p_fractional_vco_multiplier="true",
             p_reference_clock_frequency="50.0 MHz",
             p_operation_mode="normal",
-            p_number_of_clocks=1,
+            p_number_of_clocks="1",
             p_output_clock_frequency0="60.000000 MHz",
 
-            p_pll_vco_div=2,
-            p_pll_cp_current=30,
-            p_pll_bwctrl=2000,
+            p_pll_vco_div="2",
+            p_pll_cp_current="30",
+            p_pll_bwctrl="2000",
             p_pll_output_clk_frequency="300.0 MHz",
             # Drive our clock from the USB clock
             # coming from the USB clock pin of the USB3300
@@ -211,42 +213,53 @@ class IntelCycloneVFPGAClockDomainGenerator(Elaboratable, ClockDomainGeneratorBa
         )
 
         m.submodules.audiopll = Instance("altera_pll",
+            #p_fractional_vco_multiplier="true",
+            p_pll_type="Cyclone V",
             p_reference_clock_frequency="60.0 MHz",
             p_operation_mode="normal",
-            p_number_of_clocks=2,
+            p_number_of_clocks="3",
             p_output_clock_frequency0="12.288000 MHz",
             p_output_clock_frequency1="3.072000 MHz",
-            p_pll_clkin_0_src="adj_pll_clk",
+            p_output_clock_frequency2="61.440000 MHz",
+            #p_pll_clkin_0_src="adj_pll_clk",
 
-            p_pll_vco_div=1,
-            p_pll_cp_current=20,
-            p_pll_bwctrl=12000,
-            p_pll_output_clk_frequency="1536.0 MHz",
+            #p_pll_vco_div="1",
+            #p_pll_cp_current="20",
+            #p_pll_bwctrl="12000",
+            #p_pll_output_clk_frequency="1536.0 MHz",
+
+             p_fractional_vco_multiplier="true",
+             p_pll_vco_div="2",
+             p_pll_cp_current="20",
+             p_pll_bwctrl="4000",
+             p_pll_output_clk_frequency="491.52 MHz",
 
             # Drive our clock from the mainpll
             i_refclk=main_clock,
-            i_adjpllin=sys_cascade,
+            #i_adjpllin=sys_cascade,
             o_outclk=audio_clocks,
             o_locked=audio_locked,
             o_cascade_out=audio_cascade
         )
 
         m.submodules.fastpll = Instance("altera_pll",
+            p_pll_type="Cyclone V",
+            #p_fractional_vco_multiplier="true",
             p_reference_clock_frequency="12.288 MHz",
             p_operation_mode="normal",
-            p_number_of_clocks=2,
+            p_number_of_clocks="1",
             p_output_clock_frequency0="98.304000 MHz",
-            p_output_clock_frequency1="61.440000 MHz",
-            p_pll_clkin_0_src="adj_pll_clk",
+#            p_output_clock_frequency1="61.440000 MHz", #"49.152000 MHz", #61.440000 MHz",
+            #p_pll_clkin_0_src="adj_pll_clk",
 
-            p_pll_vco_div=2,
-            p_pll_cp_current=20,
-            p_pll_bwctrl=6000,
+            p_pll_vco_div="2",
+            p_pll_cp_current="20",
+            p_pll_bwctrl="6000",
             p_pll_output_clk_frequency="393.216 MHz",
 
             # Drive our clock from the audiopll
             i_refclk=audio_clocks[0],
-            i_adjpllin=audio_cascade[0],
+            #i_adjpllin=audio_cascade[0],
             o_outclk=fast_clocks,
             o_locked=fast_locked
         )
@@ -257,7 +270,8 @@ class IntelCycloneVFPGAClockDomainGenerator(Elaboratable, ClockDomainGeneratorBa
             ClockSignal("usb") .eq(main_clock),
             ClockSignal("adat").eq(audio_clocks[0]),
             ClockSignal("dac").eq(audio_clocks[1]),
-            ClockSignal("sync").eq(fast_clocks[1])
+            #ClockSignal("sync").eq(fast_clocks[1])
+            ClockSignal("sync").eq(audio_clocks[2])
         ]
 
         self.wire_up_reset(m, reset)
