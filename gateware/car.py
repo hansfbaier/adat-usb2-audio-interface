@@ -190,7 +190,7 @@ class Xilinx7SeriesClockDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
         fastpll_feedback = Signal()
 
         m.submodules.mainpll = Instance("PLLE2_ADV",
-            p_CLKIN1_PERIOD        = 20,
+            p_CLKIN1_PERIOD        = 20.0,
             p_BANDWIDTH            = "OPTIMIZED",
             p_COMPENSATION         = "ZHOLD",
             p_STARTUP_WAIT         = "FALSE",
