@@ -13,7 +13,7 @@ class ClockDomainGeneratorBase():
         m.submodules.reset_sync_dac  = ResetSynchronizer(reset, domain="dac")
         m.submodules.reset_sync_adat = ResetSynchronizer(reset, domain="adat")
 
-class IntelFPGAClockDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
+class IntelCycloneIVClockDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
     ADAT_DIV_48k    = 83
     ADAT_MULT_48k   = 17
 
@@ -157,7 +157,7 @@ class IntelFPGAClockDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
         return m
 
 
-class IntelCycloneVFPGAClockDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
+class IntelCycloneVClockDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
 
     def __init__(self, *, clock_frequencies=None, clock_signal_name=None):
         pass

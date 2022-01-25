@@ -9,7 +9,7 @@ from amaranth_boards.qmtech_xc7a35t import QMTechXC7A35TPlatform
 
 from luna.gateware.platform.core import LUNAPlatform
 
-from car                     import IntelFPGAClockDomainGenerator, IntelCycloneVFPGAClockDomainGenerator, Xilinx7SeriesClockDomainGenerator
+from car                     import IntelCycloneIVClockDomainGenerator, IntelCycloneVClockDomainGenerator, Xilinx7SeriesClockDomainGenerator
 from adatface_rev0_baseboard import ADATFaceRev0Baseboard
 
 class IntelFPGAParameters:
@@ -34,7 +34,7 @@ class IntelFPGAParameters:
 
 class ADATFaceCycloneV(QMTech5CEFA2Platform, LUNAPlatform):
     fast_multiplier        = 9
-    clock_domain_generator = IntelCycloneVFPGAClockDomainGenerator
+    clock_domain_generator = IntelCycloneVClockDomainGenerator
     fast_domain_clock_freq = int(48e3 * 256 * fast_multiplier)
 
     @property
@@ -54,7 +54,7 @@ class ADATFaceCycloneV(QMTech5CEFA2Platform, LUNAPlatform):
 
 class ADATFaceCycloneIV(QMTechEP4CEPlatform, LUNAPlatform):
     fast_multiplier        = 9
-    clock_domain_generator = IntelFPGAClockDomainGenerator
+    clock_domain_generator = IntelCycloneIVClockDomainGenerator
     fast_domain_clock_freq = int(48e3 * 256 * fast_multiplier)
 
     @property
@@ -75,7 +75,7 @@ class ADATFaceCycloneIV(QMTechEP4CEPlatform, LUNAPlatform):
 # This is here just for experimental reasons.
 # right now the design probably would not fit into this device anymore
 class ADATFaceCyclone10(QMTech10CL006Platform, LUNAPlatform):
-    clock_domain_generator = IntelFPGAClockDomainGenerator
+    clock_domain_generator = IntelCycloneIVClockDomainGenerator
     fast_multiplier        = 9
     fast_domain_clock_freq = int(48e3 * 256 * fast_multiplier)
 
