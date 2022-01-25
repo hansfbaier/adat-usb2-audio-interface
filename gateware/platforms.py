@@ -112,4 +112,4 @@ class ADATFaceArtix7(QMTechXC7A35TPlatform, LUNAPlatform):
         self.connectors[0].number = 3
         self.connectors[1].number = 2
 
-        super().__init__(standalone=False)
+        super().__init__(standalone=False, toolchain="Symbiflow")
