@@ -55,7 +55,7 @@ $ cd ..
 4. Activate the venv and build
 ```bash
 $ source ./gateware/venv/bin/activate
-$ python3 gateware/adat_usb2_audio_interface.py
+$ python3 gateware/adat_usb2_audio_interface.py --keep
 ```
 
 This will create a directory named build/ and after a successful build will directly
