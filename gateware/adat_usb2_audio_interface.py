@@ -8,8 +8,10 @@ from amaranth            import *
 from amaranth.lib.fifo   import AsyncFIFOBuffered, AsyncFIFO, SyncFIFOBuffered, SyncFIFO
 from amaranth.lib.cdc    import FFSynchronizer
 
-from amlib.stream        import connect_fifo_to_stream, connect_stream_to_fifo
-from amlib.io.i2s        import I2STransmitter
+from amlib.stream               import connect_fifo_to_stream, connect_stream_to_fifo
+from amlib.io.i2s               import I2STransmitter
+from amlib.io.debouncer         import Debouncer
+from amlib.dsp.convolution.mac  import StereoConvolutionMAC, ConvolutionMode
 
 from luna                import top_level_cli
 from luna.usb2           import USBDevice, \
@@ -38,6 +40,9 @@ from debug                   import setup_ila, add_debug_led_array
 
 from usb_descriptors import USBDescriptors
 
+import wave
+import numpy as np
+
 class USB2AudioInterface(Elaboratable):
     """ USB Audio Class v2 interface """
     # one isochronous packet typically has 6 or 7 samples of 8 channels of 32 bit samples
@@ -54,6 +59,8 @@ class USB2AudioInterface(Elaboratable):
 
     USE_DEBUG_LED_ARRAY = True
 
+    USE_CONVOLUTION = False
+
     def elaborate(self, platform):
         m = Module()
 
@@ -62,6 +69,7 @@ class USB2AudioInterface(Elaboratable):
         usb2_number_of_channels      = self.USB2_NO_CHANNELS
         usb2_number_of_channels_bits = Shape.cast(range(usb2_number_of_channels)).width
         audio_bits                   = 24
+        samplerate                   = 48000
         adat_number_of_channels      = usb1_number_of_channels - usb2_number_of_channels
 
         m.submodules.car = platform.clock_domain_generator()
@@ -381,7 +389,8 @@ class USB2AudioInterface(Elaboratable):
         #
         # I2S DACs
         #
-        m.submodules.dac1_transmitter = dac1 = DomainRenamer("usb")(I2STransmitter(sample_width=audio_bits))
+        dac1_fifo_depth = 32 if self.USE_CONVOLUTION else 16 #when introducing delay with the convolver we need a larger fifo
+        m.submodules.dac1_transmitter = dac1 = DomainRenamer("usb")(I2STransmitter(sample_width=audio_bits, fifo_depth=dac1_fifo_depth))
         m.submodules.dac2_transmitter = dac2 = DomainRenamer("usb")(I2STransmitter(sample_width=audio_bits))
         m.submodules.dac1_extractor   = dac1_extractor = DomainRenamer("usb")(StereoPairExtractor(usb1_number_of_channels, usb1_to_output_fifo_depth))
         m.submodules.dac2_extractor   = dac2_extractor = DomainRenamer("usb")(StereoPairExtractor(usb1_number_of_channels, usb1_to_output_fifo_depth))
@@ -405,8 +414,49 @@ class USB2AudioInterface(Elaboratable):
             dac2_extractor.selected_channel_in.eq(Mux(usb1_no_channels == 2, 0, 2)),
         ]
 
-        self.wire_up_dac(m, usb1_to_channel_stream, dac1_extractor, dac1, lrclk, dac1_pads)
+        if self.USE_CONVOLUTION:
+            enable_convolver = Signal()
+
+            # load the IR data
+            with wave.open('IRs/DT990_crossfeed_4800taps.wav', 'rb') as wav:
+                ir_data = wav.readframes(wav.getnframes())
+                ir_sample_rate = wav.getframerate()
+
+            ir_sig = np.zeros((len(ir_data) // 6, 2), dtype='int32')
+            for i in range(0, len(ir_sig), 6):
+                ir_sig[i // 6, 0] = int.from_bytes(ir_data[i:i + 3], byteorder='little', signed=True)
+                ir_sig[i // 6, 1] = int.from_bytes(ir_data[i + 3:i + 6], byteorder='little', signed=True)
+
+            # tapcount 4096 - more is failing to synthesize right now. 4800 would be the goal for 100ms.
+            taps = ir_sig[:4096,:]
+
+            m.submodules.convolver = convolver = DomainRenamer("usb")(StereoConvolutionMAC(taps=taps, samplerate=samplerate, clockfrequency=60e6,
+                                     bitwidth=audio_bits, convolutionMode=ConvolutionMode.CROSSFEED))
+
+            # validate the IR file
+            assert ir_sample_rate == samplerate, f"Unsupported samplerate {ir_sample_rate} for IR file. Required samplerate is {samplerate}"
+            for tap in range(len(taps)):
+                assert -1 * 2 ** (audio_bits - 1) <= taps[tap, 0] <= 1 * 2 ** (audio_bits - 1) - 1,\
+                        f"Tap #{tap} is out of range for bitwidth {audio_bits}: {taps[tap, 0]}"
+        else:
+            convolver = None
+            enable_convolver = None
+
+        self.wire_up_dac(m, usb1_to_channel_stream, dac1_extractor, dac1, lrclk, dac1_pads, convolver, enable_convolver)
         self.wire_up_dac(m, usb1_to_channel_stream, dac2_extractor, dac2, lrclk, dac2_pads)
+
+        if self.USE_CONVOLUTION:
+            # the convolver can be toggled in-/active either via the first button on the devboard or via the
+            # TOGGLE_CONVOLUTION(1) vendor request
+            m.submodules.button_debouncer = button_debouncer = Debouncer()
+            m.submodules.request_debouncer = request_debouncer = Debouncer()
+            m.d.comb += [
+                button_debouncer.btn_in.eq(platform.request("core_button")[0]),
+                request_debouncer.btn_in.eq(usb1_class_request_handler.enable_convolution)
+            ]
+            with m.If(button_debouncer.btn_up_out | request_debouncer.btn_up_out):  # toggle convolution on/off
+                m.d.sync += enable_convolver.eq(~enable_convolver)
+                m.d.comb += dac1.enable_in.eq(0)  # reset the DAC once we toggle its signal source
 
         #
         # USB => output FIFO level debug signals
@@ -450,6 +500,7 @@ class USB2AudioInterface(Elaboratable):
         # board status LEDs
         #
         leds = platform.request("leds")
+
         m.d.comb += [
             leds.active1.eq(usb1.tx_activity_led | usb1.rx_activity_led),
             leds.suspended1.eq(usb1.suspended),
@@ -459,6 +510,10 @@ class USB2AudioInterface(Elaboratable):
             leds.usb2.eq(usb_aux2.vbus),
         ]
         m.d.comb += [getattr(leds, f"sync{i + 1}").eq(adat_receivers[i].synced_out) for i in range(4)]
+
+        if self.USE_CONVOLUTION:
+            convolver_led = platform.request("core_led", 0)
+            m.d.comb += convolver_led.o.eq(enable_convolver)
 
         return m
 
@@ -622,7 +677,7 @@ class USB2AudioInterface(Elaboratable):
                 usb2_sof_counter, usb2_to_usb1_fifo_level, usb2_to_usb1_fifo_depth)
 
 
-    def wire_up_dac(self, m, usb_to_channel_stream, dac_extractor, dac, lrclk, dac_pads):
+    def wire_up_dac(self, m, usb_to_channel_stream, dac_extractor, dac, lrclk, dac_pads, convolver=None, enable_convolver=None):
         # wire up DAC extractor
         m.d.comb += [
             dac_extractor.channel_stream_in.valid.eq(   usb_to_channel_stream.channel_stream_out.valid
@@ -631,10 +686,19 @@ class USB2AudioInterface(Elaboratable):
             dac_extractor.channel_stream_in.channel_nr.eq(usb_to_channel_stream.channel_stream_out.channel_nr),
         ]
 
+        if convolver:
+            with m.If(enable_convolver):
+                m.d.comb += [
+                    convolver.signal_in.stream_eq(dac_extractor.channel_stream_out),
+                    dac.stream_in.stream_eq(convolver.signal_out)
+                ]
+            with m.Else():
+                m.d.comb += dac.stream_in.stream_eq(dac_extractor.channel_stream_out)
+        else:
+            m.d.comb += dac.stream_in.stream_eq(dac_extractor.channel_stream_out)
+
         # wire up DAC/ADC
         m.d.comb += [
-            dac.stream_in.stream_eq(dac_extractor.channel_stream_out),
-
             # wire up DAC/ADC
             # in I2S, everything happens on the negedge
             # the easiest way to achieve this, is to invert
