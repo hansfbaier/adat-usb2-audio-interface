@@ -3,7 +3,7 @@ from amaranth_boards.resources import *
 
 class ADATFaceRev0Baseboard:
     @staticmethod
-    def resources(attrs):
+    def resources(attrs, colorlight=False):
         return [
             # LEDS
             Resource("leds", 0,
@@ -58,8 +58,8 @@ class ADATFaceRev0Baseboard:
             Resource("i2s", 2,
                 Subsignal("sclk",   Pins("J_2:57", dir="o")),
                 Subsignal("bclk",   Pins("J_2:58", dir="o")),
-                Subsignal("data",   Pins("J_2:59", dir="o")),
-                Subsignal("lrclk",  Pins("J_2:60", dir="o")),
+                Subsignal("data",   Pins("J_2:50", dir="o") if colorlight else Pins("J_2:59", dir="o")),
+                Subsignal("lrclk",  Pins("J_2:52", dir="o") if colorlight else Pins("J_2:60", dir="o")),
                 attrs),
 
 
@@ -80,10 +80,15 @@ class ADATFaceRev0Baseboard:
                 attrs),
 
             Resource("toslink", 4,
-                Subsignal("tx", Pins("J_2:7", dir="o")),
+                Subsignal("tx", Pins("J_2:8", dir="o") if colorlight else Pins("J_2:7", dir="o")),
                 Subsignal("rx", Pins("J_2:9", dir="i")),
                 attrs),
 
             # Debug
             SPIResource(0, clk="J_2:12", copi="J_2:8", cipo=None, cs_n="J_2:10", attrs=attrs),
+
+            Resource("debug", 0, Pins("J_2:44", dir="o")),
+            Resource("debug", 1, Pins("J_2:46", dir="o")),
+            Resource("debug", 2, Pins("J_2:48", dir="o")),
+            Resource("debug", 3, Pins("J_2:42", dir="o")),
         ]

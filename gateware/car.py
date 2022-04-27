@@ -368,3 +368,199 @@ class Xilinx7SeriesClockDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
 
         return m
 
+class ColorlightDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
+    """ Clock generator for the Colorlight I5 board. """
+
+    def __init__(self, clock_frequencies=None):
+        pass
+
+    def elaborate(self, platform):
+        m = Module()
+
+        # Create our domains.
+        m.domains.sync   = ClockDomain("sync")
+        m.domains.usb    = ClockDomain("usb")
+        m.domains.fast   = ClockDomain("fast")
+        m.domains.adat   = ClockDomain("adat")
+        m.domains.dac    = ClockDomain("dac")
+
+
+        # Grab our clock and global reset signals.
+        clk25 = platform.request(platform.default_clk)
+
+        main_clocks    = Signal(5)
+        audio_clocks   = Signal(4)
+        fast_clock_48k = Signal()
+
+        main_locked   = Signal()
+        audio_locked  = Signal()
+        fast_locked   = Signal()
+        reset         = Signal()
+
+        # USB PLL
+        main_feedback    = Signal()
+        m.submodules.main_pll = Instance("EHXPLLL",
+
+                # Status.
+                o_LOCK=main_locked,
+
+                # PLL parameters...
+                p_PLLRST_ENA="DISABLED",
+                p_INTFB_WAKE="DISABLED",
+                p_STDBY_ENABLE="DISABLED",
+                p_DPHASE_SOURCE="DISABLED",
+                p_OUTDIVIDER_MUXA="DIVA",
+                p_OUTDIVIDER_MUXB="DIVB",
+                p_OUTDIVIDER_MUXC="DIVC",
+                p_OUTDIVIDER_MUXD="DIVD",
+
+                # 60 MHz
+                p_CLKI_DIV = 5,
+                p_CLKOP_ENABLE = "ENABLED",
+                p_CLKOP_DIV = 10,
+                p_CLKOP_CPHASE = 15,
+                p_CLKOP_FPHASE = 0,
+
+                p_FEEDBK_PATH = "CLKOP",
+                p_CLKFB_DIV = 12,
+
+                # Clock in.
+                i_CLKI=clk25,
+
+                # Internal feedback.
+                i_CLKFB=main_feedback,
+
+                # Control signals.
+                i_RST=reset,
+                i_PHASESEL0=0,
+                i_PHASESEL1=0,
+                i_PHASEDIR=1,
+                i_PHASESTEP=1,
+                i_PHASELOADREG=1,
+                i_STDBY=0,
+                i_PLLWAKESYNC=0,
+
+                # Output Enables.
+                i_ENCLKOP=0,
+                i_ENCLKOS=0,
+
+                # Generated clock outputs.
+                o_CLKOP=main_feedback,
+
+                # Synthesis attributes.
+                a_FREQUENCY_PIN_CLKI="25",
+                a_FREQUENCY_PIN_CLKOP="60",
+
+                a_ICP_CURRENT="6",
+                a_LPF_RESISTOR="16",
+                a_MFG_ENABLE_FILTEROPAMP="1",
+                a_MFG_GMCREF_SEL="2"
+        )
+
+        audio_feedback = Signal()
+        audio_locked   = Signal()
+        m.submodules.audio_pll = Instance("EHXPLLL",
+
+                # Status.
+                o_LOCK=audio_locked,
+
+                # PLL parameters...
+                p_PLLRST_ENA="DISABLED",
+                p_INTFB_WAKE="DISABLED",
+                p_STDBY_ENABLE="DISABLED",
+                p_DPHASE_SOURCE="DISABLED",
+                p_OUTDIVIDER_MUXA="DIVA",
+                p_OUTDIVIDER_MUXB="DIVB",
+                p_OUTDIVIDER_MUXC="DIVC",
+                p_OUTDIVIDER_MUXD="DIVD",
+
+                # 25MHz * 29 = 725 MHz PLL freqency
+                p_CLKI_DIV = 1,
+                p_CLKOP_ENABLE = "ENABLED",
+                p_CLKOP_DIV = 29,
+                p_CLKOP_CPHASE = 0,
+                p_CLKOP_FPHASE = 0,
+
+                # 12.288 MHz = 726MHz / 59
+                p_CLKOS_ENABLE = "ENABLED",
+                p_CLKOS_DIV = 59,
+                p_CLKOS_CPHASE = 0,
+                p_CLKOS_FPHASE = 0,
+
+                # I2S DAC clock = 12.288 MHz / 4
+                p_CLKOS2_ENABLE = "ENABLED",
+                p_CLKOS2_DIV = 59 * 4,
+                p_CLKOS2_CPHASE = 0,
+                p_CLKOS2_FPHASE = 0,
+
+                # fast domain clock
+                p_CLKOS3_ENABLE = "ENABLED",
+                p_CLKOS3_DIV = 8,
+                p_CLKOS3_CPHASE = 0,
+                p_CLKOS3_FPHASE = 0,
+
+                p_FEEDBK_PATH = "CLKOP",
+                p_CLKFB_DIV = 1,
+
+                # Clock in.
+                i_CLKI=clk25,
+
+                # Internal feedback.
+                i_CLKFB=audio_feedback,
+
+                # Control signals.
+                i_RST=reset,
+                i_PHASESEL0=0,
+                i_PHASESEL1=0,
+                i_PHASEDIR=1,
+                i_PHASESTEP=1,
+                i_PHASELOADREG=1,
+                i_STDBY=0,
+                i_PLLWAKESYNC=0,
+
+                # Output Enables.
+                i_ENCLKOP=0,
+                i_ENCLKOS=0,
+                i_ENCLKOS2=0,
+                i_ENCLKOS3=0,
+
+                # Generated clock outputs.
+                o_CLKOP=audio_feedback,
+                o_CLKOS=ClockSignal("adat"),
+                o_CLKOS2=ClockSignal("dac"),
+                o_CLKOS3=ClockSignal("fast"),
+
+                # Synthesis attributes.
+                a_FREQUENCY_PIN_CLKI="25",
+                a_FREQUENCY_PIN_CLKOS="12.288",
+                a_FREQUENCY_PIN_CLKOS2="3.072",
+
+                a_ICP_CURRENT="6",
+                a_LPF_RESISTOR="16",
+                a_MFG_ENABLE_FILTEROPAMP="1",
+                a_MFG_GMCREF_SEL="2"
+        )
+
+        debug0 = platform.request("debug", 0)
+        debug1 = platform.request("debug", 1)
+        debug2 = platform.request("debug", 2)
+        debug3 = platform.request("debug", 3)
+
+        reset = Signal()
+        # Control our resets.
+        m.d.comb += [
+            ClockSignal("usb")     .eq(main_feedback),
+            ClockSignal("sync")    .eq(ClockSignal("usb")),
+
+            reset.eq(~(main_locked & audio_locked)),
+
+            debug0.eq(ClockSignal("usb")),
+            debug1.eq(ClockSignal("adat")),
+            debug2.eq(ClockSignal("fast")),
+            debug3.eq(reset),
+
+        ]
+
+        self.wire_up_reset(m, reset)
+
+        return m

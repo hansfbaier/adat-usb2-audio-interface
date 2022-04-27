@@ -1,15 +1,16 @@
 from amaranth import *
 from amaranth.build import *
 
-from amaranth_boards.resources import *
-from amaranth_boards.qmtech_ep4ce   import QMTechEP4CEPlatform
-from amaranth_boards.qmtech_5cefa2  import QMTech5CEFA2Platform
-from amaranth_boards.qmtech_10cl006 import QMTech10CL006Platform
-from amaranth_boards.qmtech_xc7a35t import QMTechXC7A35TPlatform
+from amaranth_boards.resources         import *
+from amaranth_boards.qmtech_ep4ce      import QMTechEP4CEPlatform
+from amaranth_boards.qmtech_5cefa2     import QMTech5CEFA2Platform
+from amaranth_boards.qmtech_10cl006    import QMTech10CL006Platform
+from amaranth_boards.qmtech_xc7a35t    import QMTechXC7A35TPlatform
+from amaranth_boards.colorlight_qmtech import ColorlightQMTechPlatform
 
 from luna.gateware.platform.core import LUNAPlatform
 
-from car                     import IntelCycloneIVClockDomainGenerator, IntelCycloneVClockDomainGenerator, Xilinx7SeriesClockDomainGenerator
+from car                     import ColorlightDomainGenerator, IntelCycloneIVClockDomainGenerator, IntelCycloneVClockDomainGenerator, Xilinx7SeriesClockDomainGenerator
 from adatface_rev0_baseboard import ADATFaceRev0Baseboard
 
 class IntelFPGAParameters:
@@ -113,3 +114,22 @@ class ADATFaceArtix7(QMTechXC7A35TPlatform, LUNAPlatform):
         self.connectors[1].number = 2
 
         super().__init__(standalone=False)
+
+class ADATFaceColorlight(ColorlightQMTechPlatform, LUNAPlatform):
+    clock_domain_generator = ColorlightDomainGenerator
+    fast_multiplier        = 8
+    fast_domain_clock_freq = int(48e3 * 256 * fast_multiplier)
+
+    @property
+    def file_templates(self):
+        templates = super().file_templates
+        return templates
+
+    def __init__(self):
+        self.resources += ADATFaceRev0Baseboard.resources(Attrs(IO_TYPE="LVCMOS33"), colorlight=True)
+        # swap connector numbers, because on ADATface the connector
+        # names are swapped compared to the QMTech daughterboard
+        self.connectors[0].number = 3
+        self.connectors[1].number = 2
+        from amaranth_boards.colorlight_i5 import ColorLightI5Platform
+        super().__init__(colorlight=ColorLightI5Platform)
