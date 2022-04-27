@@ -2,6 +2,8 @@ from amaranth         import *
 from amaranth.build   import *
 from amaranth.lib.cdc import ResetSynchronizer
 
+from amlib.utils import SimpleClockDivider
+
 
 class ClockDomainGeneratorBase():
     NO_PHASE_SHIFT  = 0
@@ -487,12 +489,6 @@ class ColorlightDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
                 p_CLKOS_CPHASE = 0,
                 p_CLKOS_FPHASE = 0,
 
-                # I2S DAC clock = 12.288 MHz / 4
-                p_CLKOS2_ENABLE = "ENABLED",
-                p_CLKOS2_DIV = 59 * 4,
-                p_CLKOS2_CPHASE = 0,
-                p_CLKOS2_FPHASE = 0,
-
                 # fast domain clock
                 p_CLKOS3_ENABLE = "ENABLED",
                 p_CLKOS3_DIV = 8,
@@ -521,19 +517,16 @@ class ColorlightDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
                 # Output Enables.
                 i_ENCLKOP=0,
                 i_ENCLKOS=0,
-                i_ENCLKOS2=0,
                 i_ENCLKOS3=0,
 
                 # Generated clock outputs.
                 o_CLKOP=audio_feedback,
                 o_CLKOS=ClockSignal("adat"),
-                o_CLKOS2=ClockSignal("dac"),
                 o_CLKOS3=ClockSignal("fast"),
 
                 # Synthesis attributes.
                 a_FREQUENCY_PIN_CLKI="25",
                 a_FREQUENCY_PIN_CLKOS="12.288",
-                a_FREQUENCY_PIN_CLKOS2="3.072",
 
                 a_ICP_CURRENT="6",
                 a_LPF_RESISTOR="16",
@@ -546,11 +539,15 @@ class ColorlightDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
         debug2 = platform.request("debug", 2)
         debug3 = platform.request("debug", 3)
 
+        m.submodules.bclk_div = clk_div = DomainRenamer("adat")(SimpleClockDivider(4))
+
         reset = Signal()
         # Control our resets.
         m.d.comb += [
             ClockSignal("usb")     .eq(main_feedback),
             ClockSignal("sync")    .eq(ClockSignal("usb")),
+            ClockSignal("dac")     .eq(clk_div.clock_out),
+            clk_div.clock_enable_in.eq(1),
 
             reset.eq(~(main_locked & audio_locked)),
 

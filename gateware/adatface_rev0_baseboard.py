@@ -80,7 +80,7 @@ class ADATFaceRev0Baseboard:
                 attrs),
 
             Resource("toslink", 4,
-                Subsignal("tx", Pins("J_2:8", dir="o") if colorlight else Pins("J_2:7", dir="o")),
+                Subsignal("tx", Pins("J_2:14", dir="o") if colorlight else Pins("J_2:7", dir="o")),
                 Subsignal("rx", Pins("J_2:9", dir="i")),
                 attrs),
 
