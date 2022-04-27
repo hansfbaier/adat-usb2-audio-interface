@@ -1,5 +1,6 @@
 setuptools
 wheel
+numpy
 git+https://github.com/amaranth-community-unofficial/python-usb-descriptors.git
 git+https://github.com/amaranth-lang/amaranth.git
 git+https://github.com/amaranth-lang/amaranth-soc.git
