@@ -488,7 +488,7 @@ class USB2AudioInterface(Elaboratable):
 
         # Internal Logic Analyzer
         if self.USE_ILA:
-            setup_ila(locals(), self.ILA_MAX_PACKET_SIZE)
+            setup_ila(locals(), self.ILA_MAX_PACKET_SIZE, self.USE_CONVOLUTION)
 
         if self.USE_DEBUG_LED_ARRAY:
             add_debug_led_array(locals())

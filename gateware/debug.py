@@ -83,7 +83,7 @@ def add_debug_led_array(v):
     ]
 
 
-def setup_ila(v, ila_max_packet_size):
+def setup_ila(v, ila_max_packet_size, use_convolution):
     examined_usb                 = "usb1"
     m                            = v['m']
     usb1_sof_counter             = v['usb1_sof_counter']
@@ -511,29 +511,30 @@ def setup_ila(v, ila_max_packet_size):
         enable_convolver,
     ]
 
-    convolver_signal_in_valid = Signal()
-    convolver_signal_in_first = Signal()
-    convolver_signal_in_last = Signal()
-    convolver_signal_in_ready = Signal()
-    convolver_signal_in_payload = Signal(signed(24))
-    convolver_signal_out_valid = Signal()
-    convolver_signal_out_first = Signal()
-    convolver_signal_out_last = Signal()
+    convolver_signal_in_valid    = Signal()
+    convolver_signal_in_first    = Signal()
+    convolver_signal_in_last     = Signal()
+    convolver_signal_in_ready    = Signal()
+    convolver_signal_in_payload  = Signal(signed(24))
+    convolver_signal_out_valid   = Signal()
+    convolver_signal_out_first   = Signal()
+    convolver_signal_out_last    = Signal()
     convolver_signal_out_payload = Signal(24)
-    convolver_signal_out_ready = Signal()
+    convolver_signal_out_ready   = Signal()
 
-    m.d.comb += [
-        convolver_signal_in_valid.eq(convolver.signal_in.valid),
-        convolver_signal_in_first.eq(convolver.signal_in.first),
-        convolver_signal_in_last.eq(convolver.signal_in.last),
-        convolver_signal_in_payload.eq(convolver.signal_in.payload),
-        convolver_signal_in_ready.eq(convolver.signal_in.ready),
-        convolver_signal_out_valid.eq(convolver.signal_out.valid),
-        convolver_signal_out_first.eq(convolver.signal_out.first),
-        convolver_signal_out_last.eq(convolver.signal_out.last),
-        convolver_signal_out_payload.eq(convolver.signal_out.payload),
-        convolver_signal_out_ready.eq(convolver.signal_out.ready),
-    ]
+    if use_convolution:
+        m.d.comb += [
+            convolver_signal_in_valid.eq(convolver.signal_in.valid),
+            convolver_signal_in_first.eq(convolver.signal_in.first),
+            convolver_signal_in_last.eq(convolver.signal_in.last),
+            convolver_signal_in_payload.eq(convolver.signal_in.payload),
+            convolver_signal_in_ready.eq(convolver.signal_in.ready),
+            convolver_signal_out_valid.eq(convolver.signal_out.valid),
+            convolver_signal_out_first.eq(convolver.signal_out.first),
+            convolver_signal_out_last.eq(convolver.signal_out.last),
+            convolver_signal_out_payload.eq(convolver.signal_out.payload),
+            convolver_signal_out_ready.eq(convolver.signal_out.ready),
+        ]
 
     convolution_debug = [
         convolver_signal_in_ready,
@@ -553,7 +554,7 @@ def setup_ila(v, ila_max_packet_size):
     #
     # signals to trace
     #
-    signals = convolution_debug
+    signals = adat_transmitter_debug
 
     signals_bits = sum([s.width for s in signals])
     m.submodules.ila = ila = \
