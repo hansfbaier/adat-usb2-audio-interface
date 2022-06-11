@@ -1,4 +1,7 @@
 {
     "python.pythonPath": "gateware/venv/bin/python3",
     "zenMode.hideLineNumbers": false,
+    "files.associations": {
+        "resources.h": "c"
+    },
 }

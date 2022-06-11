@@ -65,34 +65,26 @@ class USB2AudioInterface(Elaboratable):
 
     USE_CONVOLUTION = False
 
-    USE_SOC = False
+    USE_SOC = True
 
     def __init__(self) -> None:
         if self.USE_SOC:
             self.soc = soc = SimpleSoC()
-
-            soc.add_rom("firmware/firmware.bin", 0x4000)
-            soc.add_ram(0x4000)
 
             self.uart_pins = Record([
                 ('rx', [('i', 1)]),
                 ('tx', [('o', 1)])
             ])
 
-            uart = AsyncSerialPeripheral(core=AsyncSerial(divisor=int(60e6 // 115200), pins=self.uart_pins))
-            soc.add_peripheral(uart)
-
-            timer = TimerPeripheral(24)
-            soc.add_peripheral(timer)
+            soc.add_bios_and_peripherals(self.uart_pins)
+            soc.add_debug_port()
 
             with open("firmware/soc.ld", 'w') as ld:
                 soc.generate_ld_script(file=ld)
             with open("firmware/resources.h", 'w') as res_header:
                 soc.generate_c_header(file=res_header)
 
-            result = os.system("(cd firmware; make)")
-            assert result == 0, "compilation failed, aborting...."
-            print("firmware compilation succeeded.")
+            soc.build()
 
         super().__init__()
 

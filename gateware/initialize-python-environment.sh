@@ -14,3 +14,6 @@ pip3 install .
 cd ..
 rm -rf lambdasoc
 popd
+pushd venv/lib/python*/site-packages/lambdasoc/software/
+git clone https://github.com/lambdaconcept/lambdasoc-bios.git bios
+popd
