@@ -372,6 +372,8 @@ class Xilinx7SeriesClockDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
 
 class ColorlightDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
     """ Clock generator for the Colorlight I5 board. """
+    FastDomainDivider = 7
+    FastClockFreq     = 25e6 * 29 / FastDomainDivider
 
     def __init__(self, clock_frequencies=None):
         pass
@@ -483,7 +485,7 @@ class ColorlightDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
                 p_CLKOP_CPHASE = 0,
                 p_CLKOP_FPHASE = 0,
 
-                # 12.288 MHz = 726MHz / 59
+                # 12.288 MHz = 725 MHz / 59
                 p_CLKOS_ENABLE = "ENABLED",
                 p_CLKOS_DIV = 59,
                 p_CLKOS_CPHASE = 0,
@@ -491,7 +493,7 @@ class ColorlightDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
 
                 # fast domain clock
                 p_CLKOS3_ENABLE = "ENABLED",
-                p_CLKOS3_DIV = 8,
+                p_CLKOS3_DIV = self.FastDomainDivider,
                 p_CLKOS3_CPHASE = 0,
                 p_CLKOS3_FPHASE = 0,
 

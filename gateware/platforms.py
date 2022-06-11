@@ -117,8 +117,7 @@ class ADATFaceArtix7(QMTechXC7A35TPlatform, LUNAPlatform):
 
 class ADATFaceColorlight(ColorlightQMTechPlatform, LUNAPlatform):
     clock_domain_generator = ColorlightDomainGenerator
-    fast_multiplier        = 8
-    fast_domain_clock_freq = int(48e3 * 256 * fast_multiplier)
+    fast_domain_clock_freq = ColorlightDomainGenerator.FastClockFreq
 
     @property
     def file_templates(self):
