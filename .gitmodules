@@ -1,0 +1,3 @@
+[submodule "jt51-synth"]
+	path = jt51_synth
+	url = https://github.com/hansfbaier/jt51-synth.git
