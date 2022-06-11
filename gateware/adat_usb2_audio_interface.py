@@ -12,6 +12,10 @@ from amlib.stream               import connect_fifo_to_stream, connect_stream_to
 from amlib.io.i2s               import I2STransmitter
 from amlib.io.debouncer         import Debouncer
 from amlib.dsp.convolution.mac  import StereoConvolutionMAC, ConvolutionMode
+from amlib.soc                  import SimpleSoC
+
+from lambdasoc.periph.serial    import AsyncSerialPeripheral, AsyncSerial
+from lambdasoc.periph.timer     import TimerPeripheral
 
 from luna                import top_level_cli
 from luna.usb2           import USBDevice, \
@@ -57,9 +61,40 @@ class USB2AudioInterface(Elaboratable):
     USE_ILA             = False
     ILA_MAX_PACKET_SIZE = 512
 
-    USE_DEBUG_LED_ARRAY = True
+    USE_DEBUG_LED_ARRAY = False
 
     USE_CONVOLUTION = False
+
+    USE_SOC = False
+
+    def __init__(self) -> None:
+        if self.USE_SOC:
+            self.soc = soc = SimpleSoC()
+
+            soc.add_rom("firmware/firmware.bin", 0x4000)
+            soc.add_ram(0x4000)
+
+            self.uart_pins = Record([
+                ('rx', [('i', 1)]),
+                ('tx', [('o', 1)])
+            ])
+
+            uart = AsyncSerialPeripheral(core=AsyncSerial(divisor=int(60e6 // 115200), pins=self.uart_pins))
+            soc.add_peripheral(uart)
+
+            timer = TimerPeripheral(24)
+            soc.add_peripheral(timer)
+
+            with open("firmware/soc.ld", 'w') as ld:
+                soc.generate_ld_script(file=ld)
+            with open("firmware/resources.h", 'w') as res_header:
+                soc.generate_c_header(file=res_header)
+
+            result = os.system("(cd firmware; make)")
+            assert result == 0, "compilation failed, aborting...."
+            print("firmware compilation succeeded.")
+
+        super().__init__()
 
     def elaborate(self, platform):
         m = Module()
@@ -73,6 +108,17 @@ class USB2AudioInterface(Elaboratable):
         adat_number_of_channels      = usb1_number_of_channels - usb2_number_of_channels
 
         m.submodules.car = platform.clock_domain_generator()
+
+        #
+        # SoC
+        #
+        if self.USE_SOC:
+            m.submodules.soc = self.soc
+            uart_pads = platform.request("uart", 0)
+            m.d.comb += [
+                uart_pads.tx       .eq(self.uart_pins.tx),
+                self.uart_pins.rx  .eq(uart_pads.rx)
+            ]
 
         #
         # USB
@@ -715,9 +761,15 @@ class USB2AudioInterface(Elaboratable):
         ]
 
 if __name__ == "__main__":
-    os.environ["LUNA_PLATFORM"] = "platforms:ADATFaceCycloneIV"
+    os.environ["AMARANTH_verbose"] = "True"
+    #os.environ["LUNA_PLATFORM"] = "platforms:ADATFaceCycloneIV"
     #os.environ["LUNA_PLATFORM"] = "platforms:ADATFaceCycloneV"
     #os.environ["LUNA_PLATFORM"] = "platforms:ADATFaceCyclone10"
     #os.environ["LUNA_PLATFORM"] = "platforms:ADATFaceArtix7"
-    #os.environ["LUNA_PLATFORM"] = "platforms:ADATFaceColorlight"
+
+    # ECP5 platform
+    os.environ["AMARANTH_synth_opts"] = "-abc9"
+    os.environ["AMARANTH_nextpnr_opts"] = "--timing-allow-fail"
+    os.environ["LUNA_PLATFORM"] = "platforms:ADATFaceColorlight"
+
     top_level_cli(USB2AudioInterface)

@@ -125,10 +125,10 @@ class ADATFaceColorlight(ColorlightQMTechPlatform, LUNAPlatform):
         return templates
 
     def __init__(self):
-        self.resources += ADATFaceRev0Baseboard.resources(Attrs(IO_TYPE="LVCMOS33"), colorlight=True)
+        adatface_resources = ADATFaceRev0Baseboard.resources(Attrs(IO_TYPE="LVCMOS33"), colorlight=True)
         # swap connector numbers, because on ADATface the connector
         # names are swapped compared to the QMTech daughterboard
         self.connectors[0].number = 3
         self.connectors[1].number = 2
         from amaranth_boards.colorlight_i9 import ColorLightI9Platform
-        super().__init__(colorlight=ColorLightI9Platform)
+        super().__init__(colorlight=ColorLightI9Platform, daughterboard=False, extra_resources=adatface_resources)

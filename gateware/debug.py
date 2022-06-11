@@ -560,11 +560,12 @@ def setup_ila(v, ila_max_packet_size, use_convolution):
     m.submodules.ila = ila = \
         StreamILA(
             domain="usb", o_domain="usb",
-            sample_rate=60e6, # usb domain
+            #sample_rate=60e6, # usb domain
             #sample_rate=48e3 * 256 * 5, # sync domain
             #sample_rate=48e3 * 256 * 9, # fast domain
+            #sample_rate=25e6 * 29 / 7, # fast domain, ECP5
             signals=signals,
-            sample_depth       = int(50 * 8 * 1024 / signals_bits),
+            sample_depth       = int(10 * 8 * 1024 / signals_bits),
             samples_pretrigger = 2, #int(78 * 8 * 1024 / signals_bits),
             with_enable=True)
 

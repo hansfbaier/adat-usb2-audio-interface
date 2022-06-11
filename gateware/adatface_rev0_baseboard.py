@@ -80,12 +80,14 @@ class ADATFaceRev0Baseboard:
                 attrs),
 
             Resource("toslink", 4,
-                Subsignal("tx", Pins("J_2:14", dir="o") if colorlight else Pins("J_2:7", dir="o")),
+                Subsignal("tx", Pins("J_2:18", dir="o") if colorlight else Pins("J_2:7", dir="o")),
                 Subsignal("rx", Pins("J_2:9", dir="i")),
                 attrs),
 
+
             # Debug
             SPIResource(0, clk="J_2:12", copi="J_2:8", cipo=None, cs_n="J_2:10", attrs=attrs),
+            UARTResource(0, tx="J_2:14", rx="J_2:16", attrs=attrs),
 
             Resource("debug", 0, Pins("J_2:44", dir="o")),
             Resource("debug", 1, Pins("J_2:46", dir="o")),
