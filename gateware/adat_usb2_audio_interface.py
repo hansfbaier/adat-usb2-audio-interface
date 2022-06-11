@@ -719,4 +719,5 @@ if __name__ == "__main__":
     #os.environ["LUNA_PLATFORM"] = "platforms:ADATFaceCycloneV"
     #os.environ["LUNA_PLATFORM"] = "platforms:ADATFaceCyclone10"
     #os.environ["LUNA_PLATFORM"] = "platforms:ADATFaceArtix7"
+    #os.environ["LUNA_PLATFORM"] = "platforms:ADATFaceColorlight"
     top_level_cli(USB2AudioInterface)

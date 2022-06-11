@@ -130,5 +130,5 @@ class ADATFaceColorlight(ColorlightQMTechPlatform, LUNAPlatform):
         # names are swapped compared to the QMTech daughterboard
         self.connectors[0].number = 3
         self.connectors[1].number = 2
-        from amaranth_boards.colorlight_i5 import ColorLightI5Platform
-        super().__init__(colorlight=ColorLightI5Platform)
+        from amaranth_boards.colorlight_i9 import ColorLightI9Platform
+        super().__init__(colorlight=ColorLightI9Platform)
