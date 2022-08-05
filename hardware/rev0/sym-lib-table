@@ -1,3 +1,4 @@
 (sym_lib_table
   (lib (name "usb_ulpi")(type "KiCad")(uri "${KIPRJMOD}/usb_ulpi.kicad_sym")(options "")(descr ""))
+  (lib (name "toslink")(type "KiCad")(uri "${KIPRJMOD}/toslink.kicad_sym")(options "")(descr ""))
 )
