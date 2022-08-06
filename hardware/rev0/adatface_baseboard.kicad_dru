@@ -42,11 +42,11 @@
 	(condition "A.Type == 'via'"))
 
 (rule "PTH Hole Size"
-	(constraint hole (min 0.2mm) (max 6.35mm))
+	(constraint hole (min 0.2mm) )
 	(condition "A.isPlated()"))
 
 (rule "PTH Size"
-	(constraint length (min 0.7mm) (max 6.35mm))
+	(constraint length (min 0.7mm) )
 	(condition "A.isPlated()"))
 
 (rule "Minimum Non-plated Hole Size"
