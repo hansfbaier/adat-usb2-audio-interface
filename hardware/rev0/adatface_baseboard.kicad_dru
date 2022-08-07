@@ -1,0 +1,83 @@
+(version 1)
+
+# 4-layer, 1oz copper
+(rule "Minimum Trace Width and Spacing (inner layer)"
+	(constraint track_width (min 5mil))
+	(constraint clearance (min 5mil))
+	(layer inner)
+	(condition "A.Type == 'track'"))
+
+(rule "Minimum Trace Width and Spacing (outer layer)"
+	(constraint track_width (min 3.5mil))
+	(constraint clearance (min 3.5mil))
+	(layer outer)
+	(condition "A.Type == 'track'"))
+
+# silkscreen
+(rule "Minimum line width"
+	(constraint track_width (min 6mil))
+	(layer "F.Silkscreen") (layer "B.Silkscreen"))
+
+(rule "Pad to Silkscreen"
+	(constraint clearance (min 0.15mm))
+	(layer outer)
+	(condition "A.Type == 'pad' && (B.Type == 'text' || B.Type == 'graphic')"))
+
+# edge clearance
+(rule "Trace to Outline"
+	(constraint edge_clearance (min 0.2mm))
+	(condition "A.Type == 'track'"))
+
+# drill/hole size
+(rule "drill hole size (mechanical)"
+	(constraint hole (min 0.2mm) (max 6.3mm))
+	(condition "A.Type == 'hole'"))
+
+(rule "Minimum Via Hole Size"
+	(constraint hole (min 0.2mm))
+	(condition "A.Type == 'via'"))
+
+(rule "Minimum Via Diameter"
+	(constraint length (min 0.4mm))
+	(condition "A.Type == 'via'"))
+
+(rule "PTH Hole Size"
+	(constraint hole (min 0.2mm) )
+	(condition "A.isPlated()"))
+
+(rule "PTH Size"
+	(constraint length (min 0.7mm) )
+	(condition "A.isPlated()"))
+
+(rule "Minimum Non-plated Hole Size"
+	(constraint hole (min 0.5mm))
+	(condition "A.Type == 'pad' && !A.isPlated()"))
+
+# clearance
+(rule "via to track clearance"
+	(constraint hole_clearance (min 0.254mm))
+	(condition "A.Type == 'via' && B.Type == 'track'"))
+
+(rule "via to via clearance (same nets)"
+	(constraint hole_clearance (min 0.254mm))
+	(condition "A.Type == 'via' && B.Type == 'via' && A.Net == B.Net"))
+
+(rule "pad to pad clearance (with hole, different nets)"
+	(constraint hole_clearance (min 0.5mm))
+	(condition "A.Type == 'through-hole' && B.Type == A.Type && A.Net != B.Net"))
+
+(rule "pad to pad clearance (without hole, different nets)"
+	(constraint clearance (min 0.127mm))
+	(condition "A.Type == 'pad' && B.Type == A.Type && A.Net != B.Net"))
+
+(rule "NPTH to Track clearance)"
+	(constraint hole_clearance (min 0.254mm))
+	(condition "A.Pad_Type == 'NPTH, mechanical' && B.Type == 'track'"))
+
+(rule "PTH to Track clearance)"
+	(constraint hole_clearance (min 0.33mm))
+	(condition "A.isPlated() && B.Type == 'track'"))
+
+(rule "Pad to Track clearance)"
+	(constraint clearance (min 0.2mm))
+	(condition "A.isPlated() && B.Type == 'track'"))
