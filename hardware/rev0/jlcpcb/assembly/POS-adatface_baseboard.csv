@@ -37,14 +37,14 @@ FB1,1.5A,L_1206_3216Metric,160.5,-100.75,90.0,top
 J1,Conn_01x06_Male,PinHeader_1x06_P2.54mm_Vertical,132.25,-132.9,0.0,top
 J2,Conn_02x32_Odd_Even,PinHeader_2x32_P2.54mm_Vertical,67.945,-41.91,0.0,top
 J3,Conn_02x32_Odd_Even,PinHeader_2x32_P2.54mm_Vertical,128.65,-41.91,0.0,top
-J4,Connector_USB_C_Receptacle_USB2.0,USB_C_Receptacle_XKB_U262-16XN-4BVC11,158.65,-85.85,270.0,top
-J5,Connector_USB_C_Receptacle_USB2.0,USB_C_Receptacle_XKB_U262-16XN-4BVC11,158.65,-56.85,270.0,top
+J4,Connector_USB_C_Receptacle_USB2.0,USB_C_Receptacle_XKB_U262-16XN-4BVC11,158.65,-85.85,90.0,top
+J5,Connector_USB_C_Receptacle_USB2.0,USB_C_Receptacle_XKB_U262-16XN-4BVC11,158.65,-56.85,90.0,top
 J6,Conn_01x06_Male,PinHeader_1x06_P2.54mm_Vertical,99.0,-132.9,0.0,top
 J7,Conn_01x26_Male,PinHeader_1x26_P2.54mm_Horizontal,80.01,-41.783,0.0,top
 J8,Conn_01x01_Male,PinHeader_1x01_P2.54mm_Horizontal,124.25,-47.0,180.0,top
 J9,Conn_01x01_Male,PinHeader_1x01_P2.54mm_Horizontal,124.25,-43.25,180.0,top
-J10 - GND,Conn_01x04_Male,PinHeader_1x04_P2.54mm_Horizontal,107.49,-39.31,90.0,top
-J11 - GND,Conn_01x04_Male,PinHeader_1x04_P2.54mm_Horizontal,93.64,-39.365,90.0,top
+J10,Conn_01x04_Male,PinHeader_1x04_P2.54mm_Horizontal,107.49,-39.31,90.0,top
+J11,Conn_01x04_Male,PinHeader_1x04_P2.54mm_Horizontal,93.64,-39.365,90.0,top
 L1,47uH,L_0805_2012Metric,58.4,-136.85,-90.0,top
 L2,47uH,L_0805_2012Metric,58.65,-53.09375,-90.0,top
 L3,47uH,L_0805_2012Metric,58.45,-80.85,-90.0,top
