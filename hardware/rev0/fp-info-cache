@@ -1,4 +1,4 @@
-20514671856425675
+20435813905721656
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -7987,13 +7987,6 @@ connector barrel jack
 3
 3
 Connector_Card
-CF-Card_3M_N7E50-7516PK-20-WF
-Compact Flash Card connector (https://multimedia.3m.com/mws/media/22365O/3mtm-cf-card-header-compactflashtm-type-i-sm-ts0662.pdf)
-connector cf
-0
-54
-50
-Connector_Card
 CF-Card_3M_N7E50-A516xx-30
 Compact Flash Card connector, polarization inverse (https://multimedia.3m.com/mws/media/22424O/3mtm-cf-card-header-type-i-low-profile-surface-mount-ts0747.pdf)
 connector cf
@@ -10954,6 +10947,237 @@ hdmi micro type d right angle tht smd hybrid
 0
 23
 20
+Connector_Harting
+Harting_har-flexicon_14110213001xxx_1x02-MP_P2.54mm_Vertical
+Harting har-flexicon series connector, 14110213001xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13001XXX_100228421DRW046C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon vertical
+0
+4
+3
+Connector_Harting
+Harting_har-flexicon_14110213002xxx_1x02-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110213002xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13002XXX_100228421DRW035C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+4
+3
+Connector_Harting
+Harting_har-flexicon_14110213010xxx_1x02-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110213010xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13010XXX_100228421DRW063C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+4
+3
+Connector_Harting
+Harting_har-flexicon_14110313001xxx_1x03-MP_P2.54mm_Vertical
+Harting har-flexicon series connector, 14110313001xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13001XXX_100228421DRW046C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon vertical
+0
+5
+4
+Connector_Harting
+Harting_har-flexicon_14110313002xxx_1x03-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110313002xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13002XXX_100228421DRW035C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+5
+4
+Connector_Harting
+Harting_har-flexicon_14110313010xxx_1x03-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110313010xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13010XXX_100228421DRW063C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+5
+4
+Connector_Harting
+Harting_har-flexicon_14110413001xxx_1x04-MP_P2.54mm_Vertical
+Harting har-flexicon series connector, 14110413001xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13001XXX_100228421DRW046C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon vertical
+0
+6
+5
+Connector_Harting
+Harting_har-flexicon_14110413002xxx_1x04-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110413002xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13002XXX_100228421DRW035C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+6
+5
+Connector_Harting
+Harting_har-flexicon_14110413010xxx_1x04-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110413010xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13010XXX_100228421DRW063C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+6
+5
+Connector_Harting
+Harting_har-flexicon_14110513001xxx_1x05-MP_P2.54mm_Vertical
+Harting har-flexicon series connector, 14110513001xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13001XXX_100228421DRW046C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon vertical
+0
+7
+6
+Connector_Harting
+Harting_har-flexicon_14110513002xxx_1x05-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110513002xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13002XXX_100228421DRW035C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+7
+6
+Connector_Harting
+Harting_har-flexicon_14110513010xxx_1x05-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110513010xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13010XXX_100228421DRW063C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+7
+6
+Connector_Harting
+Harting_har-flexicon_14110613001xxx_1x06-MP_P2.54mm_Vertical
+Harting har-flexicon series connector, 14110613001xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13001XXX_100228421DRW046C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon vertical
+0
+8
+7
+Connector_Harting
+Harting_har-flexicon_14110613002xxx_1x06-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110613002xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13002XXX_100228421DRW035C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+8
+7
+Connector_Harting
+Harting_har-flexicon_14110613010xxx_1x06-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110613010xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13010XXX_100228421DRW063C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+8
+7
+Connector_Harting
+Harting_har-flexicon_14110713001xxx_1x07-MP_P2.54mm_Vertical
+Harting har-flexicon series connector, 14110713001xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13001XXX_100228421DRW046C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon vertical
+0
+9
+8
+Connector_Harting
+Harting_har-flexicon_14110713002xxx_1x07-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110713002xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13002XXX_100228421DRW035C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+9
+8
+Connector_Harting
+Harting_har-flexicon_14110713010xxx_1x07-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110713010xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13010XXX_100228421DRW063C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+9
+8
+Connector_Harting
+Harting_har-flexicon_14110813001xxx_1x08-MP_P2.54mm_Vertical
+Harting har-flexicon series connector, 14110813001xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13001XXX_100228421DRW046C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon vertical
+0
+10
+9
+Connector_Harting
+Harting_har-flexicon_14110813002xxx_1x08-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110813002xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13002XXX_100228421DRW035C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+10
+9
+Connector_Harting
+Harting_har-flexicon_14110813010xxx_1x08-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110813010xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13010XXX_100228421DRW063C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+10
+9
+Connector_Harting
+Harting_har-flexicon_14110913001xxx_1x09-MP_P2.54mm_Vertical
+Harting har-flexicon series connector, 14110913001xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13001XXX_100228421DRW046C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon vertical
+0
+11
+10
+Connector_Harting
+Harting_har-flexicon_14110913002xxx_1x09-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110913002xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13002XXX_100228421DRW035C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+11
+10
+Connector_Harting
+Harting_har-flexicon_14110913010xxx_1x09-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14110913010xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13010XXX_100228421DRW063C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+11
+10
+Connector_Harting
+Harting_har-flexicon_14111013001xxx_1x10-MP_P2.54mm_Vertical
+Harting har-flexicon series connector, 14111013001xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13001XXX_100228421DRW046C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon vertical
+0
+12
+11
+Connector_Harting
+Harting_har-flexicon_14111013002xxx_1x10-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14111013002xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13002XXX_100228421DRW035C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+12
+11
+Connector_Harting
+Harting_har-flexicon_14111013010xxx_1x10-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14111013010xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13010XXX_100228421DRW063C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+12
+11
+Connector_Harting
+Harting_har-flexicon_14111113001xxx_1x11-MP_P2.54mm_Vertical
+Harting har-flexicon series connector, 14111113001xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13001XXX_100228421DRW046C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon vertical
+0
+13
+12
+Connector_Harting
+Harting_har-flexicon_14111113002xxx_1x11-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14111113002xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13002XXX_100228421DRW035C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+13
+12
+Connector_Harting
+Harting_har-flexicon_14111113010xxx_1x11-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14111113010xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13010XXX_100228421DRW063C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+13
+12
+Connector_Harting
+Harting_har-flexicon_14111213001xxx_1x12-MP_P2.54mm_Vertical
+Harting har-flexicon series connector, 14111213001xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13001XXX_100228421DRW046C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon vertical
+0
+14
+13
+Connector_Harting
+Harting_har-flexicon_14111213002xxx_1x12-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14111213002xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13002XXX_100228421DRW035C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+14
+13
+Connector_Harting
+Harting_har-flexicon_14111213010xxx_1x12-MP_P2.54mm_Horizontal
+Harting har-flexicon series connector, 14111213010xxx (https://b2b.harting.com/files/download/PRD/PDF_TS/1411XX13010XXX_100228421DRW063C.pdf), generated with kicad-footprint-generator
+connector Harting har-flexicon horizontal
+0
+14
+13
 Connector_Harwin
 Harwin_Gecko-G125-FVX0605L0X_2x03_P1.25mm_Vertical
 Harwin Gecko Connector, 6 pins, dual row female, vertical entry, PN:G125-FVX0605L0X
@@ -50428,20 +50652,6 @@ Diode SOD923
 2
 2
 Diode_SMD
-D_SOT-23_ANK
-SOT-23, Single Diode
-SOT-23
-0
-3
-2
-Diode_SMD
-D_SOT-23_NKA
-SOT-23, Single Diode
-SOT-23
-0
-3
-2
-Diode_SMD
 D_TUMD2
 ROHM - TUMD2
 TUMD2
@@ -52823,13 +53033,6 @@ heatsink
 2
 Heatsink
 Heatsink_AAVID_TV5G_TO220_Horizontal
-Heatsink TV5G TO-220 Horizontal, https://www.shopaavid.com/Product/TV-5G
-Heatsink TV5G TO-220 Horizontal 
-0
-0
-0
-Heatsink
-Heatsink_Aavid-TV5G_TO220_Horizontal
 Heatsink TV5G TO-220 Horizontal, https://www.shopaavid.com/Product/TV-5G
 Heatsink TV5G TO-220 Horizontal 
 0
@@ -72667,20 +72870,6 @@ SOT-143 Reverse Handsoldering
 4
 4
 Package_TO_SOT_SMD
-SOT-143R_Reverse
-SOT-143R Reverse
-SOT-143R Reverse
-0
-4
-4
-Package_TO_SOT_SMD
-SOT-143R_Reverse_Handsoldering
-SOT-143R Reverse Handsoldering
-SOT-143 Reverse Handsoldering
-0
-4
-4
-Package_TO_SOT_SMD
 SOT-143_Handsoldering
 SOT-143 Handsoldering https://www.nxp.com/docs/en/package-information/SOT143B.pdf
 SOT-143 Handsoldering
@@ -76300,7 +76489,7 @@ Bluetooth Module
 30
 30
 RF_Module
-BM78SPPS5XC2
+BM78SPPS5xC2
 Bluetooth Dual-mode module with integral chip antenna (http://ww1.microchip.com/downloads/en/DeviceDoc/60001380C.pdf)
 Bluetooth BR/EDR BLE
 0
@@ -84993,6 +85182,76 @@ transformer flyback
 0
 10
 10
+Transistor_Power_Module
+Infineon_AG-ECONO2
+28-lead TH, EconoPACK 2, same as Littelfuse_Package_H_XN2MM, https://www.infineon.com/dgdl/Infineon-FS75R07N2E4-DS-v02_00-en_de.pdf?fileId=db3a30432f5008fe012f52f916333979
+igbt diode module
+0
+28
+28
+Transistor_Power_Module
+Infineon_EasyPIM-1B
+35-lead TH, EasyPIM 1B, https://www.infineon.com/dgdl/Infineon-FP10R06W1E3-DS-v02_01-en_de.pdf?fileId=db3a304412b407950112b43312285a63
+brifge rectifier igbt diode module
+0
+23
+23
+Transistor_Power_Module
+Infineon_EasyPIM-2B
+35-lead TH, EasyPIM 2B, same as ST_ACEPACK-2-CIB, https://www.infineon.com/dgdl/Infineon-FP50R06W2E3-DS-v02_02-EN.pdf?fileId=db3a30431b3e89eb011b455c99987d24
+brifge rectifier igbt diode module
+0
+35
+23
+Transistor_Power_Module
+Littelfuse_Package_H_XBN2MM
+24-lead TH, Package H, https://www.littelfuse.com/~/media/electronics/datasheets/power_semiconductors/littelfuse_power_semiconductor_igbt_module_mg1215h_xbn2mm_datasheet.pdf.pdf
+brifge rectifier igbt diode module
+0
+24
+24
+Transistor_Power_Module
+Littelfuse_Package_H_XN2MM
+28-lead TH, Package H, same as Infineon_AG-ECONO2, https://www.littelfuse.com/~/media/electronics/datasheets/power_semiconductors/littelfuse_power_semiconductor_igbt_module_mg1225h_xn2mm_datasheet.pdf.pdf
+igbt diode module
+0
+28
+28
+Transistor_Power_Module
+Littelfuse_Package_W_XBN2MM
+24-lead TH, Package W, https://www.littelfuse.com/~/media/electronics/datasheets/power_semiconductors/littelfuse_power_semiconductor_igbt_module_mg1250w_xbn2mm_datasheet.pdf.pdf
+brifge rectifier igbt diode module
+0
+35
+24
+Transistor_Power_Module
+Littelfuse_Package_W_XN2MM
+35-lead TH, Package W, https://www.littelfuse.com/~/media/electronics/datasheets/power_semiconductors/littelfuse_power_semiconductor_igbt_module_mg1275w_xn2mm_datasheet.pdf.pdf
+igbt diode module
+0
+35
+35
+Transistor_Power_Module
+ST_ACEPACK-2-CIB
+35-lead TH, ACEPACK 2 CIB, same as Infineon_EasyPIM-2B, https://www.st.com/resource/en/datasheet/a2c25s12m3.pdf
+brifge rectifier igbt diode module
+0
+35
+23
+Transistor_Power_Module
+ST_ACEPACK-2-CIB_PressFIT
+35-lead TH, ACEPACK 2 CIB, PressFIT, https://www.st.com/resource/en/datasheet/a2c50s65m2-f.pdf
+brifge rectifier igbt diode module
+0
+35
+23
+Transistor_Power_Module
+ST_SDIP-25L
+25-lead TH, SDIP-25L, https://www.st.com/resource/en/datasheet/stgips20k60.pdf
+igbt diode module
+0
+25
+25
 Valve
 Valve_ECC-83-1
 Valve ECC-83-1 round pins
@@ -85763,6 +86022,167 @@ varistor SIOV
 0
 2
 2
+easyeda2kicad
+CONN-SMD_BA42-80BT-1-NHB
+
+
+0
+82
+80
+easyeda2kicad
+CONN-SMD_FBB08006-F80S1013W5M
+
+
+0
+82
+80
+easyeda2kicad
+D0402-BI
+
+
+0
+2
+2
+easyeda2kicad
+DIMM-SMD_DM-7D4-H2500-M
+
+
+0
+202
+200
+easyeda2kicad
+F1206
+
+
+0
+2
+2
+easyeda2kicad
+OSC-SMD_4P-L7.0-W5.0-BL
+
+
+0
+4
+4
+easyeda2kicad
+QFN-68_L8.0-W8.0-P0.40-BL-EP5.5
+
+
+0
+69
+69
+easyeda2kicad
+RJ45-TH_HR911105A
+
+
+0
+16
+14
+easyeda2kicad
+RJ45-TH_HR911130A
+
+
+0
+18
+16
+easyeda2kicad
+SMA-TH_HJ-SMA014
+
+
+0
+5
+5
+easyeda2kicad
+SO-DIMM-SMD_200P-P0.60_1473005-4
+
+
+0
+204
+201
+easyeda2kicad
+SOIC-8_L5.3-W5.3-P1.27-LS8.0-BL
+
+
+0
+8
+8
+easyeda2kicad
+SOIC-14_L8.7-W3.9-P1.27-LS6.0-BL
+
+
+0
+14
+14
+easyeda2kicad
+SOT-223-3_L6.5-W3.4-P2.30-LS7.0-BR
+
+
+0
+4
+4
+easyeda2kicad
+SOT-223-4_L6.5-W3.5-P2.30-LS7.0-BR
+
+
+0
+4
+4
+easyeda2kicad
+SW-SMD_4P-L5.1-W5.1-P3.70-LS6.5-TL-2
+
+
+0
+4
+4
+easyeda2kicad
+SW-TH_4P-L6.0-W6.0-P4.50-LS6.5
+
+
+0
+4
+4
+easyeda2kicad
+USB-A-SMD_U231-091N-4BLRA00-S-1
+
+
+0
+11
+11
+easyeda2kicad
+USB-A-TH_U231-091N-5
+
+
+0
+13
+13
+easyeda2kicad
+USB-C-SMD_10P-P1.00-L6.8-W8.9
+
+
+0
+10
+7
+easyeda2kicad
+USB-C_SMD-TYPE-C-31-M-12
+
+
+0
+22
+17
+easyeda2kicad
+USB-SMD_U231-091N-4BLRA00-S
+
+
+0
+13
+13
+easyeda2kicad
+USB3.0-A-SMD_916-862A205EY10200
+
+
+0
+11
+10
 footprints
 QFN-32-1EP_5x5mm_P0.5mm_EP3.3x3.3mm
 QFN, 32 Pin (http://ww1.microchip.com/downloads/en/DeviceDoc/00002164B.pdf#page=68), generated with kicad-footprint-generator ipc_noLead_generator.py
@@ -85784,769 +86204,6 @@ USB C Type-C Receptacle SMD
 0
 20
 17
-kicad-footprints
-4P4C_narrow
-
-4P4C connector RJ10
-0
-4
-4
-kicad-footprints
-5X6_MOSFET
-https://www.onsemi.com/pub/Collateral/AND9137-D.PDF
-PQFN DFN SON LFPAK SOT669 Power-SO8 5x6 HSOP8
-0
-22
-3
-kicad-footprints
-BLE_MODULE_RAYTAC_MDBT42
-
-
-0
-41
-41
-kicad-footprints
-Bourns_SRN6045TA
-
-Inductors Bourns / Tayo Yuden 6045
-0
-2
-2
-kicad-footprints
-Bourns_SRN8040TA
-
-Inductors Bourns / Tayo Yuden 6045
-0
-2
-2
-kicad-footprints
-Box_Header_2x05x2.54mm_Straight
-http://www.farnell.com/datasheets/1520732.pdf
-connector multicomp MC9A MC9A12
-0
-10
-10
-kicad-footprints
-CP_Radial_L31.5mm_D16.0mm_P7.50mm_horizontal
-CP, Radial series, Radial, pin pitch=7.50mm, , diameter=16mm, Electrolytic Capacitor
-CP Radial series Radial pin pitch 7.50mm  diameter 16mm Electrolytic Capacitor
-0
-2
-2
-kicad-footprints
-C_0402_1005
-Capacitor SMD 0402, reflow soldering, AVX (see smccp.pdf)
-capacitor 0402
-0
-2
-2
-kicad-footprints
-C_0603_1608
-Capacitor SMD 0603, reflow soldering, AVX (see smccp.pdf)
-capacitor 0603
-0
-2
-2
-kicad-footprints
-C_0805_2012
-Capacitor SMD 0805, reflow soldering, AVX (see smccp.pdf)
-capacitor 0805
-0
-2
-2
-kicad-footprints
-C_1206_3216
-Capacitor SMD 1206, reflow soldering, AVX (see smccp.pdf)
-capacitor 1206
-0
-2
-2
-kicad-footprints
-C_1210_3225
-Capacitor SMD 1210, reflow soldering, AVX (see smccp.pdf)
-capacitor 1210
-0
-2
-2
-kicad-footprints
-CommsExt_2x8
-Through hole straight pin header, 1x08, 2.54mm pitch, single row
-Through hole pin header THT 1x08 2.54mm single row
-0
-16
-16
-kicad-footprints
-DIP-42_W15.24mm_Socket
-42-lead though-hole mounted DIP package, row spacing 15.24 mm (600 mils), Socket
-THT DIP DIL PDIP 2.54mm 15.24mm 600mil Socket
-0
-84
-42
-kicad-footprints
-DIP_switch_4p_angled
-
-
-0
-8
-8
-kicad-footprints
-D_SMA
-Diode SMA
-Diode SMA
-0
-2
-2
-kicad-footprints
-D_SMB
-Diode SMB Standard
-Diode SMB Standard
-0
-2
-2
-kicad-footprints
-D_SMC
-Diode SMC Standard = DO-214AB
-Diode SMC Standard DO-214AB
-0
-2
-2
-kicad-footprints
-D_SOD-123
-SOD-123
-SOD-123
-0
-2
-2
-kicad-footprints
-D_SOD-123F
-D_SOD-123F
-D_SOD-123F
-0
-2
-2
-kicad-footprints
-D_SOD-323
-SOD-323
-SOD-323
-0
-2
-2
-kicad-footprints
-Fiducial_0.7mm
-Circular Fiducial, 1mm bare copper top; 2.54mm keepout
-marker
-0
-1
-1
-kicad-footprints
-Fischer_Elektronik_FK_250_10_LF_PAK
-
-
-0
-2
-1
-kicad-footprints
-Fischer_Elektronik_SK573_37,5
-
-
-0
-0
-0
-kicad-footprints
-Fischer_Elektronik_SK573_50
-
-
-0
-0
-0
-kicad-footprints
-Fuse_Clip_5x20mm
-
-
-0
-4
-2
-kicad-footprints
-Keystone-Fuse-3550-2
-
-KEYSTONE, FUSE, ATO, ATC, HOLDER 3557-2
-0
-4
-2
-kicad-footprints
-L-FERYSTER-DTMSS-27
-
-
-0
-2
-2
-kicad-footprints
-L-FERYSTER-DTMSS-27_22uH
-
-
-0
-2
-2
-kicad-footprints
-L-FERYSTER-DTMSS-27_33uH
-
-
-0
-2
-2
-kicad-footprints
-L-FERYSTER-DTMSS-27_47uH
-
-
-0
-2
-2
-kicad-footprints
-L-FERYSTER-DTMSS-40_68uH
-
-
-0
-2
-2
-kicad-footprints
-L-FERYSTER-DW-3,5
-
-
-0
-2
-2
-kicad-footprints
-LED_0603_D3.0mm
-LED, diameter 3.0mm, 2 pins
-LED diameter 3.0mm 2 pins
-0
-4
-2
-kicad-footprints
-LED_0603_D3.0mm_v2
-LED, diameter 3.0mm, 2 pins
-LED diameter 3.0mm 2 pins
-0
-4
-2
-kicad-footprints
-LIBRESOLAR_LOGO
-
-
-0
-0
-0
-kicad-footprints
-L_WE-TPC-4818
-SELF WE-TPC/M
-
-0
-2
-2
-kicad-footprints
-L_Wuerth_WE-TPC-58xx
-Choke, Drossel, WE-PD2, Typ MS, Wuerth, SMD,
-Choke Drossel WE-PD2 TypMS Wuerth SMD 
-0
-2
-2
-kicad-footprints
-Mousebite_3x0.5
-
-
-0
-0
-0
-kicad-footprints
-Neutrik_NC4MAH
-
-
-0
-5
-5
-kicad-footprints
-Neutrik_NC5FDX-TOP
-
-
-0
-0
-0
-kicad-footprints
-OLED_SSD1306_I2C_0.96
-Through hole straight socket strip, 1x04, 2.54mm pitch, single row (from Kicad 4.0.7), script generated
-Through hole socket strip THT 1x04 2.54mm single row
-0
-4
-4
-kicad-footprints
-OLED_SSD1306_I2C_0.96_no_holes
-Through hole straight socket strip, 1x04, 2.54mm pitch, single row (from Kicad 4.0.7), script generated
-Through hole socket strip THT 1x04 2.54mm single row
-0
-4
-4
-kicad-footprints
-Phoenix_Contact_DMC_0,5_6-G1-2,54_THR
-
-
-0
-12
-6
-kicad-footprints
-Phoenix_Contact_DMC_0,5_16-G1-2,54_THR
-
-
-0
-32
-16
-kicad-footprints
-Phoenix_Contact_MC_1,5_2-G-3,81
-
-
-0
-2
-2
-kicad-footprints
-Phoenix_Contact_MC_1,5_3-G-3,81
-
-
-0
-3
-3
-kicad-footprints
-Phoenix_Contact_MC_1,5_6-G-3,81
-
-
-0
-6
-6
-kicad-footprints
-Phoenix_Contact_MC_1,5_16-G-3,81
-
-
-0
-16
-16
-kicad-footprints
-Phoenix_Contact_MKDSN_2,5-2
-
-
-0
-2
-2
-kicad-footprints
-Phoenix_Contact_MKDS_5-2-7,62
-MKDS 5/2-7,62
-screw terminal
-0
-2
-2
-kicad-footprints
-Phoenix_Contact_MKDS_5-2-9,5
-Phoenix Contact MKDS 5/2-9,52
-
-0
-2
-2
-kicad-footprints
-Phoenix_Contact_MKDS_5-2-952
-<b>MKDS 5/2-9,52</b><p>{return}Source: PHOENIX CONTACT
-
-0
-2
-2
-kicad-footprints
-Phoenix_Contact_MKDS_5-3-9,5
-Phoenix Contact MKDS 5/2-9,52
-
-0
-3
-3
-kicad-footprints
-Phoenix_Contact_PLA_5-2-7,5-ZF
-
-
-0
-2
-2
-kicad-footprints
-Phoenix_Contact_PLH_5-2-7,5-ZF
-
-
-0
-2
-2
-kicad-footprints
-Phoenix_Contact_PTSM_0.5_2-HH-2,5-THR-R16
-
-
-0
-2
-2
-kicad-footprints
-Phoenix_Contact_PT_2,5-2-7,5-H
-
-
-0
-2
-2
-kicad-footprints
-Phoenix_Contact_SPT-2,5-3-V-5,0
-
-
-0
-6
-3
-kicad-footprints
-Phoenix_Contact_SPTAF-1_6-5,0-EL
-
-
-0
-12
-6
-kicad-footprints
-Phoenix_Contact_SPT_5-2-V-7,5-ZB
-
-
-0
-2
-2
-kicad-footprints
-Phoenix_Contact_TDPT_2,5-6-SP-5,08
-
-
-0
-12
-6
-kicad-footprints
-Phoenix_Contact_TDPT_4-2-SP-6,35-ZB
-
-
-0
-2
-2
-kicad-footprints
-RJ12_RJ25_6P6C_Amphenol_54601
-RJ12 connector  https://cdn.amphenol-icc.com/media/wysiwyg/files/drawing/c-bmj-0082.pdf
-RJ12 connector
-0
-6
-6
-kicad-footprints
-RJ25_6P6C_TabUp
-https://katalog.we-online.de/em/datasheet/615006138421.pdf
-RJ25 connector
-0
-6
-6
-kicad-footprints
-RJ25_6P6C_short
-RJ12 connector  https://cdn.amphenol-icc.com/media/wysiwyg/files/drawing/c-bmj-0082.pdf
-RJ12 connector
-0
-6
-6
-kicad-footprints
-RJ45_8P8C
-http://katalog.we-online.de/em/datasheet/615008137121.pdf
-RJ45
-0
-8
-8
-kicad-footprints
-R_0402_1005
-Resistor SMD 0402, reflow soldering, Vishay (see dcrcw.pdf)
-resistor 0402
-0
-2
-2
-kicad-footprints
-R_0603_1608
-Resistor SMD 0603, reflow soldering, Vishay (see dcrcw.pdf)
-resistor 0603
-0
-2
-2
-kicad-footprints
-R_0805_2012
-Resistor SMD 0805, reflow soldering, Vishay (see dcrcw.pdf)
-resistor 0805
-0
-2
-2
-kicad-footprints
-R_1206_3216
-Resistor SMD 1206, reflow soldering, Vishay (see dcrcw.pdf)
-resistor 1206
-0
-2
-2
-kicad-footprints
-R_2010_5025
-Resistor SMD 2010, reflow soldering, Vishay (see dcrcw.pdf)
-resistor 2010
-0
-2
-2
-kicad-footprints
-R_2512_6332
-Resistor SMD 2512, reflow soldering, Vishay (see dcrcw.pdf)
-resistor 2512
-0
-2
-2
-kicad-footprints
-R_Array_Convex_4x0603
-Chip Resistor Network, ROHM MNR14 (see mnr_g.pdf)
-resistor array
-0
-8
-8
-kicad-footprints
-R_Bourns_CRE2512
-Resistor SMD 2512, reflow soldering, Vishay (see dcrcw.pdf)
-resistor 2512
-0
-2
-2
-kicad-footprints
-R_Shunt_2512
-Current Measurement Resistor SMD 2512, reflow soldering, Vishay WSLF or Bourns CCS2H
-resistor 2512
-0
-2
-2
-kicad-footprints
-Resonator_Murata_CSTNE
-
-
-0
-3
-3
-kicad-footprints
-Rotary_Switch_THT
-
-
-0
-6
-5
-kicad-footprints
-SOD-123HE
-
-SOD-123HE, SOD-123
-0
-2
-2
-kicad-footprints
-SOIC-8_3.9x4.9mm_Pitch1.27mm
-8-Lead Plastic Small Outline (SN) - Narrow, 3.90 mm Body [SOIC] (see Microchip Packaging Specification 00000049BS.pdf)
-SOIC 1.27
-0
-8
-8
-kicad-footprints
-SOT-23
-SOT-23, Standard
-SOT-23
-0
-3
-3
-kicad-footprints
-SOT-23-5
-5-pin SOT23 package
-SOT-23-5
-0
-5
-5
-kicad-footprints
-SOT-23-6
-6-pin SOT-23 package
-SOT-23-6
-0
-6
-6
-kicad-footprints
-SW_SPST_6mm
-
-
-0
-4
-2
-kicad-footprints
-SW_SPST_EVQP7A
-Light Touch Switch
-
-0
-4
-2
-kicad-footprints
-SW_Tactile_SKHH_Angled
-tactile switch 6mm ALPS SKHH right angle http://www.alps.com/prod/info/E/HTML/Tact/SnapIn/SKHH/SKHHLUA010.html
-tactile switch 6mm ALPS SKHH right angle
-0
-4
-2
-kicad-footprints
-Sim800L
-
-
-0
-12
-12
-kicad-footprints
-TO-220-3_Horizontal_BottomHeatsink
-TO-220-3, Horizontal, RM 2.54mm, see https://www.vishay.com/docs/66542/to-220-1.pdf
-TO-220-3 Horizontal RM 2.54mm
-0
-3
-3
-kicad-footprints
-TestPoint_0.8mm_hole
-
-
-0
-1
-1
-kicad-footprints
-TestPoint_1mm_pad
-
-
-0
-1
-1
-kicad-footprints
-USB_A_Wuerth_614008235023_Vertical_Stacked
-Stacked USB A connector https://katalog.we-online.de/em/datasheet/614008235023.pdf
-Wuerth stacked USB_A
-0
-12
-9
-kicad-footprints
-USB_A_Wuerth_61400416021_Horizontal
-Stacked USB A connector http://katalog.we-online.de/em/datasheet/61400826021.pdf
-Wuerth stacked USB_A
-0
-6
-5
-kicad-footprints
-USB_A_Wuerth_61400826021_Horizontal_Stacked
-Stacked USB A connector http://katalog.we-online.de/em/datasheet/61400826021.pdf
-Wuerth stacked USB_A
-0
-12
-9
-kicad-footprints
-USB_Micro-B
-http://www.molex.com/pdm_docs/sd/473460001_sd.pdf
-Micro-USB SMD
-0
-9
-6
-kicad-footprints
-USB_Micro-B_10103594-0001LF
-Micro USB Type B 10103594-0001LF
-USB USB_B USB_micro USB_OTG
-0
-17
-6
-kicad-footprints
-VIA-0.3mm
-
-
-0
-1
-1
-kicad-footprints
-VIA-0.4mm
-
-
-0
-1
-1
-kicad-footprints
-VIA-0.5mm
-
-
-0
-1
-1
-kicad-footprints
-VQFN_RGX0011A
-
-
-0
-11
-11
-kicad-footprints
-VSSOP-10_3.0x3.0mm_P0.5mm
-VSSOP-10 3.0 x 3.0, http://www.ti.com/lit/ds/symlink/lm75b.pdf
-VSSOP-10 3.0 x 3.0
-0
-10
-10
-kicad-footprints
-Wago_236-402
-
-
-0
-4
-2
-kicad-footprints
-Wago_236-403
-
-
-0
-6
-3
-kicad-footprints
-Watterott_Logo
-
-
-0
-0
-0
-kicad-footprints
-Wuerth_USB_Micro_USB_vert_Type_B_614105150721
-<b>614105150721</b><p>{return}WR-COM_USB_Micro Type B_Vertical_THT Micro Type B Vertical THT- Tape & Reel not for Pick & Place machine
-
-0
-7
-6
-kicad-footprints
-Wuerth_WP-THRBU
-
-
-0
-9
-1
-kicad-footprints
-Wuerth_WP-THRBU_74650195
-
-
-0
-9
-1
-kicad-footprints
-Wuerth_WP-THRBU_74655095
-
-
-0
-8
-1
-kicad-footprints
-Wuerth_WR-FPC_686112148922
-
-
-0
-14
-12
-kicad-footprints
-Wuerth_WR-FPC_687112149022
-
-
-0
-14
-12
 toslink
 PLR135-T8_PLT133-T8
 
