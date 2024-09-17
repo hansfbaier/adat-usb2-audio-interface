@@ -1,6 +1,7 @@
-from amaranth         import *
-from amaranth.build   import *
-from amaranth.lib.cdc import ResetSynchronizer
+from amaranth            import *
+from amaranth.build      import *
+from amaranth.lib.cdc    import ResetSynchronizer
+from amaranth.lib.wiring import flipped
 
 from amlib.utils import SimpleClockDivider
 
@@ -37,7 +38,7 @@ class IntelCycloneIVClockDomainGenerator(Elaboratable, ClockDomainGeneratorBase)
         m.domains.adat = ClockDomain("adat")
         m.domains.dac  = ClockDomain("dac")
 
-        clk = platform.request(platform.default_clk)
+        clk = flipped(platform.request(platform.default_clk))
 
         main_clocks    = Signal(5)
         audio_clocks   = Signal(4)
@@ -179,7 +180,7 @@ class IntelCycloneVClockDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
         m.domains.adat = ClockDomain("adat")
         m.domains.dac  = ClockDomain("dac")
 
-        clk = platform.request(platform.default_clk)
+        clk = flipped(platform.request(platform.default_clk))
 
         main_clock    = Signal()
         audio_clocks  = Signal(4)
@@ -256,7 +257,7 @@ class Xilinx7SeriesClockDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
         m.domains.adat = ClockDomain("adat")
         m.domains.dac  = ClockDomain("dac")
 
-        clk = platform.request(platform.default_clk)
+        clk = flipped(platform.request(platform.default_clk))
 
         main_clocks    = Signal()
         audio_clocks   = Signal(4)
@@ -390,7 +391,7 @@ class ColorlightDomainGenerator(Elaboratable, ClockDomainGeneratorBase):
 
 
         # Grab our clock and global reset signals.
-        clk25 = platform.request(platform.default_clk)
+        clk25 = flipped(platform.request(platform.default_clk))
 
         main_clocks    = Signal(5)
         audio_clocks   = Signal(4)
