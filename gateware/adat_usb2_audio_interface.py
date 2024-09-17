@@ -12,10 +12,6 @@ from amlib.stream               import connect_fifo_to_stream, connect_stream_to
 from amlib.io.i2s               import I2STransmitter
 from amlib.io.debouncer         import Debouncer
 from amlib.dsp.convolution.mac  import StereoConvolutionMAC, ConvolutionMode
-from amlib.soc                  import SimpleSoC
-
-from lambdasoc.periph.serial    import AsyncSerialPeripheral, AsyncSerial
-from lambdasoc.periph.timer     import TimerPeripheral
 
 from luna                import top_level_cli
 from luna.usb2           import USBDevice, \
@@ -69,6 +65,10 @@ class USB2AudioInterface(Elaboratable):
 
     def __init__(self) -> None:
         if self.USE_SOC:
+            from amlib.soc               import SimpleSoC
+            from lambdasoc.periph.serial import AsyncSerialPeripheral, AsyncSerial
+            from lambdasoc.periph.timer  import TimerPeripheral
+
             self.soc = soc = SimpleSoC()
 
             soc.add_rom("firmware/firmware.bin", 0x4000)
